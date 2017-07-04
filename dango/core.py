@@ -74,9 +74,10 @@ class DangoBotBase(commands.bot.BotBase):
 
         If not all dependencies are loaded, will defer until they are.
         """
-        desc = getattr(cls, PLUGIN_DESC)
+        desc = getattr(cls, PLUGIN_DESC, None)
         if not desc:
-            raise ValueError("This is not a dango cog.")
+            log.debug("Loading cog %s", cls)
+            return super().add_cog(cls)
 
         depends = [self.get_cog(name) for name in desc.depends]
         if not all(depends):
@@ -121,7 +122,7 @@ class DangoBotBase(commands.bot.BotBase):
 
     def unload_cog_deps(self, unloading_cog):
         for cog_name, cog_inst in self.cogs.copy().items():
-            desc = getattr(cog_inst, PLUGIN_DESC)
+            desc = getattr(cog_inst, PLUGIN_DESC, None)
             if not desc:
                 continue
 
