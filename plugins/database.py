@@ -4,18 +4,19 @@ import logging
 import aiopg
 from aiopg.sa import create_engine
 import config  # TODO
-from dango import plugin
+from dango import dcog
 
 
 log = logging.getLogger(__name__)
 
 
-@plugin()
+@dcog(pass_bot=True)
 class Database:
 
-    def __init__(self):
-        asyncio.ensure_future(self.connect())
+    def __init__(self, bot):
+        self._connect = asyncio.ensure_future(self.connect(), loop=bot.loop)
         self._ready = asyncio.Event()
+        self.bot = bot
 
     async def connect(self):
         self._engine = await create_engine(config.database)
@@ -30,4 +31,6 @@ class Database:
             self._acquire(), self._engine)
 
     def __unload(self):
-        pass
+        self._connect.cancel()
+        if self._ready.is_set():
+            self._engine.close()

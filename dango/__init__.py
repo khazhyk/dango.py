@@ -1,1 +1,1 @@
-from .core import plugin
+from .core import dcog

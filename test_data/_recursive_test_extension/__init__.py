@@ -1,8 +1,8 @@
 
-from dango import plugin
+from dango import dcog
 from .cmds import SubModule  # noqa pylint: disable=unused-import
 
 
-@plugin()
+@dcog()
 class InModule:
     pass

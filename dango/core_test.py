@@ -4,23 +4,23 @@ import sys
 import unittest
 
 from dango import core
-from dango import plugin
+from dango import dcog
 
 loop = asyncio.get_event_loop()
 
 
-@plugin()
+@dcog()
 class A:
     pass
 
 
-@plugin(depends=["A"])
+@dcog(depends=["A"])
 class B:
     def __init__(self, a):
         self.a = a
 
 
-@plugin(depends=["B"])
+@dcog(depends=["B"])
 class C:
     def __init__(self, b):
         self.b = b

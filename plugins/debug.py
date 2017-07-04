@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import os
 
-from dango import plugin
+from dango import dcog
 from discord.ext.commands import command
+import psutil
 
 log = logging.getLogger(__name__)
 
@@ -17,7 +19,7 @@ def dump_tasks():
             print(e)
 
 
-@plugin()
+@dcog()
 class Debug:
 
     async def on_ready(self):
@@ -26,3 +28,10 @@ class Debug:
     @command()
     async def test(self, ctx):
         await ctx.send("\N{AUBERGINE}" * 1)
+
+    @command()
+    async def stats(self, ctx):
+        await ctx.send(
+            "Using {:.2f} MiB of memory (RSS)".format(
+                psutil.Process(os.getpid()).memory_full_info().rss / (1024 * 1024)
+            ))

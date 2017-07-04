@@ -13,12 +13,14 @@ Discord.py commands ext extensions + plugin collection.
     - [ ] The wrapper also works for classic text-based k.v. display.
 - [ ] New/better RPC system, multi-shard aware.
     - [ ] Rolling restart system (maybe)
-- [ ] Look into using `watchdog` for watch_plugin_dir
-    - [ ] For this we need to be able to reload plugins, even if we depend on them.
-    - [ ] Plugin dependency system?
+- [x] Look into using `watchdog` for watch_plugin_dir
+    - [x] For this we need to be able to reload plugins, even if we depend on them.
+    - [x] Plugin dependency system?
     - [ ] Detect if dango/core/whatever changes. If we have a change outside of
         plugins, we likely need a full restart, not just a reload.
-
+- [ ] Config system
+    - [ ] Allow plugins/cogs to declare config elements w/ defaults
+    - [ ] Populate config file on cog load.
 
 ## Testing
 python -m unittest discover -p "*_test.py"

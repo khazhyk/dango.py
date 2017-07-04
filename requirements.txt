@@ -1,1 +1,12 @@
 git+https://github.com/Rapptz/discord.py@rewrite
+aiohttp
+watchdog
+
+# database
+aiopg
+sqlalchemy
+psycopg2
+
+# zerobin
+sjcl
+pycryptodome

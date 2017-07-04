@@ -1,13 +1,13 @@
-from dango import plugin
+from dango import dcog
 
 
-@plugin(depends=["A"])
+@dcog(depends=["A"])
 class D:
     def __init__(self, a):
         self.a = a
 
 
-@plugin(depends=["B"])
+@dcog(depends=["B"])
 class E:
     def __init__(self, b):
         self.b = b

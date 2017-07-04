@@ -1,6 +1,6 @@
-from dango import plugin
+from dango import dcog
 
 
-@plugin()
+@dcog()
 class SubModule:
     pass

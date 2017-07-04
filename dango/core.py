@@ -5,7 +5,11 @@ import re
 
 import discord
 from discord.ext import commands
+from discord.utils import cached_property
+from watchdog import events
+from watchdog import observers
 
+from . import plugin_watchdog
 from . import waaai
 from . import zerobin
 
@@ -14,18 +18,20 @@ log = logging.getLogger(__name__)
 PLUGIN_DESC = "__dango_plugin_desc__"
 
 
-def plugin(depends=None):
+def dcog(depends=None, pass_bot=False):
     def real_decorator(cls):
         setattr(cls, PLUGIN_DESC, PluginDesc(
-            depends=depends or []
+            depends=depends or [],
+            pass_bot=pass_bot
         ))
         return cls
     return real_decorator
 
 
 class PluginDesc:
-    def __init__(self, depends):
+    def __init__(self, depends, pass_bot):
         self.depends = depends
+        self.pass_bot = pass_bot
 
 
 class DangoContext(commands.Context):
@@ -76,6 +82,9 @@ class DangoBotBase(commands.bot.BotBase):
         if not all(depends):
             self._dango_unloaded_cogs[cls.__name__] = cls
             return
+
+        if desc.pass_bot:
+            depends.insert(0, self)
 
         cog = cls(*depends)
         super().add_cog(cog)
@@ -130,10 +139,14 @@ class DangoBotBase(commands.bot.BotBase):
         log.info("Loading extension {}".format(name))
         lib = importlib.import_module(name)
 
-        for item in dir(lib):
+        for item in dir(lib):  # TODO - inspect.members
             val = getattr(lib, item)
             if isinstance(val, type) and hasattr(val, PLUGIN_DESC):
                 self.add_cog(val)
+
+        setup = getattr(lib, 'setup', None)
+        if setup:
+            setup(self)
 
         self.extensions[name] = lib
 
@@ -153,6 +166,21 @@ class DangoBotBase(commands.bot.BotBase):
                 "Some plugins were unable to load due to missing deps: %s",
                 ",".join("%s.%s" % (c.__module__, c.__name__)
                          for c in self._dango_unloaded_cogs))
+        self.watchdog_dir(dire)
+
+    @cached_property
+    def observer(self):
+        ob = observers.Observer()
+        ob.start()
+        return ob
+
+    async def close(self):
+        self.observer.stop()
+        return await super().close()
+
+    def watchdog_dir(self, dire):
+        self.observer.schedule(
+            plugin_watchdog.PluginDirWatchdog(self), dire, recursive=True)
 
 
 class DangoAutoShardedBot(DangoBotBase, discord.AutoShardedClient):
