@@ -230,5 +230,30 @@ class TestExtensionLoading(unittest.TestCase):
         self.assertNotIn("SubModule", b.cogs)
 
 
+class PluginDirLoadTest(unittest.TestCase):
+
+    def setUpClass():
+        setup_logging()
+
+    def setUp(self):
+        self.b = core.DangoBot('t')
+
+    def tearDown(self):
+        loop.run_until_complete(self.b.close())
+
+    def test_load_folder(self):
+        b = self.b
+
+        b.watch_plugin_dir("test_data")
+
+        self.assertIn("InModule", b.cogs)
+        self.assertIn("SubModule", b.cogs)
+        self.assertIn("A", b.cogs)
+        self.assertIn("B", b.cogs)
+        self.assertIn("C", b.cogs)
+        self.assertIn("D", b.cogs)
+        self.assertIn("E", b.cogs)
+
+
 if __name__ == "__main__":
     unittest.main()

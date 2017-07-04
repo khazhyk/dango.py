@@ -151,15 +151,12 @@ class DangoBotBase(commands.bot.BotBase):
         self.extensions[name] = lib
 
     def watch_plugin_dir(self, dire):
+        # TODO - story is kind of icky for folder modules - we need to import
+        # cogs into __init__.py, not much better than setup() in __init__.py
         for item in os.listdir(dire):
-            if item.endswith(".py"):
-                item = item[:-3]
-                if item == "__init__":
-                    continue
-            elif os.path.isdir(os.path.join(dire, item)):
-                if "__init__.py" not in os.listdir(os.path.join(dire, item)):
-                    continue
-            self.load_extension("{}.{}".format(dire, item))
+            lib = plugin_watchdog.module_name(os.path.join(dire, item))
+            if lib:
+                self.load_extension(lib)
 
         if self._dango_unloaded_cogs:
             log.warning(

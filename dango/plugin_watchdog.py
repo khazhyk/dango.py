@@ -7,6 +7,10 @@ log = logging.getLogger(__name__)
 
 
 def _module_name(event):
+    return module_name(event.src_path)
+
+
+def module_name(path):
     """Returns module name if this is likely a plugin.
 
     Two types of plugins:
@@ -15,17 +19,15 @@ def _module_name(event):
         - folders in the plugins/ directory
             - A change to any file in a subdir should reload entire module.
     """
-    path = os.path.normpath(event.src_path)
+    path = os.path.normpath(path)
     path, ext = os.path.splitext(path)
     parts = path.split(os.sep)
-
-    assert parts[0] == "plugins"  # TODO
 
     # Ignore plugins/__init__.py
     if parts[1] == "__init__":
         return
 
-    if ext == '.py':
+    if ext == '.py' or os.path.exists(os.path.join(path, '__init__.py')):
         return ".".join(parts[:2])  # plugins.lib
 
 
