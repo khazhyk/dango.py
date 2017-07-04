@@ -25,4 +25,4 @@ class Debug:
 
     @command()
     async def test(self, ctx):
-        await ctx.send("\N{AUBERGINE}" * 2001)
+        await ctx.send("\N{AUBERGINE}" * 1)
