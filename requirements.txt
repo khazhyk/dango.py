@@ -1,6 +1,7 @@
 git+https://github.com/Rapptz/discord.py@rewrite
 aiohttp
 watchdog
+psutil
 
 # zerobin
 sjcl
