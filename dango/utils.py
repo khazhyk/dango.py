@@ -1,4 +1,6 @@
+import asyncio
 import os
+import subprocess
 import sys
 
 
@@ -25,3 +27,16 @@ class AsyncContextWrapper:
 
     async def __aexit__(self, *args, **kwargs):
         return await self.wrapped.__aexit__(*args, **kwargs)
+
+
+async def run_subprocess(cmd, loop=None):
+    try:
+        proc = await asyncio.create_subprocess_shell(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        res = await proc.communicate()
+    except NotImplementedError:
+        loop = loop or asyncio.get_event_loop()
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        res = await loop.run_in_executor(None, proc.communicate)
+    return res
