@@ -23,6 +23,6 @@ def setup_logging():
 
 def main(config):
     setup_logging()
-    bot = core.DangoAutoShardedBot('test ', config=config)
+    bot = core.DangoAutoShardedBot(config.prefix, config=config)
     bot.watch_plugin_dir(getattr(config, 'plugins', 'plugins'))  # TODO
     bot.run(config.token)
