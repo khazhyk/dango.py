@@ -3,4 +3,4 @@ python:
   - "3.5"
   - "3.6"
 install: "pip install -r requirements.txt"
-script: python -m unittest discover -p "*_test.py"
+script: pytest -vs
