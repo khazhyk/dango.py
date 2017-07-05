@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 from aiopg.sa import create_engine
-import config  # TODO
 from dango import dcog
 from dango.utils import AsyncContextWrapper
 
@@ -10,15 +9,16 @@ from dango.utils import AsyncContextWrapper
 log = logging.getLogger(__name__)
 
 
-@dcog()
+@dcog(pass_bot=True)
 class Database:
 
-    def __init__(self):
+    def __init__(self, bot):
         self._connect_task = asyncio.ensure_future(self._connect())
         self._ready = asyncio.Event()
+        self.bot = bot
 
     async def _connect(self):
-        self._engine = await create_engine(config.database)
+        self._engine = await create_engine(self.bot.config.database)
         self._ready.set()
 
     async def _acquire(self):

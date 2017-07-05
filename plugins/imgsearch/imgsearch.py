@@ -1,4 +1,3 @@
-import config
 from discord.ext.commands import command
 from discord.ext.commands.errors import CommandError
 
@@ -42,7 +41,7 @@ class ImageSearch:
 
         try:
             with ctx.typing():
-                s = saucenao.SauceNAO(config.saucenao_api_key)
+                s = saucenao.SauceNAO(ctx.bot.config.saucenao_api_key)
                 results = await s.search(found_url)
 
             if len(results) > 0 and results[0].similarity > 90:
