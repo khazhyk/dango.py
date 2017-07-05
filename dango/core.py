@@ -39,19 +39,20 @@ class DangoContext(commands.Context):
     async def send(self, content=None, *args, **kwargs):
         """Override for send to add message filtering."""
         # TODO - this maybe shouldn't be in dango
-        content = re.sub("@everyone", "@\u200beveryone", content, flags=re.IGNORECASE)
-        content = re.sub("@here", "@\u200bhere", content, flags=re.IGNORECASE)
+        if content:
+            content = re.sub("@everyone", "@\u200beveryone", content, flags=re.IGNORECASE)
+            content = re.sub("@here", "@\u200bhere", content, flags=re.IGNORECASE)
 
-        if len(content) > 2000:
-            try:
-                zbin_url = await zerobin.upload_zerobin(content)
-                waaai_url = await waaai.send_to_waaai(
-                    zbin_url, self.bot.config.waaai_api_key)  # TODO
-                content = "Content too long: %s" % waaai_url
-            except:  # TODO
-                log.exception("Exception when uploading to zerobin...")
-                # text_file = io.BytesIO(content.encode('utf8'))
-                content = "Way too big..."
+            if len(content) > 2000:
+                try:
+                    zbin_url = await zerobin.upload_zerobin(content)
+                    waaai_url = await waaai.send_to_waaai(
+                        zbin_url, self.bot.config.waaai_api_key)  # TODO
+                    content = "Content too long: %s" % waaai_url
+                except:  # TODO
+                    log.exception("Exception when uploading to zerobin...")
+                    # text_file = io.BytesIO(content.encode('utf8'))
+                    content = "Way too big..."
 
         sent_message = await super().send(content, *args, **kwargs)
         self.bot.dispatch("dango_message_sent", sent_message, self)
