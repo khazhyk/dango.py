@@ -1,3 +1,4 @@
+from dango import checks
 from dango import dcog
 from discord.ext.commands import command
 
@@ -6,6 +7,7 @@ from discord.ext.commands import command
 class Reload:
 
     @command()
+    @checks.is_owner()
     async def reload(self, ctx, extension):
         """Reloads an extension."""
         try:
