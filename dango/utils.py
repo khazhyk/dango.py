@@ -39,4 +39,4 @@ async def run_subprocess(cmd, loop=None):
         proc = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         res = await loop.run_in_executor(None, proc.communicate)
-    return res
+    return [s.decode('utf8') for s in res]

@@ -35,9 +35,7 @@ class Debug:
     @command()
     @checks.is_owner()
     async def sh(self, ctx, *, cmd):
-        res = await utils.run_subprocess(cmd)
-
-        stdout, stderr = [o.decode('utf8') for o in res]
+        stdout, stderr = await utils.run_subprocess(cmd)
 
         if stderr:
             out = "stdout:\n{}\nstderr:\n{}".format(stdout, stderr)
@@ -45,10 +43,3 @@ class Debug:
             out = stdout
 
         await ctx.send("```{}```".format(out))
-
-    @command()
-    async def stats(self, ctx):
-        await ctx.send(
-            "Using {:.2f} MiB of memory (RSS)".format(
-                psutil.Process(os.getpid()).memory_full_info().rss / (1024 * 1024)
-            ))
