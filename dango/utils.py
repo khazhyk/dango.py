@@ -11,3 +11,17 @@ def fix_unicode():
         sys.stderr = sys.__stderr__ = open(
             sys.stderr.detach().fileno(), 'w', encoding=sys.stderr.encoding,
             errors="backslashreplace")
+
+
+class AsyncContextWrapper:
+
+    def __init__(self, coro, wrapped):
+        self.coro = coro
+        self.wrapped = wrapped
+
+    async def __aenter__(self):
+        await self.coro
+        return await self.wrapped.__aenter__()
+
+    async def __aexit__(self, *args, **kwargs):
+        return await self.wrapped.__aexit__(*args, **kwargs)

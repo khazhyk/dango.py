@@ -2,11 +2,15 @@ git+https://github.com/Rapptz/discord.py@rewrite
 aiohttp
 watchdog
 
+# zerobin
+sjcl
+pycryptodome
+
+# redis
+aioredis
+hiredis
+
 # database
 aiopg
 sqlalchemy
 psycopg2
-
-# zerobin
-sjcl
-pycryptodome
