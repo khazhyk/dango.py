@@ -23,8 +23,8 @@ def module_name(path):
     path, ext = os.path.splitext(path)
     parts = path.split(os.sep)
 
-    # Ignore plugins/__init__.py
-    if parts[1] == "__init__":
+    # Ignore plugins/ and plugins/__init__.py
+    if len(parts) == 1 or parts[1] == "__init__":
         return
 
     if ext == '.py' or os.path.exists(os.path.join(path, '__init__.py')):
