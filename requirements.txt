@@ -12,6 +12,4 @@ aioredis
 hiredis
 
 # database
-aiopg
-sqlalchemy
-psycopg2
+asyncpg
