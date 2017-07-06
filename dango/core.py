@@ -165,7 +165,7 @@ class DangoBotBase(commands.bot.BotBase):
             log.warning(
                 "Some plugins were unable to load due to missing deps: %s",
                 ",".join("%s.%s" % (c.__module__, c.__name__)
-                         for c in self._dango_unloaded_cogs))
+                         for c in self._dango_unloaded_cogs.values()))
         self.watchdog_dir(dire)
 
     @cached_property
