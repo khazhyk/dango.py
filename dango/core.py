@@ -1,3 +1,5 @@
+import collections
+import datetime
 import importlib
 import logging
 import os
@@ -16,6 +18,7 @@ from . import zerobin
 log = logging.getLogger(__name__)
 
 PLUGIN_DESC = "__dango_plugin_desc__"
+COG_DESC = "__dango_cog_desc__"
 
 
 def dcog(depends=None, pass_bot=False):
@@ -27,11 +30,8 @@ def dcog(depends=None, pass_bot=False):
         return cls
     return real_decorator
 
-
-class PluginDesc:
-    def __init__(self, depends, pass_bot):
-        self.depends = depends
-        self.pass_bot = pass_bot
+PluginDesc = collections.namedtuple("PluginDesc", "depends pass_bot")
+CogDesc = collections.namedtuple("PluginDesc", "load_time")
 
 
 class DangoContext(commands.Context):
@@ -90,6 +90,7 @@ class DangoBotBase(commands.bot.BotBase):
 
         cog = cls(*depends)
         super().add_cog(cog)
+        setattr(cog, COG_DESC, CogDesc(datetime.datetime.utcnow()))
         log.debug("Loaded dcog %s.%s", cls.__module__, cls.__name__)
 
         # Try loading previously unloaded plugins.
