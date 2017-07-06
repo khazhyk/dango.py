@@ -23,11 +23,10 @@ class Database:
 
     async def _acquire(self):
         await self._ready.wait()
-        return await self._engine._acquire()
+        return self._engine.acquire()
 
     def acquire(self):
-        ctx = self._engine.acquire()
-        return AsyncContextWrapper(self._ready.wait(), ctx)
+        return AsyncContextWrapper(self._acquire())
 
     def __unload(self):
         self._connect_task.cancel()

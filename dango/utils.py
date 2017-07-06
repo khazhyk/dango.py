@@ -17,12 +17,11 @@ def fix_unicode():
 
 class AsyncContextWrapper:
 
-    def __init__(self, coro, wrapped):
+    def __init__(self, coro):
         self.coro = coro
-        self.wrapped = wrapped
 
     async def __aenter__(self):
-        await self.coro
+        self.wrapped = await self.coro
         return await self.wrapped.__aenter__()
 
     async def __aexit__(self, *args, **kwargs):

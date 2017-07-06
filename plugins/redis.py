@@ -18,10 +18,14 @@ class Redis:
                 minsize=self.bot.config.redis_minsize,
                 maxsize=self.bot.config.redis_maxsize
             )
+        self._ready.set()
+
+    async def _acquire(self):
+        await self._ready.wait()
+        return self._pool.get()
 
     def acquire(self):
-        ctx = self._pool.get()
-        return AsyncContextWrapper(self._ready.wait(), ctx)
+        return AsyncContextWrapper(self._acquire())
 
     def __unload(self):
         self._connect_task.cancel()
