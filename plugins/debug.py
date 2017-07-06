@@ -39,7 +39,8 @@ class Debug:
     @command()
     @checks.is_owner()
     async def sh(self, ctx, *, cmd):
-        stdout, stderr = await utils.run_subprocess(cmd)
+        with ctx.typing():
+            stdout, stderr = await utils.run_subprocess(cmd)
 
         if stderr:
             out = "stdout:\n{}\nstderr:\n{}".format(stdout, stderr)
