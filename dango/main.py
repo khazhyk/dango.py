@@ -11,6 +11,8 @@ def setup_logging():
 
     dango = logging.getLogger("dango")
     dango.setLevel(logging.DEBUG)
+    plugins = logging.getLogger("plugins")
+    plugins.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter(
         "[%(asctime)s][%(name)s][%(levelname)s] %(message)s")

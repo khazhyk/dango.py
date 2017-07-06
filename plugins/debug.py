@@ -28,9 +28,13 @@ class Debug:
     async def on_ready(self):
         log.info("Ready!")
 
+    async def on_command(self, ctx):
+        log.debug("Command triggered: command=%s author=%s msg=%s",
+                  ctx.command.qualified_name, ctx.author, ctx.message.content)
+
     @command()
     async def test(self, ctx):
-        await ctx.send("\N{AUBERGINE}" * 1)
+        await ctx.send("\N{AUBERGINE}")
 
     @command()
     @checks.is_owner()
