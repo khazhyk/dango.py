@@ -96,6 +96,9 @@ class Osu:
         if osu_user_id:
             return await self._lookup_acct(osu_user_id, mode=mode)
 
+        if ctx.author != user:
+            raise errors.BadArgument(
+                "I don't know {}'s osu username!".format(user))
         await ctx.send(
             "I don't know your osu name! I'm setting your osu name to {}, "
             "if this is wrong use {}setosu <name>".format(
