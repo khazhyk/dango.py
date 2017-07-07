@@ -3,6 +3,7 @@ aiohttp
 watchdog
 psutil
 lru-dict
+osuapi
 
 # zerobin
 sjcl
