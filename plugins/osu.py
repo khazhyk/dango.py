@@ -14,7 +14,7 @@ class StringOrMentionConverter(converter.Converter):
     async def convert(self, ctx, argument):
         if argument.startswith("+"):
             return argument[1:]
-        return await converter.UserConverter().convert(ctx, argument)
+        return await converter.MemberConverter().convert(ctx, argument)
 
 
 def osu_map_url(value):
@@ -134,9 +134,10 @@ class Osu:
         embed = discord.Embed()
         embed.title = osu_acct.username
         embed.url = "https://osu.ppy.sh/u/%s" % osu_acct.user_id
-        embed.color = osu_acct.user_id
-        embed.set_author(
-            name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.color = hash(str(osu_acct.user_id)) % (1 << 24)
+        if isinstance(account, discord.abc.User):
+            embed.set_author(
+                name=str(account), icon_url=account.avatar_url)
         embed.set_thumbnail(url="http://a.ppy.sh/%s" % osu_acct.user_id)
 
         if not usrscore:
