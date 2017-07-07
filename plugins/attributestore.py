@@ -72,7 +72,9 @@ class AttributeStore:
         async with self.database.acquire() as conn:
             await conn.execute(
                 "INSERT INTO attributes (id, type, data)"
-                "VALUES ($1, $2, $3)", str(id), type, json.dumps(value))
+                "VALUES ($1, $2, $3)"
+                "ON CONFLICT (id, type) DO UPDATE SET data = $3",
+                str(id), type, json.dumps(value))
 
     async def _get(self, type, id):
         res = await self._get_lru(type, id)
