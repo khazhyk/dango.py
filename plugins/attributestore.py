@@ -91,6 +91,7 @@ class AttributeStore:
             await self._put_redis(type, id, res)
             await self._put_lru(type, id, res)
             return res
+        return {}
 
     async def _put(self, type, id, value):
         await self._put_db(type, id, value)
