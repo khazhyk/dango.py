@@ -1,12 +1,10 @@
 import asyncio
 import logging
-import os
 
 from dango import checks
 from dango import dcog
 from dango import utils
 from discord.ext.commands import command
-import psutil
 
 log = logging.getLogger(__name__)
 
