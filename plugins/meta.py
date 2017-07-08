@@ -49,6 +49,8 @@ class Meta:
             value="%d text\n%d voice" % (text_channels, voice_channels))
         embed.add_field(name="Servers", value=servers)
         embed.add_field(name="Process", value="%.2fMiB RSS" % memory)
+        embed.set_footer(text="dangopy | discord.py v{}".format(
+            discord.__version__))
         # embed.add_field(name="Messages", value="%d messages\n%d commands" % (messages, commands))
         # embed.add_field(name="Shards", value=shard_id(ctx.bot))
 
