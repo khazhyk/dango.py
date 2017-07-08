@@ -2,6 +2,7 @@ import json
 
 from dango import checks
 from dango import dcog
+from dango import utils
 import discord
 from discord.ext.commands import command
 from lru import LRU
@@ -25,19 +26,17 @@ class AttributeStore:
         self.database = database
         self.redis = redis
 
-        self._mapping = {}
+        self._mapping = utils.TypeMap()
 
         self._lru = LRU(2048)
         self._lru_types = set()
 
-        self.register_mapping(discord.Member, 'member')
-        self.register_mapping(discord.User, 'member')
-        self.register_mapping(discord.ClientUser, 'member')
+        self.register_mapping(discord.abc.User, 'member')
         self.register_mapping(discord.Guild, 'server')
         self.register_mapping(discord.TextChannel, 'channel')
 
     def register_mapping(self, type, name, lru=True):
-        self._mapping[type] = name
+        self._mapping.put(type, name)
         if lru:
             self._lru_types.add(name)
 
@@ -104,10 +103,10 @@ class AttributeStore:
         await self._put(type, id, cur)
 
     def get(self, item):
-        return self._get(self._mapping[type(item)], item.id)
+        return self._get(self._mapping.lookup(type(item)), item.id)
 
     def update(self, item, **vals):
-        return self._update(self._mapping[type(item)], item.id, **vals)
+        return self._update(self._mapping.lookup(type(item)), item.id, **vals)
 
     async def get_attribute(self, scope, name, default=None):
         return (await self.get(scope)).get(name, default)

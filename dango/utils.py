@@ -39,3 +39,24 @@ async def run_subprocess(cmd, loop=None):
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         res = await loop.run_in_executor(None, proc.communicate)
     return [s.decode('utf8') for s in res]
+
+
+class TypeMap:
+    """Dict that looks up based on a class's bases.
+
+    In the case of conflict, will return the first matching base.
+    Lookup time is O(n), where n is # of bases a class has.
+    """
+
+    def __init__(self, dct=None):
+        self._dict = dct or {}
+
+    def put(self, cls, obj):
+        self._dict[cls] = obj
+
+    def lookup(self, cls):
+        for base in cls.__mro__:
+            try:
+                return self._dict[base]
+            except KeyError:
+                pass
