@@ -99,14 +99,10 @@ class SauceNAOResult:
 
 class SauceNAOPixivResult(SauceNAOResult):
     """ Pixiv """
-    """ Example:
-    header: {'similarity': '95.22', 'index_id': 5, 'index_name': 'Index #5: Pixiv Images',
-    'thumbnail': 'https://img1.saucenao.com/res/pixiv/3225/32258201_s.jpg?auth=IsRA2OnppN2Dc_ntns6G8Q&exp=1450755183'}
-    data: {'member_id': '316240', 'member_name': 'もとみやみつき', 'pixiv_id': '32258201', 'title': '夜デートお嬢様(´□｀*)'}
-    """
 
     def desc(self):
         return "Pixiv: {} by {}".format(self.data['title'], self.data['member_name'])
 
     def url(self):
-        return "http://www.pixiv.net/member_illust.php?mode=medium&illust_id={}".format(self.data['pixiv_id'])
+        return "http://www.pixiv.net/member_illust.php?mode=medium&illust_id={}".format(
+            self.data['pixiv_id'])

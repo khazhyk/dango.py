@@ -29,11 +29,11 @@ Discord.py commands ext extensions + plugin collection.
         be in bot.extensions)
 
 ## Testing
-python -m unittest discover -p "*_test.py"
+pytest
 
 ## Plugin system
 
-- Cogs marked with @plugin are loaded on extension load.
+- Cogs marked with @dcog are loaded on extension load.
 - These cogs are added to the bot via add_plugin(cls)
     - If a plugin has no dependencies, we can load it immediately.
     - If all a plugin's dependencies are loaded, we can load it immediately

@@ -54,5 +54,5 @@ class CommandErrors:
             msg = "An unknown error occured."
 
         await ctx.send(msg)
-        log.error("Unhandled error dispatching '{}' in '{}'".format(
-            ctx.command.qualified_name, ctx.message.content), exc_info=tbtpl(main_exp))
+        log.error("Unhandled error dispatching '%s' in '%s'", ctx.command.qualified_name,
+                  ctx.message.content, exc_info=tbtpl(main_exp))

@@ -8,7 +8,6 @@ import re
 import discord
 from discord.ext import commands
 from discord.utils import cached_property
-from watchdog import events
 from watchdog import observers
 
 from . import plugin_watchdog

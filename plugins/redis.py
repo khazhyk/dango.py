@@ -14,9 +14,9 @@ class Redis:
 
     async def _connect(self):
         self._pool = await aioredis.create_pool(
-                self.bot.config.redis_host,
-                minsize=self.bot.config.redis_minsize,
-                maxsize=self.bot.config.redis_maxsize
+            self.bot.config.redis_host,
+            minsize=self.bot.config.redis_minsize,
+            maxsize=self.bot.config.redis_maxsize
             )
         self._ready.set()
 

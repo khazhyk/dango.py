@@ -8,8 +8,8 @@ from discord.ext.commands import command
 from lru import LRU
 
 
-def _redis_key(type, id):
-    return "spoo:attribute:%s:%s" % (type, id)
+def _redis_key(item_type, item_id):
+    return "spoo:attribute:%s:%s" % (item_type, item_id)
 
 
 @dcog(depends=['Database', 'Redis'])
@@ -35,72 +35,72 @@ class AttributeStore:
         self.register_mapping(discord.Guild, 'server')
         self.register_mapping(discord.TextChannel, 'channel')
 
-    def register_mapping(self, type, name, lru=True):
-        self._mapping.put(type, name)
+    def register_mapping(self, item_type, name, lru=True):
+        self._mapping.put(item_type, name)
         if lru:
             self._lru_types.add(name)
 
-    async def _get_lru(self, type, id):
-        if type not in self._lru_types:
+    async def _get_lru(self, item_type, item_id):
+        if item_type not in self._lru_types:
             return
-        return self._lru.get((type, id))
+        return self._lru.get((item_type, item_id))
 
-    async def _put_lru(self, type, id, value):
-        if type in self._lru_types:
-            self._lru[(type, id)] = value
+    async def _put_lru(self, item_type, item_id, value):
+        if item_type in self._lru_types:
+            self._lru[(item_type, item_id)] = value
 
-    async def _get_redis(self, type, id):
+    async def _get_redis(self, item_type, item_id):
         async with self.redis.acquire() as conn:
-            res = await conn.get(_redis_key(type, id), encoding='utf8')
+            res = await conn.get(_redis_key(item_type, item_id), encoding='utf8')
             if res:
                 return json.loads(res)
 
-    async def _put_redis(self, type, id, value):
+    async def _put_redis(self, item_type, item_id, value):
         async with self.redis.acquire() as conn:
-            await conn.set(_redis_key(type, id), json.dumps(value))
+            await conn.set(_redis_key(item_type, item_id), json.dumps(value))
 
-    async def _get_db(self, type, id):
+    async def _get_db(self, item_type, item_id):
         async with self.database.acquire() as conn:
             res = await conn.fetchrow(
                 "SELECT * FROM attributes "
-                "WHERE id = $1 AND type = $2", str(id), type)
+                "WHERE id = $1 AND type = $2", str(item_id), item_type)
             if res:
                 return json.loads(res['data'])
 
-    async def _put_db(self, type, id, value):
+    async def _put_db(self, item_type, item_id, value):
         async with self.database.acquire() as conn:
             await conn.execute(
                 "INSERT INTO attributes (id, type, data)"
                 "VALUES ($1, $2, $3)"
                 "ON CONFLICT (id, type) DO UPDATE SET data = $3",
-                str(id), type, json.dumps(value))
+                str(item_id), item_type, json.dumps(value))
 
-    async def _get(self, type, id):
-        res = await self._get_lru(type, id)
+    async def _get(self, item_type, item_id):
+        res = await self._get_lru(item_type, item_id)
         if res:
             return res
 
-        res = await self._get_redis(type, id)
+        res = await self._get_redis(item_type, item_id)
         if res:
-            await self._put_lru(type, id, res)
+            await self._put_lru(item_type, item_id, res)
             return res
 
-        res = await self._get_db(type, id)
+        res = await self._get_db(item_type, item_id)
         if res:
-            await self._put_redis(type, id, res)
-            await self._put_lru(type, id, res)
+            await self._put_redis(item_type, item_id, res)
+            await self._put_lru(item_type, item_id, res)
             return res
         return {}
 
-    async def _put(self, type, id, value):
-        await self._put_db(type, id, value)
-        await self._put_redis(type, id, value)
-        await self._put_lru(type, id, value)
+    async def _put(self, item_type, item_id, value):
+        await self._put_db(item_type, item_id, value)
+        await self._put_redis(item_type, item_id, value)
+        await self._put_lru(item_type, item_id, value)
 
-    async def _update(self, type, id, **vals):
-        cur = await self._get(type, id)
+    async def _update(self, item_type, item_id, **vals):
+        cur = await self._get(item_type, item_id)
         cur.update(vals)
-        await self._put(type, id, cur)
+        await self._put(item_type, item_id, cur)
 
     def get(self, item):
         return self._get(self._mapping.lookup(type(item)), item.id)
@@ -123,6 +123,6 @@ class AttributeStore:
             return
 
         embed = discord.Embed()
-        for k, v in attr.items():
-            embed.add_field(name=k, value=v)
+        for key, value in attr.items():
+            embed.add_field(name=key, value=value)
         await ctx.send(embed=embed)

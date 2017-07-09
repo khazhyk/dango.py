@@ -16,7 +16,7 @@ class Meta:
         """Info about bot."""
         cmd = r'git log -3 --pretty="[{}](https://github.com/khazhyk/dango.py/commit/%H) %s (%ar)"'
         if os.name == "posix":
-            cmd = cmd.format('\`%h\`')
+            cmd = cmd.format(r'\`%h\`')
         else:
             cmd = cmd.format('`%h`')
         stdout, _ = await utils.run_subprocess(cmd)
