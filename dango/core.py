@@ -66,6 +66,11 @@ class DangoBotBase(commands.bot.BotBase):
         self._dango_unloaded_cogs = {}
         return super().__init__(*args, **kwargs)
 
+    async def on_error(self, event, *args, **kwargs):
+        log.exception(
+            "Unhandled exception in %s\nargs: %s\nkwargs: %s\n",
+            event, args, kwargs)
+
     def get_context(self, message):
         return super().get_context(message, cls=DangoContext)
 
