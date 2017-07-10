@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import subprocess
 import sys
 
@@ -60,3 +61,81 @@ class TypeMap:
                 return self._dict[base]
             except KeyError:
                 pass
+
+
+def clean_invite_embed(line):
+    """Makes invites not embed"""
+    return line.replace("discord.gg/", "discord.gg/\u200b")
+
+
+def clean_single_backtick(line):
+    """Clean string for insertion in single backtick code section."""
+    if re.search('[^`]`[^`]', line) is not None:
+        raise ValueError("Cannot be cleaned")
+    if (line[:2] == '``'):
+        line = '\u200b' + line
+    if (line[-1] == '`'):
+        line = line + '\u200b'
+    return line
+
+
+def clean_double_backtick(line):
+    """Clean string for isnertion in double backtick code section."""
+    line.replace('``', '`\u200b`')
+    if (line[0] == '`'):
+        line = '\u200b' + line
+    if (line[-1] == '`'):
+        line = line + '\u200b'
+    return line
+
+
+def clean_triple_backtick(line):
+    """Clean string for insertion in triple backtick code section."""
+    if not line:
+        return line
+
+    i = 0
+    n = 0
+    while i < len(line):
+        if (line[i]) == '`':
+            n += 1
+        if n == 3:
+            line = line[:i] + '\u200b' + line[i:]
+            n = 1
+            i += 1
+        i += 1
+
+    if line[-1] == '`':
+        line += '\u200b'
+
+    return line
+
+
+def clean_newline(line):
+    """Cleans string so formatting does not cross lines when joined with \\n.
+
+    Just looks for unpaired '`' characters, other formatting characters do not
+    seem to be joined across newlines.
+
+    For reference, discord uses:
+    https://github.com/Khan/simple-markdown/blob/master/simple-markdown.js
+    """
+    match = None
+    for match1 in re.finditer(r'(`+)\s*([\s\S]*?[^`])\s*\1(?!`)', line):
+        match = match1
+
+    idx = match.end() if match else 0
+
+    line = line[:idx] + line[idx:].replace('`', '\`')
+
+    return line
+
+
+def clean_formatting(line):
+    """Escape formatting items in a string."""
+    return re.sub(r"([`*_])", r"\\\1", line)
+
+
+def clean_mentions(line):
+    """Escape anything that could resolve to mention."""
+    return line.replace("@", "@\u200b")
