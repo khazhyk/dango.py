@@ -194,7 +194,7 @@ class Tracking:
             rows = await conn.fetch(query, *params)
 
             if rows:
-                return [item[0].decode('utf8') for item in rows]
+                return [item[0].decode('utf8') for item in rows if item[0]]
             last_name = await self._last_nickname(member)
             if last_name:
                 return [last_name]
