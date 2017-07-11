@@ -1,7 +1,16 @@
+dist: trusty
 language: python
 python:
   - "3.5"
   - "3.6"
+services:
+  - postgresql
+  - redis-server
+addons:
+  postgresql: "9.5"
+before_script:
+  - psql -c 'create database spootest;' -U postgres
+  - psql spootest < scripts/nametracking.sql
+  - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
 install: "pip install -r requirements.txt"
-before_script: "export PYTHONPATH=$PYTHONPATH:$(pwd)"
 script: pytest -vs

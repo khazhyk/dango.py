@@ -1,8 +1,8 @@
 import asyncio
-import discord
+import logging
 import os
 import unittest
-import logging
+import discord
 
 
 def async_test(f):
