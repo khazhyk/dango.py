@@ -64,7 +64,7 @@ class REPL:
         else:
             value = stdout.getvalue()
             try:
-                await self.bot.add_reaction(ctx.message, '\u2705')
+                await ctx.message.add_reaction('\u2705')
             except:
                 pass
 
