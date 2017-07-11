@@ -18,8 +18,12 @@ class Database:
         self.bot = bot
 
     async def _connect(self):
-        self._engine = await asyncpg.create_pool(self.bot.config.sa_database)
-        self._ready.set()
+        try:
+            self._engine = await asyncpg.create_pool(self.bot.config.sa_database)
+            self._ready.set()
+        except:
+            log.exception("Exception connecting to database!")
+            raise
 
     async def _acquire(self):
         await self._ready.wait()
