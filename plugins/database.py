@@ -35,4 +35,4 @@ class Database:
     def __unload(self):
         self._connect_task.cancel()
         if self._ready.is_set():
-            self._engine.close()
+            asyncio.ensure_future(self._engine.close())
