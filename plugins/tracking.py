@@ -8,10 +8,14 @@ from datetime import datetime
 from datetime import timedelta
 
 from dango import dcog
+from dango import checks
 from dango import utils
 import discord
 from discord.ext import commands
+from discord.ext.commands import command
 from discord.ext.commands import group
+
+from plugins.database import multi_insert_str
 
 log = logging.getLogger(__name__)
 
@@ -103,7 +107,7 @@ class Tracking:
         try:
             while True:
                 await self.do_batch_names_update()
-                await asyncio.sleep(1)
+                await asyncio.sleep(.1)
         except asyncio.CancelledError:
             await self.do_batch_names_update()
             if self.batch_name_updates:
@@ -257,7 +261,9 @@ class Tracking:
         - Insert into DB all new nicks and names (in order)
         - Update all redis-mismatched entries on redis.
         """
-        updates, self.batch_name_updates = self.batch_name_updates[:50000], self.batch_name_updates[50000:]
+        # We process a maximum of 32767/5 elements at once to resepct psql arg limit
+        updates = self.batch_name_updates[:6553]
+        self.batch_name_updates = self.batch_name_updates[6553:]
         count = len(updates)
         if not updates:
             return
@@ -330,18 +336,22 @@ class Tracking:
             current_nicks[member.id, member.guild.id] = (member.nick, curr_idx)
 
         async with self.database.acquire() as conn:
-            await conn.executemany(
-                "INSERT INTO namechanges (id, name, idx, date) "
-                "VALUES ($1, $2, $3, $4) "
-                "ON CONFLICT (id, idx) DO NOTHING",
-                name_inserts
-                )
-            await conn.executemany(
-                "INSERT INTO nickchanges (id, server_id, name, idx, date) "
-                "VALUES ($1, $2, $3, $4, $5) "
-                "ON CONFLICT (id, server_id, idx) DO NOTHING",
-                nick_inserts
-                )
+            if name_inserts:
+                await conn.execute(
+                    "INSERT INTO namechanges (id, name, idx, date) "
+                    "VALUES %s ON CONFLICT (id, idx) DO NOTHING" % (
+                            multi_insert_str(name_inserts)
+                        ),
+                    *itertools.chain(*name_inserts)
+                    )
+            if nick_inserts:
+                await conn.execute(
+                    "INSERT INTO nickchanges (id, server_id, name, idx, date) "
+                    "VALUES %s ON CONFLICT (id, server_id, idx) DO NOTHING" % (
+                            multi_insert_str(nick_inserts)
+                        ),
+                    *itertools.chain(*nick_inserts)
+                    )
 
         if not current_names or not current_nicks:
             return
@@ -491,3 +501,15 @@ class Tracking:
         names = utils.clean_mentions(names)
         await ctx.send("Nicks for {}\n{}".format(
             user, names))
+
+    @command()
+    @checks.is_owner()
+    async def updateall(self, ctx):
+        for g in ctx.bot.guilds:
+            await self.on_guild_join(g)
+
+    @command()
+    @checks.is_owner()
+    async def updatestatus(self, ctx):
+        await ctx.send("name updates: %s, presence updates: %s" % (
+            len(self.batch_name_updates), len(self.batch_presence_updates)))

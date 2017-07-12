@@ -9,6 +9,14 @@ from dango.utils import AsyncContextWrapper
 log = logging.getLogger(__name__)
 
 
+def multi_insert_str(lst):
+    count = len(lst)
+    size = len(lst[0])
+    elems = ["$%d" % (i + 1) for i in range(count * size)]
+    indiv = ["(%s)" % (", ".join(elems[i:i+size])) for i in range(0, count * size, size)]
+    return ", ".join(indiv)
+
+
 @dcog(pass_bot=True)
 class Database:
 
