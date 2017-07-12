@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 REDIS_NICK_NONE = (b'NoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNone'
                    b'NoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNone')
+PG_ARG_MAX = 32767
 
 
 class LastSeenTuple(collections.namedtuple(
@@ -107,7 +108,7 @@ class Tracking:
         try:
             while True:
                 await self.do_batch_names_update()
-                await asyncio.sleep(.1)
+                await asyncio.sleep(1)
         except asyncio.CancelledError:
             await self.do_batch_names_update()
             if self.batch_name_updates:
@@ -262,11 +263,27 @@ class Tracking:
         - Update all redis-mismatched entries on redis.
         """
         # We process a maximum of 32767/5 elements at once to resepct psql arg limit
-        updates = self.batch_name_updates[:6553]
-        self.batch_name_updates = self.batch_name_updates[6553:]
+        all_updates = self.batch_name_updates
+        self.batch_name_updates = []
+
+        while all_updates:
+            updates = all_updates[:6553]
+            all_updates = all_updates[6553:]
+            # TODO - make the redis lookup similar to the iteration update for calculating inserts
+            pending_name_updates, pending_nick_updates = await self.batch_get_redis_mismatch(updates)
+
+            current_names, current_nicks = await self.batch_get_current_names(
+                pending_name_updates, pending_nick_updates)
+
+            name_inserts, nick_inserts, current_names, current_nicks = await self.calculate_needed_inserts(
+                    pending_name_updates, pending_nick_updates, current_names, current_nicks)
+
+            await self.batch_insert_name_updates(name_inserts, nick_inserts)
+            await self.batch_set_redis_names(current_names, current_nicks)
+
+    async def batch_get_redis_mismatch(self, updates):
+        assert 0 < len(updates) <= 50000  # Limit mget to 100k keys.
         count = len(updates)
-        if not updates:
-            return
 
         name_redis_keys = (name_key(m) for m, _ in updates)
         nick_redis_keys = (nick_key(m) for m, _ in updates)
@@ -290,6 +307,9 @@ class Tracking:
             if not nick or name_from_redis(nick) != member.nick:
                 pending_nick_updates.append((member, timestamp))
 
+        return pending_name_updates, pending_nick_updates
+
+    async def batch_get_current_names(self, pending_name_updates, pending_nick_updates):
         async with self.database.acquire() as conn:
             name_rows = await conn.fetch(
                 "SELECT id, name, idx FROM namechanges "
@@ -311,21 +331,25 @@ class Tracking:
             for m_id, m_server, m_name, m_idx in nick_rows
         }
 
+        return current_names, current_nicks
+
+    async def calculate_needed_inserts(
+            self, pending_name_updates, pending_nick_updates, curr_names, curr_nicks):
         name_inserts = []
         nick_inserts = []
 
         for member, timestamp in pending_name_updates:
-            curr_name, curr_idx = current_names.get(member.id) or (None, 0)
+            curr_name, curr_idx = curr_names.get(member.id) or (None, 0)
 
             if curr_name != member.name:
                 curr_idx += 1
                 name_inserts.append(
                     (str(member.id), member.name.encode('utf8'), curr_idx, timestamp))
             # Update current_names in order, we will send to redis.
-            current_names[member.id] = (member.name, curr_idx)
+            curr_names[member.id] = (member.name, curr_idx)
 
         for member, timestamp in pending_nick_updates:
-            curr_name, curr_idx = current_nicks.get((member.id, member.guild.id)) or (None, 0)
+            curr_name, curr_idx = curr_nicks.get((member.id, member.guild.id)) or (None, 0)
 
             if curr_name != member.nick:
                 curr_idx += 1
@@ -333,8 +357,12 @@ class Tracking:
                     (str(member.id), str(member.guild.id),
                      member.nick and member.nick.encode('utf8'), curr_idx, timestamp))
             # Update current_nicks in order, we will send to redis.
-            current_nicks[member.id, member.guild.id] = (member.nick, curr_idx)
+            curr_nicks[member.id, member.guild.id] = (member.nick, curr_idx)
+        return name_inserts, nick_inserts, curr_names, curr_nicks
 
+    async def batch_insert_name_updates(self, name_inserts, nick_inserts):
+        assert len(name_inserts) < (PG_ARG_MAX // 4)
+        assert len(nick_inserts) < (PG_ARG_MAX // 5)
         async with self.database.acquire() as conn:
             if name_inserts:
                 await conn.execute(
@@ -353,7 +381,10 @@ class Tracking:
                     *itertools.chain(*nick_inserts)
                     )
 
-        if not current_names or not current_nicks:
+    async def batch_set_redis_names(self, current_names, current_nicks):
+        assert len(current_names) <= 50000
+        assert len(current_nicks) <= 50000
+        if not current_names and not current_nicks:
             return
 
         async with self.redis.acquire() as conn:
@@ -403,10 +434,14 @@ class Tracking:
             datetime_to_redis(datetime.utcnow())))
 
     async def do_batch_presence_update(self):
-        updates, self.batch_presence_updates = self.batch_presence_updates[:50000], self.batch_presence_updates[50000:]
-        if updates:
-            async with self.redis.acquire() as conn:
-                await conn.mset(*updates)
+        updates = self.batch_presence_updates
+        self.batch_presence_updates = []
+        if not updates:
+            return
+        async with self.redis.acquire() as conn:
+            while updates:
+                await conn.mset(*updates[:50000])
+                updates = updates[50000:]
 
     # Event registration
 
@@ -511,5 +546,6 @@ class Tracking:
     @command()
     @checks.is_owner()
     async def updatestatus(self, ctx):
-        await ctx.send("name updates: %s, presence updates: %s" % (
-            len(self.batch_name_updates), len(self.batch_presence_updates)))
+        await ctx.send("name updates: %s %s\n presence updates: %s %s" % (
+            len(self.batch_name_updates), self.batch_name_task,
+            len(self.batch_presence_updates), self.batch_presence_task))

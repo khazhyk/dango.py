@@ -18,14 +18,14 @@ def async_test(f):
 
 
 def user():
-    m = discord.Object(random.randint(1 << 20, 1 << 30))
+    m = discord.Object(random.randint(1 << 10, 1 << 58))
     m.name = str(random.randint(1 << 20, 1 << 30))
     return m
 
 
 def member():
     m = user()
-    m.guild = discord.Object(random.randint(1 << 20, 1 << 30))
+    m.guild = discord.Object(random.randint(1 << 10, 1 << 58))
     m.nick = None if random.randint(0, 3) > 2 else str(random.randint(1 << 20, 1 << 30))
     return m
 
@@ -153,6 +153,25 @@ class TestTracking(unittest.TestCase):
                 "SELECT count(*) from nickchanges"))
 
     @async_test
+    async def test_batch_large_name_update(self):
+        members = [member() for _ in range(10000)]
+        for m in members:
+            self.tracking.queue_batch_names_update(m)
+
+        await self.tracking.do_batch_names_update()
+
+        for m in members:
+            self.assertEqual(m.name, await self.tracking._last_username(m))
+            self.assertEqual(m.nick, await self.tracking._last_nickname(m))
+
+        async with self.db.acquire() as dbc:
+            self.assertEqual(10000, await dbc.fetchval(
+                "SELECT count(*) from namechanges"))
+            num_nicks = sum(1 for m in members if m.nick)
+            self.assertEqual(num_nicks, await dbc.fetchval(
+                "SELECT count(*) from nickchanges"))
+
+    @async_test
     async def test_batch_name_update_updates_redis(self):
         members = [member() for _ in range(1000)]
         for m in members:
@@ -178,6 +197,28 @@ class TestTracking(unittest.TestCase):
         self.assertEqual([m_copy.name, m.name], await self.tracking.names_for(m))
         self.assertEqual(m_copy.name, await self.tracking._last_username(m))
         self.assertEqual(m_copy.nick, await self.tracking._last_nickname(m))
+
+    @async_test
+    @unittest.skip("soon(tm)")
+    async def test_batch_quick_switch(self):
+        m = member()
+        self.tracking.queue_batch_names_update(m)
+        await self.tracking.do_batch_names_update()  # Populate caches
+        m_copy1 = copy.copy(m)
+        m_copy1.name = "Updated twice!"
+        self.tracking.queue_batch_names_update(m_copy1)
+        m_copy2 = copy.copy(m)
+        self.tracking.queue_batch_names_update(m_copy2)
+        m_copy3 = copy.copy(m)
+        m_copy3.name = "Updated twice!"
+        self.tracking.queue_batch_names_update(m_copy3)
+
+        await self.tracking.do_batch_names_update()
+
+        self.assertEqual([m_copy3.name, m_copy2.name, m_copy1.name, m.name],
+                         await self.tracking.names_for(m))
+        self.assertEqual(m_copy3.name, await self.tracking._last_username(m))
+        self.assertEqual(m_copy3.nick, await self.tracking._last_nickname(m))
 
 if __name__ == '__main__':
     unittest.main()
