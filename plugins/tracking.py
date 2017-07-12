@@ -480,6 +480,8 @@ class Tracking:
             author = channel.guild.get_member(int(data['author']['id']))
         else:
             author = self.bot.get_user(int(data['author']['id']))
+        if not author:
+            return  # Author left
         await self.update_last_message(author)
 
     async def on_raw_reaction_add(self, emoji, message_id, channel_id, user_id):
