@@ -10,6 +10,7 @@ from discord.ext import commands
 from discord.utils import cached_property
 from watchdog import observers
 
+from . import config
 from . import plugin_watchdog
 from . import waaai
 from . import zerobin
@@ -46,7 +47,7 @@ class DangoContext(commands.Context):
                 try:
                     zbin_url = await zerobin.upload_zerobin(content)
                     waaai_url = await waaai.send_to_waaai(
-                        zbin_url, self.bot.config.waaai_api_key)  # TODO
+                        zbin_url, self.bot.waaai_api_key.value)  # TODO
                     content = "Content too long: %s" % waaai_url
                 except:  # TODO
                     log.exception("Exception when uploading to zerobin...")
@@ -60,11 +61,22 @@ class DangoContext(commands.Context):
 
 class DangoBotBase(commands.bot.BotBase):
 
-    def __init__(self, *args, config=None, **kwargs):
-        self.config = config
+    prefix = config.ConfigEntry("prefix", default="test ")
+    token = config.ConfigEntry("token")
+    plugins = config.ConfigEntry("plugins", default="plugins")
+    waaai_api_key = config.ConfigEntry("waaai_api_key")
+
+    def __init__(self, *args, config_filename="config.yml", **kwargs):
+        self._config = config.Configuration(config_filename)
+        self._config.add(self)
+        self._config.load()
 
         self._dango_unloaded_cogs = {}
-        return super().__init__(*args, **kwargs)
+        return super().__init__(self.prefix.value, *args, **kwargs)
+
+    def run(self):
+        self.watch_plugin_dir(self.plugins.value)
+        super().run(self.token.value)
 
     async def on_error(self, event, *args, **kwargs):
         log.exception(
@@ -93,6 +105,8 @@ class DangoBotBase(commands.bot.BotBase):
             depends.insert(0, self)
 
         cog = cls(*depends)
+        self._config.add_cog(cog)
+        self._config.load()
         super().add_cog(cog)
         setattr(cog, COG_DESC, CogDesc(datetime.datetime.utcnow()))
         log.debug("Loaded dcog %s.%s", cls.__module__, cls.__name__)
@@ -123,6 +137,7 @@ class DangoBotBase(commands.bot.BotBase):
         if hasattr(cog, PLUGIN_DESC):
             self.unload_cog_deps(cog)
 
+        self._config.remove_cog(cog)
         super().remove_cog(name)
         log.debug("Unloaded dcog %s", name)
 

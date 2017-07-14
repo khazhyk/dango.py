@@ -1,5 +1,6 @@
 __pycache__
 config.py
+config.yml
 # pytest
 .cache/
 .test_auth

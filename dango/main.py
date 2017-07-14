@@ -27,7 +27,5 @@ def setup_logging():
 def main(config):
     setup_logging()
     bot = core.DangoAutoShardedBot(
-        config.prefix, config=config,
         game=discord.Game(name="rewrite is the future!"))
-    bot.watch_plugin_dir(getattr(config, 'plugins', 'plugins'))  # TODO
-    bot.run(config.token)
+    bot.run()

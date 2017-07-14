@@ -1,3 +1,5 @@
+from dango import config
+from dango import dcog
 from discord.ext.commands import command
 from discord.ext.commands.errors import CommandError
 
@@ -21,7 +23,10 @@ async def _find_uploaded_image(channel, skip=0):
                 skip -= 1
 
 
+@dcog()
 class ImageSearch:
+
+    saucenao_api_key = config.ConfigEntry("saucenao_api_key")
 
     @command()
     async def saucenao(self, ctx, skip: int=0):
@@ -41,7 +46,7 @@ class ImageSearch:
 
         try:
             with ctx.typing():
-                s = saucenao.SauceNAO(ctx.bot.config.saucenao_api_key)
+                s = saucenao.SauceNAO(self.saucenao_api_key.value)
                 results = await s.search(found_url)
 
             if len(results) > 0 and results[0].similarity > 90:

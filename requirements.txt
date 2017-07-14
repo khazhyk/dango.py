@@ -4,6 +4,7 @@ watchdog
 psutil
 lru-dict
 osuapi
+ruamel.yaml
 
 # zerobin
 sjcl

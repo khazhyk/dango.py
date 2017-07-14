@@ -30,25 +30,14 @@ def member():
     return m
 
 
-def bot():
-    b = discord.Object(0)
-    b.config = discord.Object(0)
-    # Make sure these aren't real, we *will* delete all contents.
-    b.config.sa_database = '''postgresql://@localhost/spootest'''
-    b.config.redis_host = ('localhost', 6379)
-    b.config.redis_db = 5
-    b.config.redis_minsize = 1
-    b.config.redis_maxsize = 5
-    return b
-
-
 class TestTracking(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        b = bot()
-        cls.db = database.Database(b)
-        cls.rds = redis.Redis(b)
+        cls.db = database.Database()
+        cls.db.dsn._value = "postgresql://@localhost/spootest"
+        cls.rds = redis.Redis()
+        cls.rds.db._value = 5
 
     @async_test
     async def setUp(self):

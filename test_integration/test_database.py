@@ -1,9 +1,8 @@
 import asyncio
-import random
 import itertools
+import random
 import unittest
 
-import discord
 from plugins import database
 
 
@@ -15,20 +14,13 @@ def async_test(f):
     return wrapper
 
 
-def bot():
-    b = discord.Object(0)
-    b.config = discord.Object(0)
-    # Make sure these aren't real, we *will* delete all contents.
-    b.config.sa_database = '''postgresql://@localhost/spootest'''
-    return b
-
-
 class TestDatabase(unittest.TestCase):
 
     @async_test
     async def setUp(self):
-        b = bot()
-        self.db = database.Database(b)
+        self.db = database.Database()
+        self.db.dsn._value = "postgresql://@localhost/spootest"
+
         async with self.db.acquire() as conn:
             await conn.execute("drop table if exists multi_insert_test")
             await conn.execute(

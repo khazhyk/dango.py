@@ -1,6 +1,8 @@
+import asyncio
 import collections
 import re
 import aiohttp
+from dango import config
 from dango import dcog
 import discord
 from discord.ext.commands import command
@@ -27,15 +29,17 @@ def osu_map_url(value):
     raise errors.BadArgument("Not recognized as a beatmap url!")
 
 
-@dcog(depends=["AttributeStore"], pass_bot=True)
+@dcog(depends=["AttributeStore"])
 class Osu:
     """osu! API commands."""
 
-    def __init__(self, bot, attr):
+    api_key = config.ConfigEntry("api_key")
+
+    def __init__(self, attr):
         self.attr = attr
         self.osuapi = osuapi.OsuApi(
-            bot.config.osu_api_key, connector=osuapi.AHConnector(
-                aiohttp.ClientSession(loop=bot.loop)))
+            self.api_key.value, connector=osuapi.AHConnector(
+                aiohttp.ClientSession(loop=asyncio.get_event_loop())))
 
     def __unload(self):
         self.osuapi.close()

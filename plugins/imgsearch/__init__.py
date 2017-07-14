@@ -1,5 +1,1 @@
-from .imgsearch import ImageSearch
-
-
-def setup(bot):
-    bot.add_cog(ImageSearch())
+from .imgsearch import ImageSearch  # noqa
