@@ -23,6 +23,12 @@ class Blame:
 
     @command()
     async def blame(self, ctx, message_id: int):
+        """Show who caused a command response to show up.
+
+        message_id must be a message said by the bot. Note you
+        must enable developer mode in order to get message ids.
+        See Discord's documentation here: https://waa.ai/j06h
+        """
         async with self.database.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT blame.id, blame.message_id, blame.author_id, "
