@@ -100,10 +100,13 @@ class Configuration:
             pass
 
     def load(self):
-        with open(self.filename) as f:
-            data = f.read()
-
-        self.load_str(data)
+        try:
+            with open(self.filename) as f:
+                data = f.read()
+        except:
+            pass
+        else:
+            self.load_str(data)
 
     def load_str(self, stri):
         for key, value in self.yaml.load(stri).items():
