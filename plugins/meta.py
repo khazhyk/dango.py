@@ -1,9 +1,13 @@
 import os
+from datetime import datetime
+from datetime import timedelta
 
 from dango import dcog
 from dango import utils
 import discord
 from discord.ext.commands import command
+from discord.ext.commands import errors
+from discord.ext.commands import group
 import psutil
 
 
@@ -55,3 +59,22 @@ class Meta:
         # embed.add_field(name="Shards", value=shard_id(ctx.bot))
 
         await ctx.send(embed=embed)
+
+    @group(invoke_without_command=True)
+    async def clean(self, ctx, max_messages: int=100):
+        """Clean up the bot's messages.
+
+        Uses batch delete if bot has manage_message permission, otherwise uses
+        individual delete (limited to 5/sec). Note that if using batch delete,
+        Discord does not allow deleting messages older than two (2) weeks.
+        """
+        if (max_messages > 100):
+            raise errors.BadArgument("Won't clean more than 100 messages!")
+
+        can_mass_purge = ctx.channel.permissions_for(ctx.guild.me).manage_messages
+
+        await ctx.channel.purge(
+            limit=max_messages, check=lambda m: m.author == ctx.bot.user,
+            before=ctx.message, after=datetime.utcnow() - timedelta(days=14),
+            no_bulk=not can_mass_purge)
+        await ctx.message.add_reaction('\u2705')
