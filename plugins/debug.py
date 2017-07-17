@@ -24,6 +24,9 @@ def dump_tasks():
 class Debug:
     """Various debugging commands."""
 
+    def __init__(self, config):
+        pass
+
     async def on_ready(self):
         log.info("Ready!")
 

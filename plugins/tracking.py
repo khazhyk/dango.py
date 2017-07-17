@@ -77,7 +77,7 @@ def datetime_from_redis(bytes_obj):
 @dcog(depends=['Database', 'Redis'], pass_bot=True)
 class Tracking:
 
-    def __init__(self, bot, database, redis):
+    def __init__(self, bot, config, database, redis):
         self.bot = bot
         self.database = database
         self.redis = redis

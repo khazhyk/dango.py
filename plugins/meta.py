@@ -15,6 +15,9 @@ import psutil
 class Meta:
     """Information about the bot itself."""
 
+    def __init__(self, config):
+        pass
+
     @command(aliases=['rev', 'stats', 'info'])
     async def about(self, ctx):
         """Info about bot."""

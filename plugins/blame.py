@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 @dcog(depends=["Database"])
 class Blame:
 
-    def __init__(self, database):
+    def __init__(self, config, database):
         self.database = database
 
     async def on_dango_message_sent(self, msg, ctx):

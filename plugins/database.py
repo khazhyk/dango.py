@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 import asyncpg
-from dango import config
 from dango import dcog
 from dango.utils import AsyncContextWrapper
 
@@ -21,15 +20,14 @@ def multi_insert_str(lst):
 @dcog()
 class Database:
 
-    dsn = config.ConfigEntry("dsn")
-
-    def __init__(self):
+    def __init__(self, config):
+        self.dsn = config.register("dsn")
         self._connect_task = asyncio.ensure_future(self._connect())
         self._ready = asyncio.Event()
 
     async def _connect(self):
         try:
-            self._engine = await asyncpg.create_pool(self.dsn.value)
+            self._engine = await asyncpg.create_pool(self.dsn())
             self._ready.set()
         except:
             log.exception("Exception connecting to database!")

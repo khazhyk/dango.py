@@ -7,6 +7,9 @@ FULLWIDTH_OFFSET = 65248
 @dcog()
 class Misc:
 
+    def __init__(self, config):
+        pass
+
     @command(aliases=['fw', 'fullwidth', 'ａｅｓｔｈｅｔｉｃ'])
     async def aesthetic(self, ctx, *, msg="aesthetic"):
         """ａｅｓｔｈｅｔｉｃ."""

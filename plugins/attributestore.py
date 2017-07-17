@@ -22,7 +22,7 @@ class AttributeStore:
         - psql
     """
 
-    def __init__(self, database, redis):
+    def __init__(self, config, database, redis):
         self.database = database
         self.redis = redis
 

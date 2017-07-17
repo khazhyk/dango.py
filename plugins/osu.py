@@ -2,7 +2,6 @@ import asyncio
 import collections
 import re
 import aiohttp
-from dango import config
 from dango import dcog
 import discord
 from discord.ext.commands import command
@@ -33,12 +32,11 @@ def osu_map_url(value):
 class Osu:
     """osu! API commands."""
 
-    api_key = config.ConfigEntry("api_key")
-
-    def __init__(self, attr):
+    def __init__(self, config, attr):
         self.attr = attr
+        self.api_key = config.register("api_key")
         self.osuapi = osuapi.OsuApi(
-            self.api_key.value, connector=osuapi.AHConnector(
+            self.api_key(), connector=osuapi.AHConnector(
                 aiohttp.ClientSession(loop=asyncio.get_event_loop())))
 
     def __unload(self):

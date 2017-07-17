@@ -1,123 +1,171 @@
-"""YAML based bot configuration.
+"""Better version of config.
 
-Allows plugins to declare namespaced configuration options, populated defaults,
-refuse to load until proper configuration is provided.
+Things I don't like about config:
+ - Per class, so can't have multiple bots in same process.
+ - There's a race condition between cog instantiation and config setting, which
+    affects basically everything I care about.
+ - It's not injectable, so there's too much magic going on, makes testing
+    awkward.
+
+
+Potential usage example:
+
+
+@docg()
+class SomeCog:
+    api_key = ConfigEntry()
+
+    def __init__(self, config):
+        self._config = config
+        self.api = Api(key=self.api_key)
+
+
+api_key does a lookup self._config['api_key']
+
+config is a group, node, or something.
+
+Maybe I could add a metaclass that handles all the injection __init__ stuff for
+me lol.
+
+class SomeCog(metaclass=CogMeta):
+    database = Depends("Database")
+    redis = Depends("Redis")
+    api_key = Config()  # defaults to name of variable
+    max_connections = Config(default=4)
+
+Then CogMeta looks at members, and then creates an __init__ that takes those
+arguments.
+
+
+
+Could go for no-magic mode:
+
+@dcog()
+class SomeCog:
+    def __init__(self, config):
+        self.api_key = config.register("api_key")
+        self.max_connections = config.register("max_conn", default=4)
+
+No magic-mode seems to make sense.
+
+
+On configuration side, we'll have:
+ - FileConfiguration : a config tied to a filename
+ - StringConfiguration : a config tied to string
+ - ConfigGroup : group tied to a configuration
+   - Special group FileConfiguration.root has no prefix, parses root tree
+   - A group has members, which can be a group, or a value
+   - ConfigGroup.register() returns a ConfigValue, a descriptor tied to a
+     config.
+   - ConfigGroup.add_group() returns a ConfigGroup, tied to the group/config
+
+
 """
-import inspect
-import re
+import io
 import ruamel.yaml
 
 
-def snakify(name):
-    """Turn CamelCase into snake_case."""
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+class InvalidConfig(Exception):
+    pass
 
 
-class ConfigDesc:
-    """Config description."""
+class ConfigEntry:
+    """Descriptor tied to a config."""
 
-
-class ConfigEntry(ConfigDesc):
-    """Defines a config entry.
-
-    Args:
-        name : The name of the argument as shown in the configuration file
-        arg_type : Type to parse this argument as.
-        default : (Optional) The default to persist to the configuration if not
-            set. If not set, and configuration does not provide the entry, the
-            cog will refuse to load.
-    """
-
-    def __init__(self, name, default=None, group=None):
-        self.name = name
+    def __init__(self, config, default=None, validator=None, path=None):
+        self._config = config
+        self._path = path
         self.default = default
-        self.group = group
-        self._value = default
 
     @property
     def value(self):
-        return self._value
+        return self._config.get(self._path)
 
-    def load(self, value):
-        self._value = value
+    def __call__(self):
+        return self.value
 
 
-class ConfigGroup(ConfigDesc):
-    """Defines a config group.
+class ConfigGroup:
+    def __init__(self, config, path=None):
+        self._config = config
+        self._path = path or []
+        self._entries = {}
 
-    Args:
-        name : Name of this group.
-    """
+    def register(self, value_name, default=None, validator=None):
+        """Register config entry.
 
-    def __init__(self, name, group=None):
-        self.name = name
-        self.group = group
-        self.entries = {}
+        Raises if loaded configuration is invalid.
+        """
+        entry = ConfigEntry(
+            self._config, default, validator, path=self._path + [value_name])
+        self._entries[value_name] = entry
+        if not self.validate():
+            raise InvalidConfig
+        return entry
 
-    def add_entry(self, entry):
-        self.entries[entry.name] = entry
+    def add_group(self, group_name):
+        group = ConfigGroup(self._config, self._path + [group_name])
+        self._entries[group_name] = group
+        self.validate()
+        return group
 
-    def entry(self, *args, **kwargs):
-        e = ConfigEntry(*args, **kwargs, group=self)
-        self.entries[e.name] = e
-        return e
+    def validate(self):
+        """Raise if configuration is not valid.
 
-    def load(self, data):
-        for key, value in data.items():
-            self.entries[key].load(value)
-        # Add items for unused entries
+        If entry is not present, the default value is set.
+        If we changed configuration data, comment set where we changed it.
+        """
+        data = self._config.get(self._path)
+        valid = True
+
+        for key, entry in self._entries.items():
+            if key not in data or data[key] is None:
+                if isinstance(entry, ConfigGroup):
+                    data[key] = self._config._yaml.map()
+                elif entry.default is not None:
+                    data[key] = entry.default
+                    data.yaml_add_eol_comment("Default value", key)
+                else:
+                    data[key] = None
+                    data.yaml_add_eol_comment("Required value", key)
+                    valid = False
+        return valid
 
 
 class Configuration:
-    """YAML based per-cog configuration."""
+    def __init__(self):
+        self._yaml = ruamel.yaml.YAML()
+        self.root = ConfigGroup(self)
 
-    def __init__(self, filename=None, fp=None):
-        self.filename = filename
-        self.yaml = ruamel.yaml.YAML()
-        self.root = ConfigGroup("root")
+    def get(self, path):
+        cur = self._data
+        while path:
+            cur = cur[path[0]]
+            path = path[1:]
+        return cur
 
-    def add_entry(self, entry):
-        entry.group = self.root
-        self.root.add_entry(entry)
+    def dumps(self):
+        buff = io.StringIO()
+        self._yaml.dump(self._data, buff)
+        buff.seek(0)
+        return buff.read()
 
-    def add(self, thing):
-        for field, member in inspect.getmembers(thing):
-            if isinstance(member, ConfigDesc) and member.group is None:
-                self.root.add_entry(member)
 
-    def add_cog(self, cog):
-        cog_cgroup = ConfigGroup(snakify(cog.__class__.__name__))
-        for field, member in inspect.getmembers(cog):
-            if isinstance(member, ConfigDesc) and member.group is None:
-                cog_cgroup.add_entry(member)
-        self.add_entry(cog_cgroup)
+class StringConfiguration(Configuration):
+    def __init__(self, string):
+        super().__init__()
+        self._data = self._yaml.load(string) or self._yaml.map()
 
-    def remove_cog(self, cog):
-        try:
-            del self.root.entries[snakify(cog.__class__.__name__)]
-        except KeyError:
-            pass
+
+class FileConfiguration(Configuration):
+    def __init__(self, filename):
+        super().__init__()
+        self._filename = filename
 
     def load(self):
-        try:
-            with open(self.filename) as f:
-                data = f.read()
-        except:
-            pass
-        else:
-            self.load_str(data)
-
-    def load_str(self, stri):
-        for key, value in self.yaml.load(stri).items():
-            try:
-                self.root.entries[key].load(value)
-            except KeyError:
-                pass
+        with open(self._filename) as f:
+            self._data = self._yaml.load(f.read())
 
     def save(self):
-        pass
-
-    def populate_missing_thing(self, data):
-        data["item"] = None
-        data.yaml_add_eol_comment("This element is required", "item")
+        with open(self._filename, 'w') as f:
+            self._yaml.dump(self._data, f)

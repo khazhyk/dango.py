@@ -12,6 +12,7 @@ from watchdog import observers
 
 from . import config
 from . import plugin_watchdog
+from . import utils
 from . import waaai
 from . import zerobin
 
@@ -47,7 +48,7 @@ class DangoContext(commands.Context):
                 try:
                     zbin_url = await zerobin.upload_zerobin(content)
                     waaai_url = await waaai.send_to_waaai(
-                        zbin_url, self.bot.waaai_api_key.value)  # TODO
+                        zbin_url, self.bot.waaai_api_key())
                     content = "Content too long: %s" % waaai_url
                 except:  # TODO
                     log.exception("Exception when uploading to zerobin...")
@@ -67,9 +68,16 @@ class DangoBotBase(commands.bot.BotBase):
     waaai_api_key = config.ConfigEntry("waaai_api_key")
 
     def __init__(self, *args, config_filename="config.yml", **kwargs):
-        self._config = config.Configuration(config_filename)
-        self._config.add(self)
+        self._config = config.FileConfiguration(config_filename)
         self._config.load()
+        cgroup = self._config.root
+        try:
+            self.prefix = cgroup.register("prefix", default="test ")
+            self.token = cgroup.register("token")
+            self.plugins = cgroup.register("plugins", default="plugins")
+            self.waaai_api_key = cgroup.register("waaai_api_key")
+        finally:
+            self._config.save()
 
         self._dango_unloaded_cogs = {}
         return super().__init__(self.prefix.value, *args, **kwargs)
@@ -101,12 +109,18 @@ class DangoBotBase(commands.bot.BotBase):
             self._dango_unloaded_cogs[cls.__name__] = cls
             return
 
+        cgroup = self._config.root.add_group(utils.snakify(cls.__name__))
+
+        depends.insert(0, cgroup)
         if desc.pass_bot:
             depends.insert(0, self)
 
-        cog = cls(*depends)
-        self._config.add_cog(cog)
-        self._config.load()
+        try:
+            cog = cls(*depends)
+        except config.InvalidConfig:
+            return
+        finally:
+            self._config.save()
         super().add_cog(cog)
         setattr(cog, COG_DESC, CogDesc(datetime.datetime.utcnow()))
         log.debug("Loaded dcog %s.%s", cls.__module__, cls.__name__)

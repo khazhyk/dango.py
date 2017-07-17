@@ -28,6 +28,9 @@ class ImageSearch:
 
     saucenao_api_key = config.ConfigEntry("saucenao_api_key")
 
+    def __init__(self, config):
+        self.saucenao_api_key = config.register("saucenao_api_key")
+
     @command()
     async def saucenao(self, ctx, skip: int=0):
         """

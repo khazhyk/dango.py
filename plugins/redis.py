@@ -2,7 +2,6 @@ import asyncio
 import logging
 
 import aioredis
-from dango import config
 from dango import dcog
 from dango.utils import AsyncContextWrapper
 
@@ -12,23 +11,22 @@ log = logging.getLogger(__name__)
 @dcog()
 class Redis:
 
-    host = config.ConfigEntry("host", default="localhost")
-    port = config.ConfigEntry("port", default=6379)
-    db = config.ConfigEntry("db", default=0)
-    minsize = config.ConfigEntry("minsize", default=1)
-    maxsize = config.ConfigEntry("maxsize", default=10)
-
-    def __init__(self):
+    def __init__(self, config):
+        self.host = config.register("host", default="localhost")
+        self.port = config.register("port", default=6379)
+        self.db = config.register("db", default=0)
+        self.minsize = config.register("minsize", default=1)
+        self.maxsize = config.register("maxsize", default=10)
         self._ready = asyncio.Event()
         self._connect_task = asyncio.ensure_future(self._connect())
 
     async def _connect(self):
         try:
             self._pool = await aioredis.create_pool(
-                (self.host.value, self.port.value),
-                db=self.db.value,
-                minsize=self.minsize.value,
-                maxsize=self.maxsize.value
+                (self.host(), self.port()),
+                db=self.db(),
+                minsize=self.minsize(),
+                maxsize=self.maxsize()
                 )
             self._ready.set()
         except:

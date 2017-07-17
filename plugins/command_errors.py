@@ -34,6 +34,9 @@ class CommandErrors:
     This handles error messages for generic error types e.g. BadArgument
     """
 
+    def __init__(self, config):
+        pass
+
     async def on_command_error(self, ctx, exp):
         main_exp = exp
 

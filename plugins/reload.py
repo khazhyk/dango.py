@@ -5,6 +5,9 @@ from discord.ext.commands import command
 
 @dcog()
 class Reload:
+    
+    def __init__(self, config):
+        pass
 
     @command()
     @checks.is_owner()
