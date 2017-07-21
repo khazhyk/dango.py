@@ -45,7 +45,7 @@ def setup_logging():
 class TestPluginLoading(unittest.TestCase):
 
     def setUp(self):
-        self.b = core.DangoBot()
+        self.b = core.DangoBot(conf="sample_config.yml")
 
     def tearDown(self):
         loop.run_until_complete(self.b.close())
@@ -146,7 +146,7 @@ class TestExtensionLoading(unittest.TestCase):
         setup_logging()
 
     def setUp(self):
-        self.b = core.DangoBot()
+        self.b = core.DangoBot(conf="sample_config.yml")
 
     def tearDown(self):
         loop.run_until_complete(self.b.close())
@@ -237,7 +237,7 @@ class PluginDirLoadTest(unittest.TestCase):
         setup_logging()
 
     def setUp(self):
-        self.b = core.DangoBot()
+        self.b = core.DangoBot(conf="sample_config.yml")
 
     def tearDown(self):
         loop.run_until_complete(self.b.close())

@@ -67,8 +67,8 @@ class DangoBotBase(commands.bot.BotBase):
     plugins = config.ConfigEntry("plugins", default="plugins")
     waaai_api_key = config.ConfigEntry("waaai_api_key")
 
-    def __init__(self, *args, config_filename="config.yml", **kwargs):
-        self._config = config.FileConfiguration(config_filename)
+    def __init__(self, *args, conf="config.yml", **kwargs):
+        self._config = config.FileConfiguration(conf)
         self._config.load()
         cgroup = self._config.root
         try:

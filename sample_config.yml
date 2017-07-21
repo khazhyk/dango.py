@@ -1,0 +1,19 @@
+token: 1234
+bot: true
+waaai_api_key: 5678
+image_search:
+  saucenao_api_key: 9101112
+prefix: 'test '
+database:
+  dsn: postgresql://@localhost/spootest
+
+redis:
+  host: localhost
+  port: 6379
+  minsize: 5
+  db: 5
+  maxsize: 20
+
+osu:
+  api_key: 1234
+plugins: plugins

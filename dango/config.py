@@ -150,7 +150,12 @@ class Configuration:
 
     def dumps(self):
         buff = io.StringIO()
-        self._yaml.dump(self._data, buff)
+        data = self._data.copy()
+        for key, val in self._data.items():
+            if val == {}:
+                del data[key]
+
+        self._yaml.dump(data, buff)
         buff.seek(0)
         return buff.read()
 
@@ -167,9 +172,16 @@ class FileConfiguration(Configuration):
         self._filename = filename
 
     def load(self):
-        with open(self._filename) as f:
-            self._data = self._yaml.load(f.read())
+        try:
+            with open(self._filename) as f:
+                self._data = self._yaml.load(f.read())
+        except FileNotFoundError:
+            self._data = self._yaml.map()
 
     def save(self):
         with open(self._filename, 'w') as f:
-            self._yaml.dump(self._data, f)
+            data = self._data.copy()
+            for key, val in self._data.items():
+                if isinstance(val, dict) and not val:
+                    del data[key]
+            self._yaml.dump(data, f)
