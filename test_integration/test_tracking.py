@@ -3,10 +3,19 @@ import copy
 import random
 import unittest
 
+from dango import config
 import discord
 from plugins import database
 from plugins import redis
 from plugins import tracking
+
+
+conf = config.StringConfiguration("""
+database:
+  dsn: postgresql://@localhost/spootest
+redis:
+  db: 5
+""")
 
 
 def async_test(f):
@@ -34,10 +43,8 @@ class TestTracking(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.db = database.Database()
-        cls.db.dsn._value = "postgresql://@localhost/spootest"
-        cls.rds = redis.Redis()
-        cls.rds.db._value = 5
+        cls.db = database.Database(conf.root.add_group("database"))
+        cls.rds = redis.Redis(conf.root.add_group("redis"))
 
     @async_test
     async def setUp(self):
@@ -46,7 +53,7 @@ class TestTracking(unittest.TestCase):
             await conn.execute("delete from nickchanges")
         async with self.rds.acquire() as conn:
             await conn.flushdb()
-        self.tracking = tracking.Tracking(None, self.db, self.rds)
+        self.tracking = tracking.Tracking(None, conf, self.db, self.rds)
 
     async def red_name(self, rdc, m):
         res = await rdc.get(tracking.name_key(m))

@@ -3,4 +3,5 @@ from dango import dcog
 
 @dcog()
 class SubModule:
-    pass
+    def __init__(self, config):
+        pass

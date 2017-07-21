@@ -109,6 +109,10 @@ class ConfigGroup:
         self.validate()
         return group
 
+    def remove_group(self, group_name):
+        del self._entries[group_name]
+        self.validate()
+
     def validate(self):
         """Raise if configuration is not valid.
 

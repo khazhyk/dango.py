@@ -3,7 +3,14 @@ import itertools
 import random
 import unittest
 
+from dango import config
 from plugins import database
+
+
+conf = config.StringConfiguration("""
+database:
+  dsn: postgresql://@localhost/spootest
+""")
 
 
 def async_test(f):
@@ -18,8 +25,7 @@ class TestDatabase(unittest.TestCase):
 
     @async_test
     async def setUp(self):
-        self.db = database.Database()
-        self.db.dsn._value = "postgresql://@localhost/spootest"
+        self.db = database.Database(conf.root.add_group("database"))
 
         async with self.db.acquire() as conn:
             await conn.execute("drop table if exists multi_insert_test")
