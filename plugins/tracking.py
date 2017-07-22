@@ -14,6 +14,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import command
 from discord.ext.commands import group
+import lru
 
 from plugins.database import multi_insert_str
 
@@ -81,6 +82,8 @@ class Tracking:
         self.bot = bot
         self.database = database
         self.redis = redis
+
+        self._recent_pins = lru.LRU(128)
 
         self.batch_presence_updates = []
         self.batch_name_updates = []
@@ -475,14 +478,40 @@ class Tracking:
         if data['author']['discriminator'] == '0000':
             return  # Ignore webhooks.
 
+        if data['edited_timestamp'] is None:
+            return  # Ignore pins/etc. that aren't actually edits.
+
+        # If we had a recent pin in this channel, and the edited_timestamp is
+        # not within 5 seconds of the pin, or newer than the pin, ignore as this
+        # is a pin.
+
+        edit_time = discord.utils.parse_time(data['edited_timestamp'])
+        last_pin_time = self._recent_pins.get(data['channel_id'])
+
+        # If a message is edited, then pinned within 5 seconds, we will end up
+        # updating incorrectly, but oh well.
+        if (last_pin_time and edit_time < last_pin_time - timedelta(seconds=5)):
+            return  # If we get an edit in the past, ignore it, it's a pin.
+        elif(edit_time < datetime.utcnow() - timedelta(minutes=2)):
+            log.info("Got edit with old timestamp, missed pin? %s", data)
+            return  # This *may* be a pin, since it's old, but we didn't get a pin event.
+
         channel = self.bot.get_channel(int(data['channel_id']))
         if isinstance(channel, discord.abc.GuildChannel):
             author = channel.guild.get_member(int(data['author']['id']))
         else:
             author = self.bot.get_user(int(data['author']['id']))
+
         if not author:
-            return  # Author left
+            log.warning("Got raw_message_edit for non-existant author %s", data)
+            return
         await self.update_last_message(author)
+
+    async def on_guild_channel_pins_update(self, channel, last_pin):
+        self._recent_pins[str(channel.id)] = datetime.utcnow()
+
+    async def on_private_channel_pins_update(self, channel, last_pin):
+        self._recent_pins[str(channel.id)] = datetime.utcnow()
 
     async def on_raw_reaction_add(self, emoji, message_id, channel_id, user_id):
         channel = self.bot.get_channel(channel_id)
