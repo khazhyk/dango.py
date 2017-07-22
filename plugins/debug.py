@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from datetime import datetime
 
 from dango import checks
 from dango import dcog
@@ -37,32 +36,6 @@ class Debug:
     @command()
     async def test(self, ctx):
         await ctx.send("\N{AUBERGINE}")
-
-    @command()
-    async def rtt(self, ctx):
-        """Measures delay between message and reply.
-
-        M2M: Discord generates message timestamp -> Discord generates reply timestamp
-        RTT: Bot sends message -> Bot recieves own message
-        """
-        recv_time = ctx.message.created_at
-        msg_content = "..."
-
-        task = asyncio.ensure_future(ctx.bot.wait_for(
-            "message", timeout=15,
-            check=lambda m: (m.author == ctx.bot.user and
-                             m.content == msg_content)))
-        now = datetime.utcnow()
-        sent_message = await ctx.send(msg_content)
-        await task
-        rtt_time = datetime.utcnow()
-
-        await sent_message.edit(
-            content="M2M: {:.2f}ms, RTT: {:.2f}ms".format(
-                (sent_message.created_at - recv_time).total_seconds() * 1000,
-                (rtt_time - now).total_seconds() * 1000
-                )
-            )
 
     @command()
     @checks.is_owner()
