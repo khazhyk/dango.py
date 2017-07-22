@@ -20,7 +20,10 @@ class Latency:
 
     @command()
     async def message_lat(self, ctx):
-        await ctx.send(str(statistics.mean(lat.total_seconds() for ts, lat in self.message_latencies)))
+        """Mean latency for last 500 messages."""
+        await ctx.send("{:.2f}ms".format(
+            1000 * statistics.mean(
+                lat.total_seconds() for ts, lat in self.message_latencies)))
 
     @command()
     async def rtt(self, ctx):
