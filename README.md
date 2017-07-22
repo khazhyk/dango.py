@@ -6,7 +6,7 @@ Discord.py commands ext extensions + plugin collection.
 
 - [x] Automatically prevent @everyone, @here, etc. on all outbound messages
     - [x] Automatically upload too-large messages to 0bin etc.
-    - [ ] Need to do tracked message sending for `blame, stats, etc.
+    - [x] Need to do tracked message sending for `blame, stats, etc.
     - [ ] * Hmm, this doesn't apply to, e.g., author.send, etc., probably OK.
 - [ ] Embed wrapper for the info stuff.
     - [ ] Paginated for stuff like socket_events
@@ -18,9 +18,9 @@ Discord.py commands ext extensions + plugin collection.
     - [x] Plugin dependency system?
     - [ ] Detect if dango/core/whatever changes. If we have a change outside of
         plugins, we likely need a full restart, not just a reload.
-- [ ] Config system
-    - [ ] Allow plugins/cogs to declare config elements w/ defaults
-    - [ ] Populate config file on cog load.
+- [x] Config system
+    - [x] Allow plugins/cogs to declare config elements w/ defaults
+    - [x] Populate config file on cog load.
 - [x] Generic attribute system
     - [x] Implement as a cog on top of Database + Redis
 - [ ] Make d.py extension loading transactional - unload extensions if they fail

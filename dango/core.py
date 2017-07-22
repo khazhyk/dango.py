@@ -118,7 +118,7 @@ class DangoBotBase(commands.bot.BotBase):
         try:
             cog = cls(*depends)
         except config.InvalidConfig:
-            return
+            raise
         finally:
             self._config.save()
         super().add_cog(cog)
