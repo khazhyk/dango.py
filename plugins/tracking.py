@@ -71,7 +71,7 @@ def datetime_to_redis(datetime_obj):
 
 def datetime_from_redis(bytes_obj):
     if bytes_obj is None:
-        return None
+        return datetime.fromtimestamp(0)
     return datetime.fromtimestamp(struct.unpack('q', bytes_obj)[0] / 1000)
 
 
