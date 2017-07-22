@@ -5,6 +5,7 @@ psutil
 lru-dict
 osuapi
 ruamel.yaml
+tabulate
 
 # zerobin
 sjcl
