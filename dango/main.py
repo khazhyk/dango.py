@@ -24,7 +24,7 @@ def setup_logging():
     root.addHandler(stdouthandler)
 
 
-def main(config):
+def main():
     setup_logging()
     bot = core.DangoAutoShardedBot(
         game=discord.Game(name="rewrite is the future!"))
