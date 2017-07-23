@@ -6,6 +6,7 @@ lru-dict
 osuapi
 ruamel.yaml
 tabulate
+humanize
 
 # zerobin
 sjcl

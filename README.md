@@ -28,6 +28,21 @@ Discord.py commands ext extensions + plugin collection.
         fails to load, you will no longer be able to reload it because it won't
         be in bot.extensions)
 
+- [ ] Port over existing functionality
+    - [ ] Server/channel configuration
+    - [ ] Overwatch
+    - [x] imgsearch
+    - [x] last seen, username, nickname tracking
+    - [ ] carbonitex reporting
+    - [ ] meme posts etc.
+    - [x] userinfo etc.
+    - [ ] socket debug status
+    - [ ] misc
+    - [ ] mod commands
+    - [x] osu
+    - [ ] pmmentions
+        - [ ] add highlight regex/etc. features
+
 ## Testing
 pytest
 

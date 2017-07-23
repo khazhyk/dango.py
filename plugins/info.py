@@ -6,9 +6,11 @@ from datetime import timedelta
 
 from dango import dcog
 from dango import utils
+import discord
 from discord.ext import commands
 from discord.ext.commands import command
 from discord.ext.commands import errors
+import humanize
 import tabulate
 
 async def _send_find_results(ctx, matches):
@@ -91,6 +93,16 @@ class Find:
         await _send_find_results(ctx, matches)
 
     @command()
+    async def rolemembers(self, ctx, *, role: discord.Role):
+        """List the members of a role."""
+        if role == ctx.message.guild.default_role:
+            raise errors.CommandError("Cannot list members for default role.")
+        matches = [
+            member for member in ctx.message.guild.members if role in member.roles]
+
+        await _send_find_results(ctx, matches)
+
+    @command()
     @commands.guild_only()
     @commands.cooldown(1, 86400, commands.BucketType.guild)
     async def findold(self, ctx, *, days: int):
@@ -128,3 +140,167 @@ class Find:
 
         await ctx.send(msg)
 
+
+class InfoBuilder:
+    def __init__(self, fields=None, description=""):
+        self.description = description
+        self.fields = fields or []
+
+    def add_field(self, name, value):
+        self.fields.append((name, value))
+
+    def code_block(self):
+        col_len = max(len(name) for name, _ in self.fields)
+
+        return "```prolog\n\u200b{}```".format(
+            utils.clean_invite_embed(utils.clean_triple_backtick(utils.clean_mentions(
+                "\n".join("{}: {}".format(
+                    k.rjust(col_len), v) for k, v in self.fields)))))
+
+    def embed(self):
+        e = discord.Embed()
+        for k, v in self.fields:
+            e.add_field(name=k, value=v)
+        return e
+
+# Discord epoch
+UNKNOWN_CUTOFF = datetime.utcfromtimestamp(1420070400.000)
+
+
+def format_time(time):
+    if time is None or time < UNKNOWN_CUTOFF:
+        return "Unknown"
+    return "{} ({} UTC)".format(
+            humanize.naturaltime(time + (datetime.now() - datetime.utcnow())),
+            time)
+
+
+@dcog()
+class Info:
+    """Info about things."""
+
+    def __init__(self, config):
+        pass
+
+    @command()
+    @commands.guild_only()
+    async def channelinfo(self, ctx, *, channel: discord.TextChannel=None):
+        """Get info about a text channel."""
+        channel = channel or ctx.message.channel
+        i = InfoBuilder()
+        i.add_field("Channel", "{0.name} ({0.id})".format(channel))
+        i.add_field("Server", "{0.guild.name} ({0.guild.id})".format(channel))
+        i.add_field("Created", format_time(channel.created_at))
+        await ctx.send(i.code_block())
+
+    @command()
+    @commands.guild_only()
+    async def topic(self, ctx, *, channel: discord.TextChannel=None):
+        """Quote the channel topic at people."""
+        if channel is None:
+            channel = ctx.message.channel
+        await ctx.send(("Channel topic: " + channel.topic) if channel.topic else "No topic set.")
+
+    @command(aliases=["guildinfo"])
+    @commands.guild_only()
+    async def serverinfo(self, ctx):
+        """Show information about a server."""
+        server = ctx.message.guild
+        text_count = len(server.text_channels)
+        voice_count = len(server.voice_channels)
+        text_hid = sum(
+            1 for c in server.channels
+            if c.overwrites_for(server.default_role).read_messages is False)
+
+        roles = ", ".join([r.name for r in sorted(server.roles, key=lambda r: -r.position)])
+
+        i = InfoBuilder()
+
+        i.add_field("Server", server.name)
+        i.add_field("ID", server.id)
+        i.add_field("Region", server.region)
+        i.add_field("Members", "{} ({} online)".format(
+            len(server.members),
+            sum(1 for m in server.members if m.status is not discord.Status.offline)))
+        i.add_field(
+            "Chats", "{} Text ({}) Hidden / {} Voice".format(text_count, text_hid, voice_count))
+        i.add_field("Owner", server.owner)
+        i.add_field("Created", format_time(server.created_at))
+        i.add_field("Icon", server.icon_url)
+        i.add_field("Roles", roles)
+
+        await ctx.send(i.code_block())
+
+    @command()
+    async def userinfo(self, ctx, *, user: discord.User=None):  # TODO - custom converter
+        """Show information about a user."""
+        if user is None:
+            user = ctx.message.author
+
+        tracking = ctx.bot.get_cog("Tracking")
+
+        i = InfoBuilder()
+        i.add_field("User", str(user))
+        if isinstance(user, discord.Member) and user.nick:
+            i.add_field("Nickname", user.nick)
+        i.add_field("ID", user.id)
+        if tracking is not None:
+            names = ", ".join((await tracking.names_for(user))[:3])
+            i.add_field("Names", names)
+            if isinstance(user, discord.Member):
+                nicknames = ", ".join((await tracking.nicks_for(user))[:3])
+                if nicknames:
+                    i.add_field("Nicks", nicknames)
+        i.add_field("Created", format_time(user.created_at))
+        if isinstance(user, discord.Member):
+            i.add_field("Joined", format_time(user.joined_at))
+        if tracking is not None:
+            last_seen = await tracking.last_seen(user)
+            i.add_field("Last Seen", format_time(last_seen.last_seen))
+            i.add_field("Last Spoke", format_time(last_seen.last_spoke))
+            if isinstance(user, discord.Member):
+                i.add_field("Spoke Here", format_time(last_seen.server_last_spoke))
+        if isinstance(user, discord.Member):
+            i.add_field("Roles", ", ".join(
+                [r.name for r in sorted(user.roles, key=lambda r: -r.position)]))
+        if isinstance(user, discord.Member) and user.game:
+            i.add_field("Playing", user.game)
+
+        await ctx.send(i.code_block())
+
+    @command()
+    async def roleinfo(self, ctx, *, role: discord.Role):
+        """Displays information about a role."""
+        rd = InfoBuilder([
+            ('Name', role.name),
+            ('ID', role.id),
+            ('Members', sum(1 for member in role.guild.members if role in member.roles)),
+            ('Created', role.created_at),
+            ('Managed', role.managed),
+            ('Position', role.position),
+            ('Permissions', role.permissions.value),
+            ('Color', "#{:06x}".format(role.color.value)),
+            ('Hoist', role.hoist),
+            ('Mentionable', role.mentionable)
+        ])
+
+        await ctx.send(rd.code_block())
+
+    @command()
+    async def avatar(self, ctx, *, user: discord.User=None):
+        """Show a user's avatar."""
+        if user is None:
+            user = ctx.message.author
+
+        await ctx.send(user.avatar_url_as(static_format='png'))
+
+    @command()
+    async def defaultavatar(self, ctx, *, user: discord.User=None):
+        """Show the default avatar for a user.
+
+        (If a user has a custom avatar, it will show what it would be if they removed it).
+        """
+        if user is None:
+            user = ctx.message.author
+
+        await ctx.send(user.default_avatar_url)
