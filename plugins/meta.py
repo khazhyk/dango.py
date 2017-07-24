@@ -91,5 +91,5 @@ class Meta:
         await ctx.channel.purge(
             limit=max_messages, check=lambda m: m.author == ctx.bot.user,
             before=ctx.message, after=datetime.utcnow() - timedelta(days=14),
-            no_bulk=not can_mass_purge)
+            bulk=can_mass_purge)
         await ctx.message.add_reaction('\u2705')
