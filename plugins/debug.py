@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+import sys
 
 from dango import checks
 from dango import dcog
@@ -36,6 +38,16 @@ class Debug:
     @command()
     async def test(self, ctx):
         await ctx.send("\N{AUBERGINE}")
+
+    @command()
+    async def die(self, ctx):
+        await ctx.message.add_reaction(":discordok:293495010719170560")
+        await ctx.bot.logout()
+
+    @command()
+    async def restart(self, ctx):
+        await ctx.message.add_reaction(":helYea:236243426662678528")
+        os.execve(sys.executable, ['python'] + sys.argv, os.environ)
 
     @command()
     @checks.is_owner()
