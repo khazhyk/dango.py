@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 
+import aiohttp
 from dango import checks
 from dango import dcog
 from dango import utils
@@ -61,3 +62,10 @@ class Debug:
             out = stdout
 
         await ctx.send("```{}```".format(out))
+
+    @command()
+    @checks.is_owner()
+    async def set_avatar(self, ctx, url):
+        with aiohttp.ClientSession() as s:
+            async with s.get(url) as resp:
+                await ctx.bot.user.edit(avatar=await resp.read())
