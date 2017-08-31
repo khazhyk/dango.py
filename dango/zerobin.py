@@ -58,6 +58,7 @@ async def upload_zerobin(string_content, loop=None):
         tries = 0
         with aiohttp.ClientSession() as c:
             while tries < 2:
+                tries += 1
                 async with c.post("https://zerobin.net/", data=dict(
                         data=payload,
                         expire="never",
@@ -76,6 +77,7 @@ async def upload_zerobin(string_content, loop=None):
                             return make_zerobin_url(resp_json, encoded_key)
                         elif resp_json['status'] == 1:  # Rate limited
                             await asyncio.sleep(10)
+            raise Exception("Failed uploading to zbin")
 
 
 def make_zerobin_payload(string_content):

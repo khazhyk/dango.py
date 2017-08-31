@@ -43,6 +43,12 @@ Discord.py commands ext extensions + plugin collection.
     - [ ] pmmentions
         - [ ] add highlight regex/etc. features
 
+- Handle exceptions in batch update task
+
+asyncpg.exceptions.DeadlockDetectedError: deadlock detected
+DETAIL:  Process 21424 waits for ShareLock on transaction 2173850; blocked by process 14812.
+Process 14812 waits for ShareLock on transaction 2173849; blocked by process 21424.
+
 ## Testing
 pytest
 
