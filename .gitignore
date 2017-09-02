@@ -1,6 +1,7 @@
 __pycache__
 config.py
 config.yml
+venv
 # pytest
 .cache/
 .test_auth
