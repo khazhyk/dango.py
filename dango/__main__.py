@@ -2,8 +2,10 @@
 import logging
 import sys
 
-from dango import core
 import discord
+
+from .core import DangoAutoShardedBot
+from .utils import fix_unicode
 
 
 def setup_logging():
@@ -26,6 +28,9 @@ def setup_logging():
 
 def main():
     setup_logging()
-    bot = core.DangoAutoShardedBot(
+    bot = DangoAutoShardedBot(
         game=discord.Game(name="rewrite is the future!"))
     bot.run()
+
+fix_unicode()
+main()
