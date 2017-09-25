@@ -1,5 +1,6 @@
 import asyncio
 import collections
+import time
 import re
 import aiohttp
 from dango import dcog
@@ -143,7 +144,8 @@ class Osu:
         if isinstance(account, discord.abc.User):
             embed.set_author(
                 name=str(account), icon_url=account.avatar_url)
-        embed.set_thumbnail(url="http://a.ppy.sh/%s" % osu_acct.user_id)
+        embed.set_thumbnail(
+            url="http://a.ppy.sh/%s?_=%s" % (osu_acct.user_id, time.time()))
 
         if not usrscore:
             embed.description = "%s has never played %s" % (
