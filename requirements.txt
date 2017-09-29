@@ -19,3 +19,6 @@ hiredis
 
 # database
 asyncpg
+
+# fun
+Pillow
