@@ -48,7 +48,8 @@ class Debug:
     @command()
     async def restart(self, ctx):
         await ctx.message.add_reaction(":helYea:236243426662678528")
-        os.execve(sys.executable, ['python'] + sys.argv, os.environ)
+        print(['python'] + sys.argv, sys.executable)
+        os.execve(sys.executable, ['python', '-m', 'dango'], os.environ)
 
     @command()
     @checks.is_owner()
