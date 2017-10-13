@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from datetime import timedelta
+import pip
 
 from dango import dcog
 from dango import utils
@@ -9,6 +10,13 @@ from discord.ext.commands import command
 from discord.ext.commands import errors
 from discord.ext.commands import group
 import psutil
+
+try:
+    pip_util = pip.util
+except AttributeError:
+    pip_util = pip.utils
+discord_version = discord.utils.get(
+    pip_util.get_installed_distributions(), project_name="discord.py").version
 
 
 @dcog()
@@ -56,8 +64,7 @@ class Meta:
             value="%d text\n%d voice" % (text_channels, voice_channels))
         embed.add_field(name="Servers", value=servers)
         embed.add_field(name="Process", value="%.2fMiB RSS" % memory)
-        embed.set_footer(text="dangopy | discord.py v{}".format(
-            discord.__version__))
+        embed.set_footer(text="dangopy | discord.py v{}".format(discord_version))
         # embed.add_field(name="Messages", value="%d messages\n%d commands" % (messages, commands))
         # embed.add_field(name="Shards", value=shard_id(ctx.bot))
 
