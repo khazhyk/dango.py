@@ -455,7 +455,7 @@ class Tracking:
                 self.queue_batch_last_update(member)
 
     async def on_member_update(self, before, member):
-        self.queue_batch_last_update(member)
+        # self.queue_batch_last_update(member)  # Others can cause member_updates
         self.queue_batch_names_update(member)
 
     async def on_member_join(self, member):
