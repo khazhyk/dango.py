@@ -3,15 +3,35 @@
 Exposes an http endpoint.
 """
 import asyncio
+import collections
+from enum import Enum
 import logging
 import os
 import time
 
 from aiohttp import web
 from dango import dcog
+from dango import utils
+import discord
 import psutil
 
 log = logging.getLogger(__name__)
+
+
+class DiscordOpCode(Enum):
+    DISPATCH           = 0
+    HEARTBEAT          = 1
+    IDENTIFY           = 2
+    PRESENCE           = 3
+    VOICE_STATE        = 4
+    VOICE_PING         = 5
+    RESUME             = 6
+    RECONNECT          = 7
+    REQUEST_MEMBERS    = 8
+    INVALIDATE_SESSION = 9
+    HELLO              = 10
+    HEARTBEAT_ACK      = 11
+    GUILD_SYNC         = 12
 
 
 def uptime():
@@ -29,6 +49,18 @@ def log_task(fut):
     if fut.exception():
         log.warn(fut.exception())
 
+def render_counter(counter):
+    return "TOTAL: %s\n" % sum(counter.values()) + "\n".join("%s: %s" % (k, v) for k, v in counter.most_common())
+
+
+def render_metrics(metrics):
+    return "\n".join(name + "::\n" + render.lookup(type(metric))(metric) + "\n"
+        for name, metric in metrics.items())
+
+render = utils.TypeMap({
+        collections.Counter: render_counter,
+        dict: render_metrics
+    })
 
 @dcog(pass_bot=True)
 class HTTP:
@@ -94,19 +126,36 @@ class Metrics:
     """
 
     def __init__(self, config, http):
+        self.socket_events = collections.Counter()
+        self.dispatch_events = collections.Counter()
+        self.command_triggers = collections.Counter()
+        self.command_failures = collections.defaultdict(collections.Counter)
+        self.command_errors = collections.Counter()
+        self.command_completions = collections.Counter()
         http.add_handler("GET", "/metrics", self.handle_metrics)
 
     async def handle_metrics(self, req):
-        return web.Response(text="No metrics")
+        return web.Response(text=render_metrics({
+                'Dispatch': self.dispatch_events,
+                'Socket': self.socket_events,
+                'Command Triggers': self.command_triggers,
+                'Command Completions': self.command_completions,
+                'Command Failures': self.command_failures,
+                'Command Errors': self.command_errors
+            }))
 
-    async def on_socket_raw_receive(self, msg):
-        pass
+    async def on_socket_response(self, data):
+        self.socket_events[DiscordOpCode(data['op'])] += 1
+
+        if data['op'] == DiscordOpCode.DISPATCH.value:
+            self.dispatch_events[data.get('t')] += 1
 
     async def on_command(self, ctx):
-        pass
+        self.command_triggers[ctx.command.qualified_name] += 1
 
     async def on_command_completion(self, ctx):
-        pass
+        self.command_completions[ctx.command.qualified_name] += 1
 
     async def on_command_error(self, ctx, error):
-        pass
+        self.command_failures[ctx.command.qualified_name][type(error)] += 1
+        self.command_errors[type(error)] += 1
