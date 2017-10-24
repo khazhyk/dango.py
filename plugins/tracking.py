@@ -541,7 +541,7 @@ class Tracking:
         """Shows a all of a user's previous names."""
         if user is None:
             user = ctx.message.author
-        names = await self.names_for(user)
+        names = await self.names_for(user, since=timedelta(days=90))
         names = utils.clean_formatting(", ".join(names))
         names = utils.clean_mentions(names)
         await ctx.send("Names for {}\n{}".format(user, names))
@@ -564,7 +564,7 @@ class Tracking:
         """Shows a all of a member's previous nicks."""
         if user is None:
             user = ctx.message.author
-        names = await self.nicks_for(user)
+        names = await self.nicks_for(user, since=timedelta(days=90))
         names = utils.clean_formatting(", ".join(names))
         names = utils.clean_mentions(names)
         await ctx.send("Nicks for {}\n{}".format(
