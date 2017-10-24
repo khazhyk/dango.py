@@ -1,4 +1,5 @@
 import asyncio
+import asyncpg
 import itertools
 import random
 import unittest
@@ -56,7 +57,7 @@ class TestDatabase(unittest.TestCase):
         items = [(i, random.randint(0, 2 << 32))
                  for i in range(32767//2 + 1)]
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(asyncpg.InterfaceError):
             async with self.db.acquire() as conn:
                 await conn.execute(
                     "INSERT INTO multi_insert_test "
