@@ -13,25 +13,31 @@ from aiohttp import web
 from dango import dcog
 from dango import utils
 import discord
+import prometheus_client
 import psutil
 
 log = logging.getLogger(__name__)
 
 
-class DiscordOpCode(Enum):
-    DISPATCH           = 0
-    HEARTBEAT          = 1
-    IDENTIFY           = 2
-    PRESENCE           = 3
-    VOICE_STATE        = 4
-    VOICE_PING         = 5
-    RESUME             = 6
-    RECONNECT          = 7
-    REQUEST_MEMBERS    = 8
-    INVALIDATE_SESSION = 9
-    HELLO              = 10
-    HEARTBEAT_ACK      = 11
-    GUILD_SYNC         = 12
+OPCODE_NAMES = {
+    0:  "DISPATCH",
+    1:  "HEARTBEAT",
+    2:  "IDENTIFY",
+    3:  "PRESENCE",
+    4:  "VOICE_STATE",
+    5:  "VOICE_PING",
+    6:  "RESUME",
+    7:  "RECONNECT",
+    8:  "REQUEST_MEMBERS",
+    9:  "INVALIDATE_SESSION",
+    10: "HELLO",
+    11: "HEARTBEAT_ACK",
+    12: "GUILD_SYNC",
+}
+
+
+def _opcode_name(opcode):
+    return OPCODE_NAMES.get(opcode, opcode)
 
 
 def uptime():
@@ -119,43 +125,76 @@ class HTTP:
 
 
 @dcog(['HTTP'])
-class Metrics:
-    """Gathers various metrics and exposes via HTTP.
+class PrometheusMetrics:
 
-    Also provides utils for other cogs to provide metrics.
-    """
+    def get_prom(self, name):
+        try:
+            return prometheus_client.REGISTRY._names_to_collectors[name]
+        except KeyError:
+            for key, value in prometheus_client.REGISTRY._collector_to_names.items():
+                for val in value:
+                    if val.startswith(name):
+                        return key
+        raise KeyError
 
     def __init__(self, config, http):
-        self.socket_events = collections.Counter()
-        self.dispatch_events = collections.Counter()
-        self.command_triggers = collections.Counter()
-        self.command_failures = collections.defaultdict(collections.Counter)
-        self.command_errors = collections.Counter()
-        self.command_completions = collections.Counter()
+        try:
+            self.opcodes = prometheus_client.Counter(
+                'opcodes', 'Opcodes', ['opcode'], namespace="dango")
+            self.dispatch_events = prometheus_client.Counter(
+                'dispatch_events', 'Dispatch Events', ['event'], namespace="dango")
+            self.command_triggers = prometheus_client.Counter(
+                'command_triggers', 'Command Triggers', ['command'], namespace="dango")
+            self.command_completions = prometheus_client.Counter(
+                'command_completions', 'Command Completions', ['command'], namespace="dango")
+            self.command_errors = prometheus_client.Counter(
+                'command_errors', 'Command Errors', ['command', 'error'], namespace="dango")
+            self.command_timing = prometheus_client.Histogram(
+                'command_timing', 'Command Timing', ['command'], namespace="dango")
+        except:
+            self.opcodes = self.get_prom('dango_opcodes')
+            self.dispatch_events = self.get_prom('dango_dispatch_events')
+            self.command_triggers = self.get_prom('dango_command_triggers')
+            self.command_completions = self.get_prom('dango_command_completions')
+            self.command_errors = self.get_prom('dango_command_errors')
+            self.command_timing = self.get_prom('dango_command_timing')
+
+        self._in_flight_ctx = {}
+
         http.add_handler("GET", "/metrics", self.handle_metrics)
 
     async def handle_metrics(self, req):
-        return web.Response(text=render_metrics({
-                'Dispatch': self.dispatch_events,
-                'Socket': self.socket_events,
-                'Command Triggers': self.command_triggers,
-                'Command Completions': self.command_completions,
-                'Command Failures': self.command_failures,
-                'Command Errors': self.command_errors
-            }))
+        """aiohttp handler for Prometheus metrics."""
+        
+        registry = prometheus_client.REGISTRY
+
+        if 'name[]' in req.query:
+            registry = registry.restricted_registry(params['name[]'])
+        
+        output = prometheus_client.generate_latest(registry)
+
+        return web.Response(
+            body=output,
+            headers={'Content-Type':prometheus_client.CONTENT_TYPE_LATEST})
 
     async def on_socket_response(self, data):
-        self.socket_events[DiscordOpCode(data['op'])] += 1
+        opcode = data['op']
+        self.opcodes.labels(opcode=_opcode_name(opcode)).inc()
 
-        if data['op'] == DiscordOpCode.DISPATCH.value:
-            self.dispatch_events[data.get('t')] += 1
+        if opcode == 0:
+            self.dispatch_events.labels(event=data.get('t')).inc()
 
     async def on_command(self, ctx):
-        self.command_triggers[ctx.command.qualified_name] += 1
+        self.command_triggers.labels(command=ctx.command.qualified_name).inc()
+        self._in_flight_ctx[ctx] = time.time()
 
     async def on_command_completion(self, ctx):
-        self.command_completions[ctx.command.qualified_name] += 1
+        self.command_completions.labels(command=ctx.command.qualified_name).inc()
+        self.command_timing.labels(command=ctx.command.qualified_name).observe(time.time() - self._in_flight_ctx[ctx])
+        del self._in_flight_ctx[ctx]
 
     async def on_command_error(self, ctx, error):
-        self.command_failures[ctx.command.qualified_name][type(error)] += 1
-        self.command_errors[type(error)] += 1
+        self.command_errors.labels(
+            command=ctx.command.qualified_name,
+            error=type(error)).inc()
+        del self._in_flight_ctx[ctx]
