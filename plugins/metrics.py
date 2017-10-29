@@ -156,8 +156,8 @@ class PrometheusMetrics:
             function=lambda: len(self.bot.guilds))
         self.declare_metric(
             "member_count", prometheus_client.Gauge, "Member Count", ['status'])
-        for name, status in discord.Status.__members__.items():
-            self.member_count.labels(status=name).set_function(
+        for status in discord.Status:
+            self.member_count.labels(status=status.name).set_function(
                 _count_members_fac(bot, status))
 
         self._in_flight_ctx = {}
