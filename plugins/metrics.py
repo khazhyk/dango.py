@@ -137,27 +137,25 @@ class PrometheusMetrics:
                         return key
         raise KeyError
 
-    def __init__(self, config, http):
+    def declare_metric(self, name, type, *args, namespace="dango", **kwargs):
         try:
-            self.opcodes = prometheus_client.Counter(
-                'opcodes', 'Opcodes', ['opcode'], namespace="dango")
-            self.dispatch_events = prometheus_client.Counter(
-                'dispatch_events', 'Dispatch Events', ['event'], namespace="dango")
-            self.command_triggers = prometheus_client.Counter(
-                'command_triggers', 'Command Triggers', ['command'], namespace="dango")
-            self.command_completions = prometheus_client.Counter(
-                'command_completions', 'Command Completions', ['command'], namespace="dango")
-            self.command_errors = prometheus_client.Counter(
-                'command_errors', 'Command Errors', ['command', 'error'], namespace="dango")
-            self.command_timing = prometheus_client.Histogram(
-                'command_timing', 'Command Timing', ['command'], namespace="dango")
+            setattr(self, name, type(*args, namespace=namespace, **kwargs))
         except:
-            self.opcodes = self.get_prom('dango_opcodes')
-            self.dispatch_events = self.get_prom('dango_dispatch_events')
-            self.command_triggers = self.get_prom('dango_command_triggers')
-            self.command_completions = self.get_prom('dango_command_completions')
-            self.command_errors = self.get_prom('dango_command_errors')
-            self.command_timing = self.get_prom('dango_command_timing')
+            setattr(self, name, self.get_prom(namespace + "_" + name))
+
+    def __init__(self, config, http):
+        self.declare_metric("opcodes", prometheus_client.Counter,
+            'opcodes', 'Opcodes', ['opcode'])
+        self.declare_metric("dispatch_events", prometheus_client.Counter,
+            'dispatch_events', 'Dispatch Events', ['event'])
+        self.declare_metric("command_triggers", prometheus_client.Counter,
+            'command_triggers', 'Command Triggers', ['command'])
+        self.declare_metric("command_completions", prometheus_client.Counter,
+            'command_completions', 'Command Completions', ['command'])
+        self.declare_metric("command_errors", prometheus_client.Counter,
+            'command_errors', 'Command Errors', ['command', 'error'])
+        self.declare_metric("command_timing", prometheus_client.Histogram,
+            'command_timing', 'Command Timing', ['command'])
 
         self._in_flight_ctx = {}
 
