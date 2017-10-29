@@ -123,8 +123,10 @@ class HTTP:
         task = asyncio.ensure_future(self.stop_app())
         task.add_done_callback(log_task)
 
+def _count_members_fac(bot, status):
+        return lambda: sum(m.status == status for m in bot.get_all_members())
 
-@dcog(['HTTP'])
+@dcog(['HTTP'], pass_bot=True)
 class PrometheusMetrics:
 
     def get_prom(self, name):
@@ -137,27 +139,39 @@ class PrometheusMetrics:
                         return key
         raise KeyError
 
-    def declare_metric(self, name, type, *args, namespace="dango", **kwargs):
+    def declare_metric(self, name, type, *args, namespace="dango", function=None, **kwargs):
         try:
-            setattr(self, name, type(*args, namespace=namespace, **kwargs))
+            setattr(self, name, type(name, *args, namespace=namespace, **kwargs))
         except:
             setattr(self, name, self.get_prom(namespace + "_" + name))
 
-    def __init__(self, config, http):
-        self.declare_metric("opcodes", prometheus_client.Counter,
-            'opcodes', 'Opcodes', ['opcode'])
-        self.declare_metric("dispatch_events", prometheus_client.Counter,
-            'dispatch_events', 'Dispatch Events', ['event'])
-        self.declare_metric("command_triggers", prometheus_client.Counter,
-            'command_triggers', 'Command Triggers', ['command'])
-        self.declare_metric("command_completions", prometheus_client.Counter,
-            'command_completions', 'Command Completions', ['command'])
-        self.declare_metric("command_errors", prometheus_client.Counter,
-            'command_errors', 'Command Errors', ['command', 'error'])
-        self.declare_metric("command_timing", prometheus_client.Histogram,
-            'command_timing', 'Command Timing', ['command'])
+        if function:
+            getattr(self, name).set_function(function)
+
+    def __init__(self, bot, config, http):
+        self.declare_metric(
+            "opcodes", prometheus_client.Counter, 'Opcodes', ['opcode'])
+        self.declare_metric(
+            "dispatch_events", prometheus_client.Counter, 'Dispatch Events', ['event'])
+        self.declare_metric(
+            "command_triggers", prometheus_client.Counter, 'Command Triggers', ['command'])
+        self.declare_metric(
+            "command_completions", prometheus_client.Counter, 'Command Completions', ['command'])
+        self.declare_metric(
+            "command_errors", prometheus_client.Counter, 'Command Errors', ['command', 'error'])
+        self.declare_metric(
+            "command_timing", prometheus_client.Histogram, 'Command Timing', ['command'])
+        self.declare_metric(
+            "server_count", prometheus_client.Gauge, "Server Count",
+            function=lambda: len(self.bot.guilds))
+        self.declare_metric(
+            "member_count", prometheus_client.Gauge, "Member Count", ['status'])
+        for name, status in discord.Status.__members__.items():
+            self.member_count.labels(status=name).set_function(
+                _count_members_fac(bot, status))
 
         self._in_flight_ctx = {}
+        self.bot = bot
 
         http.add_handler("GET", "/metrics", self.handle_metrics)
 
