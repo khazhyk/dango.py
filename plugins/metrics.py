@@ -40,6 +40,10 @@ def _opcode_name(opcode):
     return OPCODE_NAMES.get(opcode, opcode)
 
 
+def _count_members_fac(bot, status):
+        return lambda: sum(m.status == status for m in bot.get_all_members())
+
+
 def uptime():
     """Returns uptime in seconds."""
     p = psutil.Process(os.getpid())
@@ -55,18 +59,6 @@ def log_task(fut):
     if fut.exception():
         log.warn(fut.exception())
 
-def render_counter(counter):
-    return "TOTAL: %s\n" % sum(counter.values()) + "\n".join("%s: %s" % (k, v) for k, v in counter.most_common())
-
-
-def render_metrics(metrics):
-    return "\n".join(name + "::\n" + render.lookup(type(metric))(metric) + "\n"
-        for name, metric in metrics.items())
-
-render = utils.TypeMap({
-        collections.Counter: render_counter,
-        dict: render_metrics
-    })
 
 @dcog(pass_bot=True)
 class HTTP:
@@ -123,8 +115,6 @@ class HTTP:
         task = asyncio.ensure_future(self.stop_app())
         task.add_done_callback(log_task)
 
-def _count_members_fac(bot, status):
-        return lambda: sum(m.status == status for m in bot.get_all_members())
 
 @dcog(['HTTP'], pass_bot=True)
 class PrometheusMetrics:
