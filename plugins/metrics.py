@@ -15,6 +15,8 @@ import psutil
 
 log = logging.getLogger(__name__)
 
+logging.getLogger("aiohttp.access").setLevel(logging.WARN)  # TODO
+
 
 OPCODE_NAMES = {
     0: "DISPATCH",
