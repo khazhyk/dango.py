@@ -22,3 +22,6 @@ asyncpg
 
 # fun
 Pillow
+
+# metrics
+prometheus_client
