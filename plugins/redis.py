@@ -8,6 +8,20 @@ from dango.utils import AsyncContextWrapper
 log = logging.getLogger(__name__)
 
 
+class ContextWrapper:
+    """Turns `with await` into `async with`."""
+
+    def __init__(self, coro):
+        self.coro = coro
+
+    async def __aenter__(self):
+        self.instance = await self.coro
+        return self.instance.__enter__()
+
+    async def __aexit__(self, *args, **kwargs):
+        return self.instance.__exit__(*args, **kwargs)
+
+
 @dcog()
 class Redis:
 
@@ -22,7 +36,7 @@ class Redis:
 
     async def _connect(self):
         try:
-            self._pool = await aioredis.create_pool(
+            self._pool = await aioredis.create_redis_pool(
                 (self.host(), self.port()),
                 db=self.db(),
                 minsize=self.minsize(),
@@ -35,10 +49,12 @@ class Redis:
 
     async def _acquire(self):
         await self._ready.wait()
-        return self._pool.get()
+        # Bizzare interface, awaiting the pool gives us a context manager
+        # for an individual connection.
+        return await self._pool
 
     def acquire(self):
-        return AsyncContextWrapper(self._acquire())
+        return ContextWrapper(self._acquire())
 
     def __unload(self):
         self._connect_task.cancel()
