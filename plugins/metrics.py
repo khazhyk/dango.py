@@ -195,6 +195,9 @@ class PrometheusMetrics:
 
     async def on_command_error(self, ctx, error):
         self.command_errors.labels(
-            command=ctx.command.qualified_name,
+            command=ctx.command and ctx.command.qualified_name,
             error=type(error)).inc()
-        del self._in_flight_ctx[ctx]
+        try:
+            del self._in_flight_ctx[ctx]
+        except KeyError:
+            log.debug("command_error for command never invoked: %s", ctx)
