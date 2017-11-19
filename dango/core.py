@@ -60,6 +60,8 @@ class DangoContext(commands.Context):
         self.bot.dispatch("dango_message_sent", sent_message, self)
         return sent_message
 
+    def __repr__(self):
+        return "<DangoContext message={0.message!r} message.content={0.message.content!r} channel={0.channel!r} prefix={0.prefix!r} command={0.command!r} invoked_with={0.invoked_with!r}>".format(self)
 
 class DangoBotBase(commands.bot.BotBase):
 
