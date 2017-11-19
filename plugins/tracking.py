@@ -15,6 +15,7 @@ from discord.ext import commands
 from discord.ext.commands import command
 from discord.ext.commands import group
 import lru
+import tabulate
 
 from plugins.database import multi_insert_str
 
@@ -87,6 +88,8 @@ class Tracking:
 
         self.batch_presence_updates = []
         self.batch_name_updates = []
+        self._batch_name_curr_updates = []
+        self._batch_presence_curr_updates = []
         self.batch_presence_task = asyncio.ensure_future(self.batch_presence())
         self.batch_name_task = asyncio.ensure_future(self.batch_name())
 
@@ -270,6 +273,7 @@ class Tracking:
         self.batch_name_updates = []
 
         while all_updates:
+            self._batch_name_curr_updates = all_updates
             updates = all_updates[:6553]
             all_updates = all_updates[6553:]
             # TODO - make the redis lookup similar to the iteration update for calculating inserts
@@ -443,6 +447,7 @@ class Tracking:
             return
         async with self.redis.acquire() as conn:
             while updates:
+                self._batch_presence_curr_updates = updates
                 await conn.mset(*updates[:50000])
                 updates = updates[50000:]
 
@@ -575,10 +580,24 @@ class Tracking:
     async def updateall(self, ctx):
         for g in ctx.bot.guilds:
             await self.on_guild_join(g)
+        await self.updatestatus.invoke(ctx)
 
     @command()
     @checks.is_owner()
     async def updatestatus(self, ctx):
-        await ctx.send("name updates: %s %s\n presence updates: %s %s" % (
-            len(self.batch_name_updates), self.batch_name_task,
-            len(self.batch_presence_updates), self.batch_presence_task))
+        rows = (
+            (
+                len(self.batch_name_updates),
+                len(self._batch_name_curr_updates),
+                str(self.batch_name_task._state),
+                len(self.batch_presence_updates),
+                len(self._batch_presence_curr_updates),
+                str(self.batch_presence_task._state),
+                ),
+        )
+        lines = tabulate.tabulate(
+            rows, headers=[
+                "PNU", "CNU", "NTS",
+                "PPU", "CPU", "PTS",
+            ], tablefmt="simple")
+        await ctx.send("```prolog\n{}```".format(lines))
