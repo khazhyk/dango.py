@@ -106,7 +106,7 @@ class Tracking:
             await self.do_batch_presence_update()
             if self.batch_presence_updates:
                 log.error("Dropping %d presences!", len(self.batch_presence_updates) / 2)
-        except:
+        except Exception:
             log.exception("Exception during presence update task!")
             raise
 
@@ -119,7 +119,7 @@ class Tracking:
             await self.do_batch_names_update()
             if self.batch_name_updates:
                 log.error("Dropping %d name updates!", len(self.batch_name_updates))
-        except:
+        except Exception:
             log.exception("Exception during name update task!")
             raise
 
@@ -172,7 +172,7 @@ class Tracking:
             query = (
                 "SELECT name FROM namechanges "
                 "WHERE id = $1 "
-                )
+            )
             params.append(str(member.id))  # TODO - convert schema to BigInt
             if since:
                 query += "AND date >= $2 "
@@ -194,7 +194,7 @@ class Tracking:
             query = (
                 "SELECT name FROM nickchanges "
                 "WHERE id = $1 AND server_id = $2"
-                )
+            )
             # TODO - convert schema to BigInt
             params.extend((str(member.id), str(member.guild.id)))
             if since:
@@ -220,7 +220,7 @@ class Tracking:
             name, idx = await conn.fetchrow(
                 "SELECT name, idx FROM namechanges WHERE id = $1"
                 "ORDER BY idx DESC LIMIT 1", str(member.id)
-                ) or (None, 0)
+            ) or (None, 0)
             # TODO - look at asyncpg custom type conversions
             if name is not None:
                 name = name.decode('utf8')
@@ -242,7 +242,7 @@ class Tracking:
                 "SELECT name, idx FROM nickchanges WHERE id = $1 "
                 "AND server_id = $2 ORDER BY idx DESC LIMIT 1",
                 str(member.id), str(member.guild.id)
-                ) or (None, 0)
+            ) or (None, 0)
             if name is not None:
                 name = name.decode('utf8')
 
@@ -283,7 +283,7 @@ class Tracking:
                 pending_name_updates, pending_nick_updates)
 
             name_inserts, nick_inserts, current_names, current_nicks = await self.calculate_needed_inserts(
-                    pending_name_updates, pending_nick_updates, current_names, current_nicks)
+                pending_name_updates, pending_nick_updates, current_names, current_nicks)
 
             await self.batch_insert_name_updates(name_inserts, nick_inserts)
             await self.batch_set_redis_names(current_names, current_nicks)
@@ -375,18 +375,18 @@ class Tracking:
                 await conn.execute(
                     "INSERT INTO namechanges (id, name, idx, date) "
                     "VALUES %s ON CONFLICT (id, idx) DO NOTHING" % (
-                            multi_insert_str(name_inserts)
-                        ),
+                        multi_insert_str(name_inserts)
+                    ),
                     *itertools.chain(*name_inserts)
-                    )
+                )
             if nick_inserts:
                 await conn.execute(
                     "INSERT INTO nickchanges (id, server_id, name, idx, date) "
                     "VALUES %s ON CONFLICT (id, server_id, idx) DO NOTHING" % (
-                            multi_insert_str(nick_inserts)
-                        ),
+                        multi_insert_str(nick_inserts)
+                    ),
                     *itertools.chain(*nick_inserts)
-                    )
+                )
 
     async def batch_set_redis_names(self, current_names, current_nicks):
         assert len(current_names) <= 50000
@@ -593,7 +593,7 @@ class Tracking:
                 len(self.batch_presence_updates),
                 len(self._batch_presence_curr_updates),
                 str(self.batch_presence_task._state),
-                ),
+            ),
         )
         lines = tabulate.tabulate(
             rows, headers=[

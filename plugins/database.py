@@ -13,7 +13,7 @@ def multi_insert_str(lst):
     count = len(lst)
     size = len(lst[0])
     elems = ["$%d" % (i + 1) for i in range(count * size)]
-    indiv = ["(%s)" % (", ".join(elems[i:i+size])) for i in range(0, count * size, size)]
+    indiv = ["(%s)" % (", ".join(elems[i:i + size])) for i in range(0, count * size, size)]
     return ", ".join(indiv)
 
 
@@ -29,7 +29,7 @@ class Database:
         try:
             self._engine = await asyncpg.create_pool(self.dsn())
             self._ready.set()
-        except:
+        except Exception:
             log.exception("Exception connecting to database!")
             raise
 

@@ -43,6 +43,7 @@ def mangle_string(thing):
 
 global_zerobin_lock = asyncio.Lock()
 
+
 async def upload_zerobin(string_content, loop=None):
     async with global_zerobin_lock:
         if not loop:

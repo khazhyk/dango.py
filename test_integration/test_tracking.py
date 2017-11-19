@@ -216,5 +216,6 @@ class TestTracking(unittest.TestCase):
         self.assertEqual(m_copy3.name, await self.tracking._last_username(m))
         self.assertEqual(m_copy3.nick, await self.tracking._last_nickname(m))
 
+
 if __name__ == '__main__':
     unittest.main()

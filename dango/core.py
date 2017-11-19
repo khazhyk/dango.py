@@ -31,6 +31,7 @@ def dcog(depends=None, pass_bot=False):
         return cls
     return real_decorator
 
+
 PluginDesc = collections.namedtuple("PluginDesc", "depends pass_bot")
 CogDesc = collections.namedtuple("PluginDesc", "load_time")
 
@@ -50,7 +51,7 @@ class DangoContext(commands.Context):
                     waaai_url = await waaai.send_to_waaai(
                         zbin_url, self.bot.waaai_api_key())
                     content = "Content too long: %s" % waaai_url
-                except:  # TODO
+                except BaseException:  # TODO
                     log.exception("Exception when uploading to zerobin...")
                     # text_file = io.BytesIO(content.encode('utf8'))
                     content = "Way too big..."
@@ -80,7 +81,7 @@ class DangoBotBase(commands.bot.BotBase):
             self._config.save()
 
         self._dango_unloaded_cogs = {}
-        return super().__init__(self.prefix.value, *args, **kwargs)
+        super().__init__(self.prefix.value, *args, **kwargs)
 
     def run(self):
         self.watch_plugin_dir(self.plugins.value)
@@ -172,7 +173,7 @@ class DangoBotBase(commands.bot.BotBase):
         if name in self.extensions:
             return
 
-        log.info("Loading extension {}".format(name))
+        log.info("Loading extension %s", name)
         lib = importlib.import_module(name)
 
         for item in dir(lib):  # TODO - inspect.members

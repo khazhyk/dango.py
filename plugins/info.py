@@ -13,6 +13,7 @@ from discord.ext.commands import errors
 import humanize
 import tabulate
 
+
 async def _send_find_results(ctx, matches):
     if len(matches) == 0:
         await ctx.send("No matches!")
@@ -68,7 +69,7 @@ class Find:
         buckets = {}
 
         for member in ctx.message.guild.members:
-            if (filter in member.name.lower()):
+            if filter in member.name.lower():
                 entry = buckets.get(member.name.lower(), [])
                 entry.append(member)
                 buckets[member.name.lower()] = entry
@@ -119,7 +120,7 @@ class Find:
 
         cutoff = now - timedelta(days=days)
 
-        if (cutoff < ctx.message.guild.me.joined_at):
+        if cutoff < ctx.message.guild.me.joined_at:
             msg += ("WARNING: The bot has only been in this server since {}, "
                     "you specified a cutoff of {}\n").format(
                 ctx.message.guild.me.joined_at, cutoff)
@@ -163,6 +164,7 @@ class InfoBuilder:
             e.add_field(name=k, value=v)
         return e
 
+
 # Discord epoch
 UNKNOWN_CUTOFF = datetime.utcfromtimestamp(1420070400.000)
 
@@ -171,8 +173,7 @@ def format_time(time):
     if time is None or time < UNKNOWN_CUTOFF:
         return "Unknown"
     return "{} ({} UTC)".format(
-            humanize.naturaltime(time + (datetime.now() - datetime.utcnow())),
-            time)
+        humanize.naturaltime(time + (datetime.now() - datetime.utcnow())), time)
 
 
 @dcog()

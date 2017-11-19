@@ -3,7 +3,6 @@ import logging
 
 import aioredis
 from dango import dcog
-from dango.utils import AsyncContextWrapper
 
 log = logging.getLogger(__name__)
 
@@ -41,9 +40,9 @@ class Redis:
                 db=self.db(),
                 minsize=self.minsize(),
                 maxsize=self.maxsize()
-                )
+            )
             self._ready.set()
-        except:
+        except Exception:
             log.exception("Exception connecting to database!")
             raise
 

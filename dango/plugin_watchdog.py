@@ -39,8 +39,8 @@ class PluginDirWatchdog(events.FileSystemEventHandler):
 
     def _call(self, coro):
         fut = asyncio.run_coroutine_threadsafe(
-                coro,
-                loop=self.bot.loop)
+            coro,
+            loop=self.bot.loop)
         return fut.result()
 
     async def _unload(self, mod_to_unload):
@@ -50,7 +50,7 @@ class PluginDirWatchdog(events.FileSystemEventHandler):
         try:
             self.bot.unload_extension(mod_to_reload)
             self.bot.load_extension(mod_to_reload)
-        except:
+        except BaseException:
             log.exception("Failed to reload! %s", mod_to_reload)
 
     def on_created(self, event):

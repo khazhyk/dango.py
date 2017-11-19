@@ -51,5 +51,5 @@ class Latency:
                 (now - recv_time).total_seconds() * 1000,
                 (sent_message.created_at - recv_time).total_seconds() * 1000,
                 (rtt_time - now).total_seconds() * 1000
-                )
             )
+        )

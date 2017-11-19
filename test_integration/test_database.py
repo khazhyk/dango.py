@@ -42,7 +42,7 @@ class TestDatabase(unittest.TestCase):
     @async_test
     async def test_multi_insert(self):
         items = [(i, random.randint(0, 2 << 32))
-                 for i in range(32767//2)]
+                 for i in range(32767 // 2)]
 
         async with self.db.acquire() as conn:
             await conn.execute(
@@ -55,7 +55,7 @@ class TestDatabase(unittest.TestCase):
     async def test_multi_insert_max(self):
         """We can have a max of 32767 arguments."""
         items = [(i, random.randint(0, 2 << 32))
-                 for i in range(32767//2 + 1)]
+                 for i in range(32767 // 2 + 1)]
 
         with self.assertRaises(asyncpg.InterfaceError):
             async with self.db.acquire() as conn:
@@ -64,6 +64,7 @@ class TestDatabase(unittest.TestCase):
                     "VALUES %s ON CONFLICT DO NOTHING" % (
                         database.multi_insert_str(items)),
                     *itertools.chain(*items))
+
 
 if __name__ == '__main__':
     unittest.main()

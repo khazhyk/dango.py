@@ -24,7 +24,7 @@ class TestTypeInheritanceMap(unittest.TestCase):
             discord.abc.User: "something",
             discord.TextChannel: "something else",
             discord.Guild: "another thing"
-            })
+        })
 
         self.assertEquals("something", m.lookup(discord.abc.User))
         self.assertEquals("something", m.lookup(discord.User))
@@ -74,7 +74,7 @@ class TestFormattingUtils(unittest.TestCase):
             ['`\u200b', '`'],
             ['\u200b``\u200b', '``'],
             ['\u200b`` ``\u200b', '`` ``'],
-            [' ``` ``\u200b',  ' ``` ``']
+            [' ``` ``\u200b', ' ``` ``']
         ]
 
         for sample in samples:
@@ -113,6 +113,7 @@ class TestFormattingUtils(unittest.TestCase):
 
         for sample in samples:
             self.assertEquals(sample[0], utils.clean_newline(sample[1]))
+
 
 if __name__ == "__main__":
     unittest.main()

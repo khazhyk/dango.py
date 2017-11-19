@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 def tbtpl(exp):
     return (type(exp), exp, exp.__traceback__)
 
+
 IGNORED = (
     errors.CommandNotFound,
     errors.DisabledCommand,

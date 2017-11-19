@@ -3,15 +3,12 @@
 Exposes an http endpoint.
 """
 import asyncio
-import collections
-from enum import Enum
 import logging
 import os
 import time
 
 from aiohttp import web
 from dango import dcog
-from dango import utils
 import discord
 import prometheus_client
 import psutil
@@ -20,16 +17,16 @@ log = logging.getLogger(__name__)
 
 
 OPCODE_NAMES = {
-    0:  "DISPATCH",
-    1:  "HEARTBEAT",
-    2:  "IDENTIFY",
-    3:  "PRESENCE",
-    4:  "VOICE_STATE",
-    5:  "VOICE_PING",
-    6:  "RESUME",
-    7:  "RECONNECT",
-    8:  "REQUEST_MEMBERS",
-    9:  "INVALIDATE_SESSION",
+    0: "DISPATCH",
+    1: "HEARTBEAT",
+    2: "IDENTIFY",
+    3: "PRESENCE",
+    4: "VOICE_STATE",
+    5: "VOICE_PING",
+    6: "RESUME",
+    7: "RECONNECT",
+    8: "REQUEST_MEMBERS",
+    9: "INVALIDATE_SESSION",
     10: "HELLO",
     11: "HEARTBEAT_ACK",
     12: "GUILD_SYNC",
@@ -41,7 +38,7 @@ def _opcode_name(opcode):
 
 
 def _count_members_fac(bot, status):
-        return lambda: sum(m.status == status for m in bot.get_all_members())
+    return lambda: sum(m.status == status for m in bot.get_all_members())
 
 
 def uptime():
@@ -132,7 +129,7 @@ class PrometheusMetrics:
     def declare_metric(self, name, type, *args, namespace="dango", function=None, **kwargs):
         try:
             setattr(self, name, type(name, *args, namespace=namespace, **kwargs))
-        except:
+        except ValueError:  # Already exists
             setattr(self, name, self.get_prom(namespace + "_" + name))
 
         if function:
@@ -167,17 +164,17 @@ class PrometheusMetrics:
 
     async def handle_metrics(self, req):
         """aiohttp handler for Prometheus metrics."""
-        
+
         registry = prometheus_client.REGISTRY
 
         if 'name[]' in req.query:
-            registry = registry.restricted_registry(params['name[]'])
-        
+            registry = registry.restricted_registry(req.query['name[]'])
+
         output = prometheus_client.generate_latest(registry)
 
         return web.Response(
             body=output,
-            headers={'Content-Type':prometheus_client.CONTENT_TYPE_LATEST})
+            headers={'Content-Type': prometheus_client.CONTENT_TYPE_LATEST})
 
     async def on_socket_response(self, data):
         opcode = data['op']
@@ -192,7 +189,8 @@ class PrometheusMetrics:
 
     async def on_command_completion(self, ctx):
         self.command_completions.labels(command=ctx.command.qualified_name).inc()
-        self.command_timing.labels(command=ctx.command.qualified_name).observe(time.time() - self._in_flight_ctx[ctx])
+        self.command_timing.labels(command=ctx.command.qualified_name).observe(
+            time.time() - self._in_flight_ctx[ctx])
         del self._in_flight_ctx[ctx]
 
     async def on_command_error(self, ctx, error):

@@ -5,7 +5,7 @@ from discord.ext.commands import command
 
 @dcog()
 class Reload:
-    
+
     def __init__(self, config):
         pass
 
@@ -16,7 +16,7 @@ class Reload:
         try:
             ctx.bot.unload_extension(extension)
             ctx.bot.load_extension(extension)
-        except:
+        except BaseException:
             await ctx.send("\N{THUMBS DOWN SIGN}")
             raise
         else:

@@ -32,5 +32,6 @@ def main():
         game=discord.Game(name="rewrite is the future!"))
     bot.run()
 
+
 fix_unicode()
 main()

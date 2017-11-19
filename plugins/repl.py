@@ -65,7 +65,7 @@ class REPL:
             value = stdout.getvalue()
             try:
                 await ctx.message.add_reaction('\u2705')
-            except:
+            except BaseException:
                 pass
 
             if ret is None:
