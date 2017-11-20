@@ -38,7 +38,8 @@ class Misc:
     async def msgraw(self, ctx, *, msg_id: int):
         raw = await ctx.bot.http.get_message(ctx.channel.id, msg_id)
 
-        await ctx.send("```json\n{}```".format(json.dumps(raw, indent=2)))
+        await ctx.send("```json\n{}```".format(
+            utils.clean_triple_backtick(json.dumps(raw, indent=2))))
 
 
     @command()
