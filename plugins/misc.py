@@ -1,4 +1,5 @@
 import io
+import json
 import random
 
 import aiohttp
@@ -32,6 +33,13 @@ class Misc:
             raise errors.BadArgument("Message not found")
         else:
             await ctx.send("```{}```".format(utils.clean_triple_backtick(msg.content)))
+
+    @command()
+    async def msgraw(self, ctx, *, msg_id: int):
+        raw = await ctx.bot.http.get_message(ctx.channel.id, msg_id)
+
+        await ctx.send("```json\n{}```".format(json.dumps(raw, indent=2)))
+
 
     @command()
     async def corrupt(self, ctx, *, user: discord.User=None):
