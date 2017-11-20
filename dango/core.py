@@ -65,11 +65,6 @@ class DangoContext(commands.Context):
 
 class DangoBotBase(commands.bot.BotBase):
 
-    prefix = config.ConfigEntry("prefix", default="test ")
-    token = config.ConfigEntry("token")
-    plugins = config.ConfigEntry("plugins", default="plugins")
-    waaai_api_key = config.ConfigEntry("waaai_api_key")
-
     def __init__(self, *args, conf="config.yml", **kwargs):
         self._config = config.FileConfiguration(conf)
         self._config.load()
@@ -112,6 +107,7 @@ class DangoBotBase(commands.bot.BotBase):
             self._dango_unloaded_cogs[cls.__name__] = cls
             return
 
+        self._config.load()
         cgroup = self._config.root.add_group(utils.snakify(cls.__name__))
 
         depends.insert(0, cgroup)
