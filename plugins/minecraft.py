@@ -186,7 +186,9 @@ class Minecraft:
         e.add_field(name="ping", value=status.latency)
         e.add_field(
             name="players",
-            value="{0.players.online}/{0.players.max}    \u200b".format(status))
+            value="{0.players.online}/{0.players.max}    \u200b".format(status) + "".join(
+                "\n[%s](%s)" % (p.name, p.id) for p in status.players.sample))
+
 
         return dict(embed=e, file=fil)
 
