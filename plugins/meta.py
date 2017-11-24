@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from datetime import timedelta
-import pip
+import inspect
 
 from dango import dcog
 from dango import utils
@@ -9,6 +9,7 @@ import discord
 from discord.ext.commands import command
 from discord.ext.commands import errors
 from discord.ext.commands import group
+import pip
 import psutil
 
 try:
@@ -17,6 +18,72 @@ except AttributeError:
     pip_util = pip.utils
 discord_version = discord.utils.get(
     pip_util.get_installed_distributions(), project_name="discord.py").version
+
+
+SOURCE_URL = "https://github.com/khazhyk/dango.py/tree/master"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
+
+class NoSuchCommand(Exception):
+    """Command does not exist."""
+
+    def __init__(self, cmd_name):
+        super().__init__(cmd_name)
+        self.cmd_name = cmd_name
+
+
+class NoSuchSubCommand(Exception):
+    """SubCommand does not exist."""
+
+    def __init__(self, cmd, sub):
+        super().__init__(cmd, sub)
+        self.cmd = cmd
+        self.sub = sub
+
+
+class NoSubCommands(Exception):
+    """SubCommand does not exist. Additionally, no subcommands exist."""
+
+    def __init__(self, cmd):
+        super().__init__(cmd)
+        self.cmd = cmd
+
+
+def resolve_command(bot, *args):
+    try:
+        cmd = bot.all_commands[args[0]]  # Raises if no such command.
+    except KeyError:
+        raise NoSuchCommand(args[0])
+
+    subcmd = cmd
+    for arg in args[1:]:
+        try:
+            subcmd = subcmd.all_commands[arg]
+        except KeyError:
+            raise NoSuchSubCommand(subcmd, arg)
+        except AttributeError:
+            raise NoSubCommands(subcmd)
+
+    return subcmd
+
+
+def get_cog_or_cmd_callback(ctx, *cmd_name):
+    if len(cmd_name) == 1:
+        cog = ctx.bot.get_cog(cmd_name[0])
+        if cog:
+            return cog.__class__
+    try:
+        cmd = resolve_command(ctx.bot, *cmd_name)
+    except NoSubCommands as e:
+        raise errors.BadArgument("`{}` has no subcommands".format(
+            e.cmd.qualified_name))
+    except NoSuchSubCommand as e:
+        raise errors.BadArgument("`{}` has no subcommand {}".format(
+            e.cmd.qualified_name, e.sub))
+    except NoSuchCommand as e:
+        raise errors.BadArgument("No such command or cog `{}`".format(
+            e.cmd_name))
+    return cmd.callback
 
 
 @dcog()
@@ -69,6 +136,25 @@ class Meta:
         # embed.add_field(name="Shards", value=shard_id(ctx.bot))
 
         await ctx.send(embed=embed)
+
+    @command()
+    async def source(self, ctx, *cmd_name):
+        """Link to the source of a command or cog.
+
+        If no name is provided, links to the root of the project."""
+        if not cmd_name:
+            return await ctx.send(SOURCE_URL)
+
+        cog_or = get_cog_or_cmd_callback(ctx, *cmd_name)
+
+        # srcfile seems to always be in unix/forward slash path, regardless of os
+        srcfile = inspect.getsourcefile(cog_or)
+        srclines, srclineno = inspect.getsourcelines(cog_or)
+
+        lines = "L{}-L{}".format(srclineno, srclineno + len(srclines) - 1)
+        url = srcfile.replace(BASE_DIR, SOURCE_URL) + "#" + lines
+
+        await ctx.send(url)
 
     @command()
     async def largestservers(self, ctx):
