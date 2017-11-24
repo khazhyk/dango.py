@@ -9,6 +9,9 @@ ruamel.yaml
 tabulate
 humanize
 
+# debug
+objgraph
+
 # zerobin
 sjcl
 pycryptodome

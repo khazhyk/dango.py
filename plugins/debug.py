@@ -1,6 +1,8 @@
 import asyncio
 import copy
+from contextlib import redirect_stdout
 import logging
+import io
 import os
 import sys
 
@@ -10,6 +12,7 @@ from dango import dcog
 from dango import utils
 import discord
 from discord.ext.commands import command
+import objgraph
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +44,22 @@ class Debug:
     @command()
     async def test(self, ctx):
         await ctx.send("\N{AUBERGINE}")
+
+    @command(name="objgraph")
+    @checks.is_owner()
+    async def objgraph_(self, ctx):
+        mct = await ctx.bot.loop.run_in_executor(None, objgraph.most_common_types)
+        await ctx.send(str(mct))
+
+    @command()
+    @checks.is_owner()
+    async def objgrowth(self, ctx):
+        stdout = io.StringIO()
+
+        with redirect_stdout(stdout):
+            await ctx.bot.loop.run_in_executor(None, objgraph.show_growth)
+
+        await ctx.send(stdout.getvalue())
 
     @command()
     @checks.is_owner()
