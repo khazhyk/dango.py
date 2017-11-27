@@ -184,10 +184,11 @@ class Minecraft:
             name="version",
             value="{0.version.name} (proto {0.version.protocol})    \u200b".format(status))
         e.add_field(name="ping", value=status.latency)
-        e.add_field(
-            name="players",
-            value="{0.players.online}/{0.players.max}    \u200b".format(status) + "".join(
-                "\n[%s](%s)" % (p.name, p.id) for p in status.players.sample))
+        players_string = "{0.players.online}/{0.players.max}    \u200b".format(status)
+        if status.players.sample:
+            players_string += "".join(
+                "\n[%s](%s)" % (p.name, p.id) for p in status.players.sample)
+        e.add_field(name="players", value=players_string)
 
 
         return dict(embed=e, file=fil)
