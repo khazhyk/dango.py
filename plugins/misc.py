@@ -1,6 +1,8 @@
+import collections
 import io
 import json
 import random
+import re
 
 import aiohttp
 from dango import dcog
@@ -10,6 +12,15 @@ from discord.ext.commands import command
 from discord.ext.commands import errors
 
 FULLWIDTH_OFFSET = 65248
+
+FakeEmoji = collections.namedtuple('FakeEmoji', 'name id')
+
+
+def idc_emoji_or_just_string(val):
+    match = re.match(r'<:([a-zA-Z0-9]+):([0-9]+)>$', val)
+    if match:
+        return FakeEmoji(match.group(1), match.group(2))
+    return FakeEmoji(val.replace(':', ''), None)
 
 
 @dcog()
@@ -41,6 +52,26 @@ class Misc:
         await ctx.send("```json\n{}```".format(
             utils.clean_triple_backtick(json.dumps(raw, indent=2))))
 
+    @command(pass_context=True)
+    async def find_emojis(self, ctx, *search_emojis: idc_emoji_or_just_string):
+        """Find all emoji sharing the same name and the servers they are from."""
+        found_emojis = [
+            emoji for emoji in ctx.bot.emojis for search_emoji in search_emojis
+            if emoji.name.lower() == search_emoji.name.lower()
+        ]
+        if found_emojis:
+            await ctx.send(", ".join("{0} - {0.guild}".format(emoji) for emoji in found_emojis))
+        else:
+            await ctx.message.add_reaction(":discordok:293495010719170560")
+
+    @command()
+    async def nitro(self, ctx, *, rest):
+        rest = rest.lower()
+        found_emojis = [emoji for emoji in ctx.bot.emojis if emoji.name.lower() == rest]
+        if found_emojis:
+            await ctx.send(str(random.choice(found_emojis)))
+        else:
+            await ctx.message.add_reaction(":discordok:293495010719170560")
 
     @command()
     async def corrupt(self, ctx, *, user: discord.User=None):
