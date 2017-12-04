@@ -105,11 +105,8 @@ class Find:
 
     @command()
     @commands.guild_only()
-    @commands.cooldown(1, 86400, commands.BucketType.guild)
     async def findold(self, ctx, *, days: int):
-        """Shows members that haven't logged in/been seen by the bot in the last `days` days.
-
-        Stupidly inefficient command, ask spoopy to run it for you lol"""
+        """Shows members that haven't logged in/been seen by the bot in the last `days` days."""
         now = datetime.utcnow()
 
         msg = ""
@@ -128,9 +125,8 @@ class Find:
                     "who has been online in that time span.\n")
 
         old_members = []
-        for member in ctx.message.guild.members:
-            last_seen, last_spoke, server_last_spoke = await tracking.last_seen(member)
-
+        last_seens = await tracking.bulk_last_seen(ctx.message.guild.members)
+        for (last_seen, last_spoke, server_last_spoke), member in zip(last_seens, ctx.message.guild.members):
             if last_seen < cutoff:
                 old_members.append(
                     (str(member), member.id, last_spoke, last_seen))

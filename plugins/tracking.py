@@ -26,6 +26,10 @@ REDIS_NICK_NONE = (b'NoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNoneNon
 PG_ARG_MAX = 32767
 
 
+def grouper(it, n):
+    return zip(*([iter(it)]*n))
+
+
 class LastSeenTuple(collections.namedtuple(
         'LastSeenTuple', ('last_seen', 'last_spoke', 'server_last_spoke'))):
     __slots__ = ()
@@ -418,6 +422,19 @@ class Tracking:
             results = map(datetime_from_redis, await conn.mget(*keys))
 
         return LastSeenTuple(*results)
+
+    async def bulk_last_seen(self, members):
+        """Takes members."""
+        keys = ((last_seen_key(member), last_spoke_key(member), member_last_spoke_key(member))
+                for member in members)
+
+        async with self.redis.acquire() as conn:
+            results = map(datetime_from_redis, await conn.mget(*itertools.chain(*keys)))
+
+        collect = []
+        for last_seen, last_spoke, member_last_spoke in grouper(results, 3):
+            collect.append(LastSeenTuple(last_seen, last_spoke, member_last_spoke))
+        return collect
 
     async def update_last_update(self, member):
         async with self.redis.acquire() as conn:
