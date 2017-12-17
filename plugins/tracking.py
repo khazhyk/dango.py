@@ -102,30 +102,32 @@ class Tracking:
         self.batch_name_task.cancel()
 
     async def batch_presence(self):
-        try:
-            while True:
+        while True:
+            try:
                 await self.do_batch_presence_update()
-                await asyncio.sleep(1)
-        except asyncio.CancelledError:
-            await self.do_batch_presence_update()
-            if self.batch_presence_updates:
-                log.error("Dropping %d presences!", len(self.batch_presence_updates) / 2)
-        except Exception:
-            log.exception("Exception during presence update task!")
-            raise
+            except asyncio.CancelledError:
+                log.info("batch_presence task canceled...")
+                await self.do_batch_presence_update()
+                if self.batch_presence_updates:
+                    log.error("Dropping %d presences!", len(self.batch_presence_updates) / 2)
+                return
+            except Exception:
+                log.exception("Exception during presence update task!")
+            await asyncio.sleep(1)
 
     async def batch_name(self):
-        try:
-            while True:
+        while True:
+            try:
                 await self.do_batch_names_update()
-                await asyncio.sleep(1)
-        except asyncio.CancelledError:
-            await self.do_batch_names_update()
-            if self.batch_name_updates:
-                log.error("Dropping %d name updates!", len(self.batch_name_updates))
-        except Exception:
-            log.exception("Exception during name update task!")
-            raise
+            except asyncio.CancelledError:
+                log.info("batch_name task canceled...")
+                await self.do_batch_names_update()
+                if self.batch_name_updates:
+                    log.error("Dropping %d name updates!", len(self.batch_name_updates))
+                return
+            except Exception:
+                log.exception("Exception during name update task!")
+            await asyncio.sleep(1)
 
     # Name tracking
 
