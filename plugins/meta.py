@@ -3,6 +3,7 @@ from datetime import datetime
 from datetime import timedelta
 import inspect
 
+from dango import checks
 from dango import dcog
 from dango import utils
 import discord
@@ -155,6 +156,19 @@ class Meta:
         url = srcfile.replace(BASE_DIR, SOURCE_URL) + "#" + lines
 
         await ctx.send(url)
+
+    @command()
+    @checks.is_owner()
+    async def reload(self, ctx, extension):
+        """Reloads an extension."""
+        try:
+            ctx.bot.unload_extension(extension)
+            ctx.bot.load_extension(extension)
+        except BaseException:
+            await ctx.send("\N{THUMBS DOWN SIGN}")
+            raise
+        else:
+            await ctx.send("\N{THUMBS UP SIGN}")
 
     @command()
     async def largestservers(self, ctx):
