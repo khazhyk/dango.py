@@ -31,3 +31,6 @@ prometheus_client
 
 # minecraft
 mcstatus
+
+# overwatch
+git+https://github.com/khazhyk/pachimari
