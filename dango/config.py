@@ -61,6 +61,7 @@ On configuration side, we'll have:
 
 
 """
+import copy
 import io
 import ruamel.yaml
 
@@ -180,7 +181,7 @@ class FileConfiguration(Configuration):
 
     def save(self):
         with open(self._filename, 'w') as f:
-            data = self._data.copy()
+            data = copy.deepcopy(self._data)
             for key, val in self._data.items():
                 if isinstance(val, dict) and not val:
                     del data[key]

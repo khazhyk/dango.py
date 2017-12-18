@@ -6,14 +6,12 @@ image_search:
 prefix: 'test '
 database:
   dsn: postgresql://@localhost/spootest
-
 redis:
   host: localhost
   port: 6379
   minsize: 5
   db: 5
   maxsize: 20
-
 osu:
   api_key: 1234
 plugins: plugins

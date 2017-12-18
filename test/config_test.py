@@ -1,13 +1,25 @@
+import os
+import tempfile
 import unittest
 
 from dango import config
 from dango import utils
+import ruamel.yaml
 
 
 SAMPLE_CONFIG = """
 a:
   stuff: 1
 """
+
+SAMPLE_COMMENTED_CONFIG="""
+# Header comment
+a: 1
+b:
+- one
+- two # Comment
+# commented: 123
+"""[1:]
 
 
 class ConfigTest(unittest.TestCase):
@@ -67,3 +79,23 @@ class ConfigTest(unittest.TestCase):
         c._data['a']['stuff'] = 3
 
         self.assertEquals(a.stuff(), 3)
+
+
+class FileConfigurationTest(unittest.TestCase):
+
+    def setUp(self):
+        self.tmpfile = tempfile.mktemp()
+
+    def tearDown(self):
+        os.remove(self.tmpfile)
+
+    def test_roundtrip(self):
+        with open(self.tmpfile, 'w') as f:
+            f.write(SAMPLE_COMMENTED_CONFIG)
+
+        fconf = config.FileConfiguration(self.tmpfile)
+        fconf.load()
+        fconf.save()
+
+        with open(self.tmpfile) as f:
+            self.assertEquals(SAMPLE_COMMENTED_CONFIG, f.read())
