@@ -75,6 +75,7 @@ class DangoBotBase(commands.bot.BotBase):
             self.plugins = cgroup.register("plugins", default="plugins")
             self.waaai_api_key = cgroup.register("waaai_api_key")
         finally:
+            # Raise and fail to start on invalid core config
             self._config.save()
 
         self._dango_unloaded_cogs = {}
@@ -191,7 +192,10 @@ class DangoBotBase(commands.bot.BotBase):
         for item in os.listdir(dire):
             lib = plugin_watchdog.module_name(os.path.join(dire, item))
             if lib:
-                self.load_extension(lib)
+                try:
+                    self.load_extension(lib)
+                except config.InvalidConfig:
+                    log.error("Could not load %s due to invalid config!", lib)
 
         if self._dango_unloaded_cogs:
             log.warning(
