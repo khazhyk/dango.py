@@ -96,7 +96,11 @@ class DangoBotBase(commands.bot.BotBase):
         super().__init__(self.prefix.value, *args, **kwargs)
 
     def run(self):
-        self.watch_plugin_dir(self.plugins.value)
+        if isinstance(self.plugins(), str):
+            self.watch_plugin_dir(self.plugins())
+        else:
+            for plugin_dir in self.plugins():
+                self.watch_plugin_dir(plugin_dir)
         super().run(self.token.value)
 
     async def on_error(self, event, *args, **kwargs):
