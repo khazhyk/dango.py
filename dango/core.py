@@ -3,6 +3,7 @@ import datetime
 import importlib
 import logging
 import os
+import sys
 import re
 
 import discord
@@ -30,6 +31,19 @@ def dcog(depends=None, pass_bot=False):
         ))
         return cls
     return real_decorator
+
+
+def _is_submodule(parent, child):
+    return parent == child or child.startswith(parent + ".")
+
+
+def force_unload(name):
+    if name in sys.modules:
+        del sys.modules[name]
+    for module in list(sys.modules.keys()):
+        if _is_submodule(name, module):
+            del sys.modules[module]
+
 
 
 PluginDesc = collections.namedtuple("PluginDesc", "depends pass_bot")
@@ -173,6 +187,8 @@ class DangoBotBase(commands.bot.BotBase):
             return
 
         log.info("Loading extension %s", name)
+        # Just in case we previously failed to unload this module, force unload it
+        force_unload(name)
         lib = importlib.import_module(name)
 
         for item in dir(lib):  # TODO - inspect.members
