@@ -34,6 +34,49 @@ OPCODE_NAMES = {
     12: "GUILD_SYNC",
 }
 
+DISPATCH_NAMES = [
+    "READY",
+    "RESUMED",
+    "MESSAGE_ACK",
+    "MESSAGE_CREATE",
+    "MESSAGE_DELETE",
+    "MESSAGE_DELETE_BULK",
+    "MESSAGE_UPDATE",
+    "MESSAGE_REACTION_ADD",
+    "MESSAGE_REACTION_REMOVE_ALL",
+    "MESSAGE_REACTION_REMOVE",
+    "PRESENCE_UPDATE",
+    "USER_UPDATE",
+    "CHANNEL_DELETE",
+    "CHANNEL_UPDATE",
+    "CHANNEL_CREATE",
+    "CHANNEL_PINS_ACK",
+    "CHANNEL_PINS_UPDATE",
+    "CHANNEL_RECIPIENT_ADD",
+    "CHANNEL_RECIPIENT_REMOVE",
+    "GUILD_INTEGRATIONS_UPDATE",
+    "GUILD_MEMBER_ADD",
+    "GUILD_MEMBER_REMOVE",
+    "GUILD_MEMBER_UPDATE",
+    "GUILD_EMOJIS_UPDATE",
+    "GUILD_CREATE",
+    "GUILD_SYNC",
+    "GUILD_UPDATE",
+    "GUILD_DELETE",
+    "GUILD_BAN_ADD",
+    "GUILD_BAN_REMOVE",
+    "GUILD_ROLE_CREATE",
+    "GUILD_ROLE_DELETE",
+    "GUILD_ROLE_UPDATE",
+    "GUILD_MEMBERS_CHUNK",
+    "VOICE_STATE_UPDATE",
+    "VOICE_SERVER_UPDATE",
+    "WEBHOOKS_UPDATE",
+    "TYPING_START",
+    "RELATIONSHIP_ADD",
+    "RELATIONSHIP_REMOVE",
+]
+
 
 def _opcode_name(opcode):
     return OPCODE_NAMES.get(opcode, opcode)
@@ -158,6 +201,12 @@ class PrometheusMetrics:
         for status in discord.Status:
             self.member_count.labels(status=status.name).set_function(
                 _count_members_fac(bot, status))
+
+        for opcode in OPCODE_NAMES.values():
+            self.opcodes.labels(opcode=opcode)
+
+        for dispatch_name in DISPATCH_NAMES:
+            self.dispatch_events.labels(event=dispatch_name)
 
         self._in_flight_ctx = {}
         self.bot = bot
