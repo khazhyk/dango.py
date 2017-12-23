@@ -32,9 +32,13 @@ class Emoji:
 
     @command()
     async def guild_emojis(self, ctx):
-        """List emojis on this server."""
+        """List emojis on this server.
+
+        Note: will only list emoji this bot can send. Some twitch integration emoji
+        (that do not require colons) cannot be sent by bots.
+        """
         emojis = [
-            "{0} - \{0}".format(emoji) for emoji in ctx.guild.emojis
+            "{0} - \{0}".format(emoji) for emoji in ctx.guild.emojis if emoji.require_colons
         ]
 
         if emojis:
@@ -44,10 +48,14 @@ class Emoji:
 
     @command(pass_context=True)
     async def find_emojis(self, ctx, *search_emojis: idc_emoji_or_just_string):
-        """Find all emoji sharing the same name and the servers they are from."""
+        """Find all emoji sharing the same name and the servers they are from.
+
+        Note: will only list emoji this bot can send. Some twitch integration emoji
+        (that do not require colons) cannot be sent by bots.
+        """
         found_emojis = [
             emoji for emoji in ctx.bot.emojis for search_emoji in search_emojis
-            if emoji.name.lower() == search_emoji.name.lower()
+            if emoji.name.lower() == search_emoji.name.lower() and emoji.require_colons
         ]
         if found_emojis:
             by_guild = collections.defaultdict(list)
@@ -61,10 +69,14 @@ class Emoji:
 
     @command(pass_context=True)
     async def search_emojis(self, ctx, *query_strings: str):
-        """Find all emoji containing query string."""
+        """Find all emoji containing query string.
+
+        Note: will only list emoji this bot can send. Some twitch integration emoji
+        (that do not require colons) cannot be sent by bots.
+        """
         found_emojis = [
             emoji for emoji in ctx.bot.emojis for query_string in query_strings
-            if query_string.lower() in emoji.name.lower()
+            if query_string.lower() in emoji.name.lower() and emoji.require_colons
         ]
         if found_emojis:
             by_guild = collections.defaultdict(list)
@@ -79,8 +91,14 @@ class Emoji:
 
     @command()
     async def nitro(self, ctx, *, rest):
+        """Send a random emoji with this name.
+
+        Note: will only use emoji this bot can send. Some twitch integration emoji
+        (that do not require colons) cannot be sent by bots.
+        """
         rest = rest.lower()
-        found_emojis = [emoji for emoji in ctx.bot.emojis if emoji.name.lower() == rest]
+        found_emojis = [emoji for emoji in ctx.bot.emojis
+                        if emoji.name.lower() == rest and emoji.require_colons]
         if found_emojis:
             await ctx.send(str(random.choice(found_emojis)))
         else:
