@@ -14,17 +14,9 @@ import discord
 from discord.ext.commands import command
 import objgraph
 
+from .common.paginator import EmbedPaginator
+
 log = logging.getLogger(__name__)
-
-
-def dump_tasks():
-    tasks = asyncio.Task.all_tasks()
-
-    for task in tasks:
-        try:
-            task.print_stack()
-        except Exception as e:
-            print(e)
 
 
 @dcog()
@@ -40,6 +32,21 @@ class Debug:
     async def on_command(self, ctx):
         log.debug("Command triggered: command=%s author=%s msg=%s",
                   ctx.command.qualified_name, ctx.author, ctx.message.content)
+
+    @command()
+    @checks.is_owner()
+    async def dump_tasks(self, ctx):
+        lines = []
+        for task in asyncio.Task.all_tasks():
+            try:
+                buf = io.StringIO()
+                task.print_stack(file=buf)
+                buf.seek(0)
+                lines.append(buf.read())
+            except Exception as e:
+                lines.append(str(e))
+
+        await EmbedPaginator.from_lines(ctx, lines).send()
 
     @command()
     async def test(self, ctx):
