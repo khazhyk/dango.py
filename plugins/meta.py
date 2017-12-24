@@ -5,13 +5,14 @@ import inspect
 
 from dango import checks
 from dango import dcog
-from dango import utils
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import errors
 from discord.ext.commands import group
 import pip
 import psutil
+
+from .common import utils
 
 try:
     pip_util = pip.util

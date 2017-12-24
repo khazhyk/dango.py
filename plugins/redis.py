@@ -4,6 +4,8 @@ import logging
 import aioredis
 from dango import dcog
 
+from .common import utils
+
 log = logging.getLogger(__name__)
 
 
@@ -31,7 +33,7 @@ class Redis:
         self.minsize = config.register("minsize", default=1)
         self.maxsize = config.register("maxsize", default=10)
         self._ready = asyncio.Event()
-        self._connect_task = asyncio.ensure_future(self._connect())
+        self._connect_task = utils.create_task(self._connect())
 
     async def _connect(self):
         try:

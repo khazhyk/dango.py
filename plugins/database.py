@@ -3,7 +3,9 @@ import logging
 
 import asyncpg
 from dango import dcog
-from dango.utils import AsyncContextWrapper
+
+from .common.utils import AsyncContextWrapper
+from .common import utils
 
 
 log = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ class Database:
 
     def __init__(self, config):
         self.dsn = config.register("dsn")
-        self._connect_task = asyncio.ensure_future(self._connect())
+        self._connect_task = utils.create_task(self._connect())
         self._ready = asyncio.Event()
 
     async def _connect(self):
@@ -43,4 +45,4 @@ class Database:
     def __unload(self):
         self._connect_task.cancel()
         if self._ready.is_set():
-            asyncio.ensure_future(self._engine.close())
+            utils.create_task(self._engine.close())

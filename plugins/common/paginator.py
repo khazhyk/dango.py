@@ -187,7 +187,7 @@ class EmbedPaginator:
                         check=lambda reaction, user: reaction.message.id == self.msg.id and
                                                      user.id == self.ctx.author.id)
                 except asyncio.TimeoutError:
-                    self.close()
+                    await self.close()
                 else:
                     if reaction.emoji in self.dispatch:
                         if self.ctx.channel.permissions_for(self.ctx.me).manage_messages:

@@ -13,6 +13,8 @@ import discord
 import prometheus_client
 import psutil
 
+from .common import utils
+
 log = logging.getLogger(__name__)
 
 logging.getLogger("aiohttp.access").setLevel(logging.WARN)  # TODO
@@ -113,15 +115,14 @@ class HTTP:
         self._ready = asyncio.Event()
 
         self.add_handler('GET', '/', default_handler)
-        task = asyncio.ensure_future(self.start_app())
-        task.add_done_callback(log_task)
+        utils.create_task(self.start_app())
+        
 
     def add_handler(self, method, location, handler):
         self.handlers[method, location] = handler
 
         if self._ready.is_set():  # TODO - test
-            task = asyncio.ensure_future(self.reload())
-            task.add_done_callback(log_task)
+            utils.create_task(self.reload())
 
     async def reload(self):
         await self.stop_app()
@@ -154,8 +155,7 @@ class HTTP:
 
     def __unload(self):
         """d.py cog cleanup fn."""
-        task = asyncio.ensure_future(self.stop_app())
-        task.add_done_callback(log_task)
+        utils.create_task(self.stop_app())
 
 
 @dcog(['HTTP'], pass_bot=True)

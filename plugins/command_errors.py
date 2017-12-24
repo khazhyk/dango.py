@@ -1,8 +1,9 @@
 import logging
 from dango import dcog
-from dango import utils
 import discord
 from discord.ext.commands import errors
+
+from .common import utils
 
 log = logging.getLogger(__name__)
 

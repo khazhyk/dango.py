@@ -7,11 +7,12 @@ import re
 
 import aiohttp
 from dango import dcog
-from dango import utils
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import errors
-from plugins.common.paginator import EmbedPaginator
+
+from .common import utils
+from .common.paginator import EmbedPaginator
 
 FULLWIDTH_OFFSET = 65248
 

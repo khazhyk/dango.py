@@ -9,11 +9,11 @@ import sys
 import aiohttp
 from dango import checks
 from dango import dcog
-from dango import utils
 import discord
 from discord.ext.commands import command
 import objgraph
 
+from .common import utils
 from .common.paginator import EmbedPaginator
 
 log = logging.getLogger(__name__)

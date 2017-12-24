@@ -9,7 +9,6 @@ from datetime import timedelta
 
 from dango import dcog
 from dango import checks
-from dango import utils
 import discord
 from discord.ext import commands
 from discord.ext.commands import command
@@ -18,6 +17,8 @@ import lru
 import tabulate
 
 from plugins.database import multi_insert_str
+
+from .common import utils
 
 log = logging.getLogger(__name__)
 
@@ -94,8 +95,8 @@ class Tracking:
         self.batch_name_updates = []
         self._batch_name_curr_updates = []
         self._batch_presence_curr_updates = []
-        self.batch_presence_task = asyncio.ensure_future(self.batch_presence())
-        self.batch_name_task = asyncio.ensure_future(self.batch_name())
+        self.batch_presence_task = utils.create_task(self.batch_presence())
+        self.batch_name_task = utils.create_task(self.batch_name())
 
     def __unload(self):
         self.batch_presence_task.cancel()

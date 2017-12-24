@@ -2,10 +2,11 @@ import json
 
 from dango import checks
 from dango import dcog
-from dango import utils
 import discord
 from discord.ext.commands import command
 from lru import LRU
+
+from .common import utils
 
 
 def _redis_key(item_type, item_id):

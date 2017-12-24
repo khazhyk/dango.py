@@ -5,7 +5,6 @@ from datetime import datetime
 from datetime import timedelta
 
 from dango import dcog
-from dango import utils
 import discord
 from discord.ext import commands
 from discord.ext.commands import command
@@ -13,6 +12,7 @@ from discord.ext.commands import errors
 import humanize
 import tabulate
 
+from .common import utils
 
 async def _send_find_results(ctx, matches):
     if len(matches) == 0:
