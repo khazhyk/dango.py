@@ -120,6 +120,7 @@ class Misc:
 
     @command()
     async def msgsource(self, ctx, *, msg_id: int):
+        """Show source for a message."""
         try:
             msg = await ctx.get_message(msg_id)
         except discord.NotFound:
@@ -129,6 +130,7 @@ class Misc:
 
     @command()
     async def msgraw(self, ctx, *, msg_id: int):
+        """Show raw JSON for a message."""
         raw = await ctx.bot.http.get_message(ctx.channel.id, msg_id)
 
         await ctx.send("```json\n{}```".format(
@@ -136,6 +138,7 @@ class Misc:
 
     @command()
     async def corrupt(self, ctx, *, user: discord.User=None):
+        """Corrupt a user's avatar."""
         user = user or ctx.message.author
         async with aiohttp.ClientSession() as sess:
             async with sess.get(user.avatar_url_as(format='jpg')) as resp:
