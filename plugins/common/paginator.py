@@ -3,15 +3,17 @@
 import asyncio
 import discord
 
+from . import utils
+
 MAX_EMBED_DESCRIPTION_LENGTH = 2048
 
-NEXT_PAGE = "\N{BLACK RIGHT-POINTING TRIANGLE}"
+FIRST_PAGE = "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}"
 PREV_PAGE = "\N{BLACK LEFT-POINTING TRIANGLE}"
 STOP_PAGE = "\N{BLACK SQUARE FOR STOP}"
 DIRECT_PAGE = "\N{INPUT SYMBOL FOR NUMBERS}"
-HELP_PAGE = "\N{BLACK QUESTION MARK ORNAMENT}"
-FIRST_PAGE = "\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}"
+NEXT_PAGE = "\N{BLACK RIGHT-POINTING TRIANGLE}"
 LAST_PAGE = "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}"
+HELP_PAGE = "\N{BLACK QUESTION MARK ORNAMENT}"
 PAGINATOR_BUTTONS = [FIRST_PAGE, PREV_PAGE, STOP_PAGE, DIRECT_PAGE, NEXT_PAGE, LAST_PAGE, HELP_PAGE]
 PAGINATOR_HELP_EMBED = discord.Embed(
     title="How to use paginator",
@@ -27,6 +29,7 @@ PAGINATOR_HELP_EMBED = discord.Embed(
 
 
 def split_into_pages(units, page_length, separator):
+    """Group the input into strings of max page_length."""
     units = iter(units)
     buf = next(units)
     for unit in units:
@@ -38,19 +41,30 @@ def split_into_pages(units, page_length, separator):
     yield buf
 
 
-class PaginatedResponse:
-    """Sends an auto-paginated embed style response."""
+def make_embed(title, description, idx, pages):
+    """Make an embed with page number footer."""
+    e = discord.Embed(title=title, description=description)
+    e.set_footer(text="Page {} of {}".format(
+        idx + 1, pages))
+    return e
 
-    def __init__(self, lines, ctx, title=""):
-        self.lines = lines
+
+class EmbedPaginator:
+    """Given a sequence of embed pages, provides pagination.
+
+    Args:
+      ctx: :class:`discord.Context`
+      pages: Sequence[discord.Embed]
+    """
+    def __init__(self, ctx, pages):
         self.ctx = ctx
-        self.title = title
+        self.pages = pages
 
-        self.pages = list(split_into_pages(lines, MAX_EMBED_DESCRIPTION_LENGTH, "\n"))
         self.idx = 0
-        self.helping = False
-        self.closed = False
+        self._helping = False
+        self._closed = False
         self._ask_task = None
+        self.msg = None
 
         self.dispatch = {
             FIRST_PAGE: lambda: self.set_page(0),
@@ -64,14 +78,9 @@ class PaginatedResponse:
 
     def embed(self):
         """Generate the embed we need."""
-        if self.helping:
+        if self._helping:
             return PAGINATOR_HELP_EMBED
-        e = discord.Embed(
-            title=self.title,
-            description=self.pages[self.idx])
-        e.set_footer(text="Page {} of {}".format(
-                self.idx + 1, len(self.pages)))
-        return e
+        return self.pages[self.idx]
 
     async def clean_messages(self, msgs):
         """Helper to clean messages."""
@@ -83,11 +92,11 @@ class PaginatedResponse:
                     await msg.delete()
 
     async def close(self):
-        self.closed = True
+        self._closed = True
 
     async def toggle_help_page(self):
         """Toggle help and update."""
-        self.helping = not self.helping
+        self._helping = not self._helping
         await self.update()
 
     async def set_page(self, idx=None):
@@ -95,7 +104,7 @@ class PaginatedResponse:
         if 0 > idx or idx > len(self.pages) - 1:
             return
         self.idx = idx
-        self.helping = False
+        self._helping = False
         await self.update()
 
     async def update(self):
@@ -106,7 +115,7 @@ class PaginatedResponse:
         if self._ask_task:
             return  # They can just reuse the existing ask task... ?
 
-        self._ask_task = asyncio.ensure_future(self.ask_for_page())
+        self._ask_task = utils.create_task(self.ask_for_page())
         self._ask_task.add_done_callback(self.clear_ask_task)
 
     def clear_ask_task(self, result):
@@ -137,14 +146,17 @@ class PaginatedResponse:
                     idx = int(resp.content) - 1
                 except ValueError:
                     pass
-
-                if 0 <= idx < len(self.pages):
-                    await self.set_page(idx)
-                    break
+                else:
+                    if 0 <= idx < len(self.pages):
+                        await self.set_page(idx)
+                        break
 
                 prompts.append(await self.ctx.send("That's not a valid page, try again!"))
         finally:
-            await self.clean_messages(prompts)
+            try:
+                await self.clean_messages(prompts)
+            except discord.NotFound:  # Messages were deleted
+                pass
 
     async def add_buttons(self):
         for button in PAGINATOR_BUTTONS:
@@ -165,10 +177,10 @@ class PaginatedResponse:
 
         self.msg = await self.ctx.send(embed=self.embed())
 
-        buttons = asyncio.ensure_future(self.add_buttons())
+        buttons = utils.create_task(self.add_buttons())
 
         try:
-            while not self.closed:
+            while not self._closed:
                 try:
                     reaction, user = await self.ctx.bot.wait_for(
                         'reaction_add', timeout=60,
@@ -179,10 +191,21 @@ class PaginatedResponse:
                 else:
                     if reaction.emoji in self.dispatch:
                         if self.ctx.channel.permissions_for(self.ctx.me).manage_messages:
-                            asyncio.ensure_future(self.msg.remove_reaction(reaction, user))
+                            utils.create_task(self.msg.remove_reaction(reaction, user))
                         await self.dispatch[reaction.emoji]()
         finally:
             buttons.cancel()
             if self._ask_task:
                 self._ask_task.cancel()
-            await self.cleanup_buttons()
+            try:
+                await self.cleanup_buttons()
+            except discord.NotFound:  # Message was deleted
+                pass
+
+    @classmethod
+    def from_lines(cls, ctx, lines, title=""):
+        """Construct a EmbedPaginator from the given lines to be joined by newline."""
+        split_pages = list(split_into_pages(lines, MAX_EMBED_DESCRIPTION_LENGTH, "\n"))
+        pages = [make_embed(title, page_content, idx, len(split_pages))
+                      for idx, page_content in enumerate(split_pages)]
+        return cls(ctx, pages)

@@ -11,7 +11,7 @@ from dango import utils
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import errors
-from plugins.common.paginator import PaginatedResponse
+from plugins.common.paginator import EmbedPaginator
 
 FULLWIDTH_OFFSET = 65248
 
@@ -42,7 +42,7 @@ class Emoji:
         ]
 
         if emojis:
-            await PaginatedResponse(emojis, ctx, "Guild Emojis").send()
+            await EmbedPaginator.from_lines(ctx, emojis, "Guild Emojis").send()
         else:
             await ctx.message.add_reaction(":discordok:293495010719170560")
 
@@ -63,7 +63,7 @@ class Emoji:
                 by_guild[e.guild].append(e)
 
             lines = ("{}: {}".format(g, "".join(map(str,emojis))) for g, emojis in by_guild.items())
-            await PaginatedResponse(lines, ctx, "Found Emojis").send()
+            await EmbedPaginator.from_lines(ctx, lines, "Found Emojis").send()
         else:
             await ctx.message.add_reaction(":discordok:293495010719170560")
 
@@ -84,7 +84,7 @@ class Emoji:
                 by_guild[e.guild].append(e)
 
             lines = ("{}: {}".format(g, "".join(map(str,emojis))) for g, emojis in by_guild.items())
-            await PaginatedResponse(lines, ctx, "Found Emojis").send()
+            await EmbedPaginator.from_lines(ctx, lines, "Found Emojis").send()
 
         else:
             await ctx.message.add_reaction(":discordok:293495010719170560")
