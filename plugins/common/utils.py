@@ -162,3 +162,26 @@ def create_task(thing):
     task = asyncio.ensure_future(thing)
     task.add_done_callback(log_task)
     return task
+
+
+class InfoBuilder:
+    def __init__(self, fields=None, description=""):
+        self.description = description
+        self.fields = fields or []
+
+    def add_field(self, name, value):
+        self.fields.append((name, value))
+
+    def code_block(self):
+        col_len = max(len(name) for name, _ in self.fields)
+
+        return "```prolog\n\u200b{}```".format(
+            clean_invite_embed(clean_triple_backtick(clean_mentions(
+                "\n".join("{}: {}".format(
+                    k.rjust(col_len), v) for k, v in self.fields)))))
+
+    def embed(self):
+        e = discord.Embed()
+        for k, v in self.fields:
+            e.add_field(name=k, value=v)
+        return e

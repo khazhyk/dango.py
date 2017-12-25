@@ -13,6 +13,7 @@ import humanize
 import tabulate
 
 from .common import utils
+from .common.utils import InfoBuilder
 from .common.paginator import GroupLinesPaginator
 
 async def _send_find_results(ctx, matches):
@@ -138,30 +139,6 @@ class Find:
             headers=("Member", "ID", "Last Spoke", "Last Seen"))
 
         await ctx.send(msg)
-
-
-class InfoBuilder:
-    def __init__(self, fields=None, description=""):
-        self.description = description
-        self.fields = fields or []
-
-    def add_field(self, name, value):
-        self.fields.append((name, value))
-
-    def code_block(self):
-        col_len = max(len(name) for name, _ in self.fields)
-
-        return "```prolog\n\u200b{}```".format(
-            utils.clean_invite_embed(utils.clean_triple_backtick(utils.clean_mentions(
-                "\n".join("{}: {}".format(
-                    k.rjust(col_len), v) for k, v in self.fields)))))
-
-    def embed(self):
-        e = discord.Embed()
-        for k, v in self.fields:
-            e.add_field(name=k, value=v)
-        return e
-
 
 # Discord epoch
 UNKNOWN_CUTOFF = datetime.utcfromtimestamp(1420070400.000)
