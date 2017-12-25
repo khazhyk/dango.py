@@ -21,6 +21,7 @@ from .common.utils import resolve_color
 from .common.paginator import EmbedPaginator
 
 FULLWIDTH_OFFSET = 65248
+ZALGO_CHARS = [chr(x) for x in range(768, 879)]
 
 EIGHT_BALL_RESPS = {
     "yes": [
@@ -303,6 +304,17 @@ class Misc:
     async def choose(self, ctx, *values: clean_content()):
         """Randomly chooses one of the options."""
         await ctx.send(random.choice(values))
+
+    @command()
+    async def zalgo(self, ctx, *, text):
+        """I̤̠̬T̢̐͟ Ì̦̮Sͣͣ͠ C̋͢͠Ơ̸̂M̥̟̂I̟̾̐N̊̔Ǵ͞
+        F͉̃ͅO̠̳ͭR̾̄̉ Y͚̜͡O̮̮̩Ù͚͎."""
+        await ctx.send("".join(
+            c + "".join(
+                random.choice(ZALGO_CHARS) for _
+                in range(pyrandom.randint(2, 7) * c.isalnum()))
+            for c in text
+        ))
 
     @command()
     async def msgsource(self, ctx, *, msg_id: int):
