@@ -117,9 +117,12 @@ class Debug:
     @command()
     @checks.is_owner()
     async def update_and_restart(self, ctx):
+        await ctx.message.add_reaction("a:loading:393852367751086090")
         await utils.run_subprocess("git pull --rebase")
         await utils.run_subprocess("python -m pip install --upgrade -r requirements.txt")
+        await ctx.message.remove_reaction("a:loading:393852367751086090", ctx.me)
         await ctx.message.add_reaction(":helYea:236243426662678528")
+        log.info("Restarting due to update_and_restart")
         os.execve(sys.executable, ['python', '-m', 'dango'], os.environ)
 
     @command()
