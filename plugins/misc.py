@@ -16,15 +16,21 @@ from .common.paginator import EmbedPaginator
 
 FULLWIDTH_OFFSET = 65248
 
-FakeEmoji = collections.namedtuple('FakeEmoji', 'name id')
+FakeEmoji = collections.namedtuple('FakeEmoji', 'name id animated')
+FakeEmoji.url = discord.Emoji.url
 
 
 def idc_emoji_or_just_string(val):
-    match = re.match(r'<:([a-zA-Z0-9]+):([0-9]+)>$', val)
+    match = re.match(r'<(?P<animated>a)?:(?P<name>[a-zA-Z0-9]+):(?P<id>[0-9]+)>$', val)
     if match:
-        return FakeEmoji(match.group(1), match.group(2))
-    return FakeEmoji(val.replace(':', ''), None)
+        return FakeEmoji(match.group("name"), match.group("id"), bool(match.group("animated")))
+    return FakeEmoji(val.replace(':', ''), None, False)  # guess it's not animated
 
+def idc_emoji(val):
+    match = re.match(r'<(?P<animated>a)?:(?P<name>[a-zA-Z0-9]+):(?P<id>[0-9]+)>$', val)
+    if not match:
+        raise errors.BadArgument("Not a valid custom emoji")
+    return FakeEmoji(match.group("name"), match.group("id"), bool(match.group("animated")))
 
 @dcog()
 class Emoji:
