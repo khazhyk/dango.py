@@ -119,6 +119,7 @@ class Debug:
     async def update_and_restart(self, ctx):
         await utils.run_subprocess("git pull --rebase")
         await utils.run_subprocess("python -m pip install --upgrade -r requirements.txt")
+        await ctx.message.add_reaction(":helYea:236243426662678528")
         os.execve(sys.executable, ['python', '-m', 'dango'], os.environ)
 
     @command()
