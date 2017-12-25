@@ -216,3 +216,19 @@ class Meta:
             before=ctx.message, after=datetime.utcnow() - timedelta(days=14),
             bulk=can_mass_purge)
         await ctx.message.add_reaction('\u2705')
+
+    @clean.command(pass_context=True, name="msg")
+    async def msg(self, ctx, message_id: str):
+        """Delete a specific message created by the bot.
+
+        Use developer mode to be able to copy a message id in context menu."""
+        msg = await ctx.get_message(message_id)
+
+        if not msg:
+            raise errors.BadArgument("Could not find a message by that id!")
+
+        if msg.author != ctx.bot.user:
+            raise errors.BadArgument("I didn't make that message!")
+
+        await msg.delete()
+        await ctx.send("Message {} deleted.".format(message_id), delete_after=5)
