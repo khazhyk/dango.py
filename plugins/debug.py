@@ -112,7 +112,13 @@ class Debug:
     @checks.is_owner()
     async def restart(self, ctx):
         await ctx.message.add_reaction(":helYea:236243426662678528")
-        print(['python'] + sys.argv, sys.executable)
+        os.execve(sys.executable, ['python', '-m', 'dango'], os.environ)
+
+    @command()
+    @checks.is_owner()
+    async def update_and_restart(self, ctx):
+        await utils.run_subprocess("git pull --rebase")
+        await utils.run_subprocess("python -m pip install --upgrade -r requirements.txt")
         os.execve(sys.executable, ['python', '-m', 'dango'], os.environ)
 
     @command()
