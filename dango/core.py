@@ -95,13 +95,13 @@ class DangoBotBase(commands.bot.BotBase):
         self._dango_unloaded_cogs = {}
         super().__init__(self.prefix.value, *args, **kwargs)
 
-    def run(self):
+    def run(self, *args, **kwargs):
         if isinstance(self.plugins(), str):
             self.watch_plugin_dir(self.plugins())
         else:
             for plugin_dir in self.plugins():
                 self.watch_plugin_dir(plugin_dir)
-        super().run(self.token.value)
+        super().run(self.token.value, *args, **kwargs)
 
     async def on_error(self, event, *args, **kwargs):
         log.exception(
