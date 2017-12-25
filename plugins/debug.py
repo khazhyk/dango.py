@@ -27,11 +27,45 @@ class Debug:
         pass
 
     async def on_ready(self):
-        log.info("Ready!")
+        log.info("Logged in as")
+        log.info(self.bot.user.name)
+        log.info(self.bot.user.id)
+        log.info('-------')
 
     async def on_command(self, ctx):
         log.debug("Command triggered: command=%s author=%s msg=%s",
                   ctx.command.qualified_name, ctx.author, ctx.message.content)
+
+    @command(pass_context=True, no_pm=True)
+    async def perminfo(self, ctx, chn: discord.TextChannel=None, usr: discord.User=None):
+        """Show permissions for a user."""
+        if usr is None:
+            usr = ctx.message.author
+
+        if chn is None:
+            chn = ctx.message.channel
+
+        perms = chn.permissions_for(usr)
+
+        info = utils.InfoBuilder()
+
+        for perm, value in perms:
+            info.add_field(perm.replace("_", " ").title(), value)
+
+        info.add_field("Value", "{:b}".format(perms.value))
+
+        await ctx.send(info.code_block())
+
+    @command()
+    async def reactinfo(self, ctx):
+        resp = ""
+        async for msg in ctx.history(limit=10):
+            for r in msg.reactions:
+                if r.custom_emoji and r.emoji.guild:
+                    resp += '%s ' % str(r.emoji.guild)
+                resp += "{}: {} {}\n".format(r.emoji, r.count, r.me)
+
+        await ctx.send(resp or "No info.")
 
     @command()
     @checks.is_owner()
