@@ -117,6 +117,20 @@ class Debug:
 
     @command()
     @checks.is_owner()
+    async def reload(self, ctx):
+        """Reloads an extension.
+        """
+        try:
+            ctx.bot.unload_extension(extension)
+            ctx.bot.load_extension(extension)
+        except BaseException:
+            await ctx.send("\N{THUMBS DOWN SIGN}")
+            raise
+        else:
+            await ctx.send("\N{THUMBS UP SIGN}")
+
+    @command()
+    @checks.is_owner()
     async def sh(self, ctx, *, cmd):
         with ctx.typing():
             stdout, stderr = await utils.run_subprocess(cmd)

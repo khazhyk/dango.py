@@ -174,19 +174,6 @@ class Meta:
         await ctx.send(url)
 
     @command()
-    @checks.is_owner()
-    async def reload(self, ctx, extension):
-        """Reloads an extension."""
-        try:
-            ctx.bot.unload_extension(extension)
-            ctx.bot.load_extension(extension)
-        except BaseException:
-            await ctx.send("\N{THUMBS DOWN SIGN}")
-            raise
-        else:
-            await ctx.send("\N{THUMBS UP SIGN}")
-
-    @command()
     async def largestservers(self, ctx):
         """Show the 5 largest servers the bot sees."""
         servers = sorted(ctx.bot.guilds, key=lambda x: -len(x.members))
