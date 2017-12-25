@@ -21,7 +21,7 @@ IGNORED = (
 ERROR_MAP = utils.TypeMap({
     errors.BadArgument: "Bad argument: {exp}",
     errors.MissingRequiredArgument:
-        "Missing argument: {exp.param}. Run `` {ctx.prefix}help "
+        "Missing argument: {exp.param.name}. Run `` {ctx.prefix}help "
         "{ctx.command.qualified_name} `` for more info.",
     errors.CommandError: "Error running command: {exp}",
     errors.CheckFailure: "Permissions error: {exp}",
