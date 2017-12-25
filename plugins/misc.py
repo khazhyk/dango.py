@@ -10,14 +10,57 @@ from dango import dcog
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import errors
+from discord.ext.commands import group
+from numpy import random
+import random as pyrandom
+import unicodedata
 
 from .common import utils
+from .common.utils import resolve_color
 from .common.paginator import EmbedPaginator
 
 FULLWIDTH_OFFSET = 65248
 
+EIGHT_BALL_RESPS = {
+    "yes": [
+        "It is certain",
+        "It is decidedly so",
+        "Without a doubt",
+        "Yes, definitely",
+        "You may rely on it",
+        "As I see it, yes",
+        "Most likely",
+        "Outlook good",
+        "Yes",
+        "Signs point to yes",
+        "💯",
+        "👍"
+    ],
+    "no": [
+        "Don't count on it",
+        "My reply is no",
+        "My sources say no",
+        "Outlook not so good",
+        "Very doubtful",
+        "lol",
+        "rofl",
+        "Are you joking?",
+        "👎"
+    ],
+    "maybe": [
+        "Reply hazy try again",
+        "Ask again later",
+        "Better not tell you now",
+        "Cannot predict now"
+    ]
+}
+
 FakeEmoji = collections.namedtuple('FakeEmoji', 'name id animated')
 FakeEmoji.url = discord.Emoji.url
+
+
+def better_int(val):
+    return int(val, 0)
 
 
 def idc_emoji_or_just_string(val):
@@ -111,12 +154,26 @@ class Emoji:
         else:
             await ctx.message.add_reaction(":discordok:293495010719170560")
 
+    @command()
+    async def random_emoji(self, ctx):
+        """Show a random emoji this bot can use."""
+        try:
+            await ctx.send(str(random.choice(
+                [emoji for emoji in ctx.bot.emojis if emoji.require_colons])))
+        except ValueError:
+            await ctx.message.add_reaction(":discordok:293495010719170560")
+
+    @command()
+    async def bigmoji(self, ctx, emoji: idc_emoji):
+        """Link to the full sized image for an emoji."""
+        await ctx.send(emoji.url)
+
 
 @dcog()
 class Misc:
 
     def __init__(self, config):
-        pass
+        self.eightballqs = {}
 
     @command(aliases=['fw', 'fullwidth', 'ａｅｓｔｈｅｔｉｃ'])
     async def aesthetic(self, ctx, *, msg="aesthetic"):
@@ -124,6 +181,138 @@ class Misc:
         await ctx.send("".join(map(
             lambda c: chr(ord(c) + FULLWIDTH_OFFSET) if (ord(c) >= 0x21 and ord(c) <= 0x7E) else c,
             msg)).replace(" ", chr(0x3000)))
+
+    @command(pass_context=True, aliases="\N{CLAPPING HANDS SIGN}")
+    async def clap(self, ctx, *, msg):
+        """\N{CLAPPING HANDS SIGN}"""
+        msg = ctx.message.clean_substr(msg)
+        await ctx.send(" \N{CLAPPING HANDS SIGN} ".join(msg.split()))
+
+    @command(pass_context=True)
+    async def say(self, ctx, *, msg):
+        """Make the bot say something.
+
+        Prevents bot triggering and mentioning other users.
+        """
+        msg = ctx.message.clean_substr(msg)
+        await ctx.send("\u200b" + msg)
+
+    @command()
+    async def star(self, ctx, *, msg):
+        """Create a star out of a string 1-25 characters long."""
+        if (len(msg) > 25):
+            raise errors.BadArgument("String must be less than 26 characters")
+        elif (len(msg) == 0):
+            raise errors.BadArgument("String must be at least 1 character")
+
+        str = '```\n'
+
+        mid = len(msg) - 1
+
+        for i in range(len(msg) * 2 - 1):
+            if (mid == i):
+                str += msg[::-1] + msg[1:] + "\n"
+            else:
+                let = abs(mid - i)
+                str += " " * (mid - let)
+                str += msg[let]
+                str += " " * (let - 1)
+                str += msg[let]
+                str += " " * (let - 1)
+                str += msg[let]
+                str += "\n"
+
+        str += "```"
+        await ctx.send(str)
+
+    @command()
+    async def roll(self, ctx, *, num: int=100):
+        """Random number from 0 to num."""
+        if num <= 0:
+            raise errors.BadArgument("Try a number greater than 0.")
+        await ctx.send("{0}".format(pyrandom.randint(0, num)))
+    
+    @group(invoke_without_command=True)
+    async def charinfo(self, ctx, *, chars: str):
+        """Show information about a unicode character."""
+        await self._charinfo(ctx, *[ord(char) for char in chars])
+
+    @charinfo.command(name="num")
+    async def charinfo_num(self, ctx, *chars: better_int):
+        """Show information about unicode characters by number lookup."""
+        if not chars:
+            raise errors.MissingRequiredArgument(
+                "Need at least one number to look up.")
+
+        await self._charinfo(ctx, *chars)
+
+    async def _charinfo(self, ctx, *chars):
+        await ctx.send("\n".join("`{}`: {} - {} - <{}>".format(
+            hex(cpt), unicodedata.name(chr(cpt), "unknown"), chr(cpt),
+            "http://www.fileformat.info/info/unicode/char/" + hex(cpt)[2:]) for cpt in chars))
+
+    @command()
+    async def mcavatar(self, ctx, minecraftusername: str):
+        """Display a minecraft avatar."""
+        await ctx.send("https://visage.surgeplay.com/full/512/{}.png".format(minecraftusername))
+
+    @staticmethod
+    def make_pil_color_preview(*colors: int):
+        from PIL import Image, ImageDraw
+        from io import BytesIO
+
+        imgwidth = 128 * len(colors)
+
+        img = Image.new('RGB', (imgwidth, 128), colors[0])
+        draw = ImageDraw.Draw(img)
+
+        for i in range(1, len(colors)):
+            draw.rectangle((128 * i, 0, 128 * (i + 1), 128), colors[i])
+
+        buff = BytesIO()
+
+        img.save(buff, 'png')
+
+        buff.seek(0)
+
+        return buff
+
+    @command(aliases=['showcolour'])
+    async def showcolor(self, ctx, *color: resolve_color):
+        """Show a color."""
+        if len(color) == 0:
+            raise errors.BadArgument("Need at least 1 color")
+
+        # PIL colors must be tuples
+        pil_colors = [(col.value >> 16, col.value >> 8 & 0xff,
+                       col.value & 0xff) for col in color]
+
+        color_image = await ctx.bot.loop.run_in_executor(None, self.make_pil_color_preview, *pil_colors)
+
+        await ctx.send(file=discord.File(color_image, filename="showcolor.png"))
+
+    @command(name="8ball")
+    async def eightball(self, ctx, *, question: str):
+        """Ask the magic 8 ball your questions."""
+        question = re.sub(r'[.,\/#!$%\^?&\*;:{}=\-_`~()]',
+                          "", question.lower())
+        if question in self.eightballqs:
+            result = self.eightballqs[question]
+        else:
+            # Traditional Magic 8 ball chances.
+            result = str(random.choice(
+                ["yes", "no", "maybe"], p=[.5, .25, .25]))
+            if result != "maybe":
+                self.eightballqs[question] = result
+
+        await ctx.send(random.choice(EIGHT_BALL_RESPS[result]))
+
+    @command()
+    async def choose(self, ctx, *values):
+        """Randomly chooses one of the options."""
+        if not values:
+            raise errors.MissingRequiredArgument(ctx.command.params['values'])
+        await ctx.send(ctx.message.clean_substr(random.choice(values)))
 
     @command()
     async def msgsource(self, ctx, *, msg_id: int):
