@@ -236,13 +236,9 @@ class Misc:
         """Show information about a unicode character."""
         await self._charinfo(ctx, *[ord(char) for char in chars])
 
-    @charinfo.command(name="num")
+    @charinfo.command(name="num", require_var_positional=True)
     async def charinfo_num(self, ctx, *chars: better_int):
         """Show information about unicode characters by number lookup."""
-        if not chars:
-            raise errors.MissingRequiredArgument(
-                "Need at least one number to look up.")
-
         await self._charinfo(ctx, *chars)
 
     async def _charinfo(self, ctx, *chars):
@@ -276,12 +272,9 @@ class Misc:
 
         return buff
 
-    @command(aliases=['showcolour'])
+    @command(aliases=['showcolour'], require_var_positional=True)
     async def showcolor(self, ctx, *color: resolve_color):
         """Show a color."""
-        if len(color) == 0:
-            raise errors.BadArgument("Need at least 1 color")
-
         # PIL colors must be tuples
         pil_colors = [(col.value >> 16, col.value >> 8 & 0xff,
                        col.value & 0xff) for col in color]
@@ -306,11 +299,9 @@ class Misc:
 
         await ctx.send(random.choice(EIGHT_BALL_RESPS[result]))
 
-    @command()
+    @command(require_var_positional=True)
     async def choose(self, ctx, *values: clean_content()):
         """Randomly chooses one of the options."""
-        if not values:
-            raise errors.MissingRequiredArgument(ctx.command.params['values'])
         await ctx.send(random.choice(values))
 
     @command()
