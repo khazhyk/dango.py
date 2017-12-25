@@ -19,12 +19,12 @@ from .common.paginator import EmbedPaginator
 log = logging.getLogger(__name__)
 
 
-@dcog()
+@dcog(pass_bot=True)
 class Debug:
     """Various debugging commands."""
 
-    def __init__(self, config):
-        pass
+    def __init__(self, bot, config):
+        self.bot = bot
 
     async def on_ready(self):
         log.info("Logged in as")

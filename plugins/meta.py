@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from datetime import timedelta
+import time
 import inspect
 
 from dango import checks
@@ -88,12 +89,26 @@ def get_cog_or_cmd_callback(ctx, *cmd_name):
     return cmd.callback
 
 
+def uptime():
+    put = int(time.time() - psutil.Process(os.getpid()).create_time())
+    return "%d:%d:%d" % (
+            put // (60 * 60),
+            (put // (60)) % (60),
+            put % 60
+        )
+
+
 @dcog()
 class Meta:
     """Information about the bot itself."""
 
     def __init__(self, config):
         pass
+
+    @command()
+    async def uptime(self, ctx):
+        """Shows time since process start."""
+        await ctx.send("Bot has been up for {}".format(uptime()))
 
     @command(aliases=['rev', 'stats', 'info'])
     async def about(self, ctx):
@@ -132,7 +147,7 @@ class Meta:
             name="Channels",
             value="%d text\n%d voice" % (text_channels, voice_channels))
         embed.add_field(name="Servers", value=servers)
-        embed.add_field(name="Process", value="%.2fMiB RSS" % memory)
+        embed.add_field(name="Process", value="%.2fMiB RSS\n%s Uptime" % (memory, uptime()))
         embed.set_footer(text="dangopy | discord.py v{}".format(discord_version))
         # embed.add_field(name="Messages", value="%d messages\n%d commands" % (messages, commands))
         # embed.add_field(name="Shards", value=shard_id(ctx.bot))
