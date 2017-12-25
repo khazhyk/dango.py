@@ -91,7 +91,7 @@ def get_cog_or_cmd_callback(ctx, *cmd_name):
 
 def uptime():
     put = int(time.time() - psutil.Process(os.getpid()).create_time())
-    return "%d:%d:%d" % (
+    return "%02d:%02d:%02d" % (
             put // (60 * 60),
             (put // (60)) % (60),
             put % 60
