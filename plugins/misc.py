@@ -9,6 +9,7 @@ import aiohttp
 from dango import dcog
 import discord
 from discord.ext.commands import command
+from discord.ext.commands import clean_content
 from discord.ext.commands import errors
 from discord.ext.commands import group
 from numpy import random
@@ -183,18 +184,16 @@ class Misc:
             msg)).replace(" ", chr(0x3000)))
 
     @command(pass_context=True, aliases="\N{CLAPPING HANDS SIGN}")
-    async def clap(self, ctx, *, msg):
+    async def clap(self, ctx, *, msg: clean_content()):
         """\N{CLAPPING HANDS SIGN}"""
-        msg = ctx.message.clean_substr(msg)
         await ctx.send(" \N{CLAPPING HANDS SIGN} ".join(msg.split()))
 
     @command(pass_context=True)
-    async def say(self, ctx, *, msg):
+    async def say(self, ctx, *, msg: clean_content()):
         """Make the bot say something.
 
         Prevents bot triggering and mentioning other users.
         """
-        msg = ctx.message.clean_substr(msg)
         await ctx.send("\u200b" + msg)
 
     @command()
@@ -308,11 +307,11 @@ class Misc:
         await ctx.send(random.choice(EIGHT_BALL_RESPS[result]))
 
     @command()
-    async def choose(self, ctx, *values):
+    async def choose(self, ctx, *values: clean_content()):
         """Randomly chooses one of the options."""
         if not values:
             raise errors.MissingRequiredArgument(ctx.command.params['values'])
-        await ctx.send(ctx.message.clean_substr(random.choice(values)))
+        await ctx.send(random.choice(values))
 
     @command()
     async def msgsource(self, ctx, *, msg_id: int):
