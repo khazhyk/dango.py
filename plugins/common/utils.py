@@ -154,9 +154,9 @@ def log_task(fut):
     try:
         if fut.exception():
             e = fut.exception()
-            log.warn(exc_info=(type(e), e, e.__traceback__))
+            log.warn("", exc_info=(type(e), e, e.__traceback__))
     except asyncio.CancelledError as e:
-        log.debug(exc_info=(type(e), e, e.__traceback__))
+        log.debug("", exc_info=(type(e), e, e.__traceback__))
 
 def create_task(thing):
     task = asyncio.ensure_future(thing)
