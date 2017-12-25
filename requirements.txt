@@ -8,7 +8,6 @@ osuapi
 ruamel.yaml
 tabulate
 humanize
-unicodedata
 
 # debug
 objgraph
