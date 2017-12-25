@@ -1,6 +1,7 @@
 """Paginated response."""
 
 import asyncio
+from collections import OrderedDict
 import discord
 
 from . import utils
@@ -14,6 +15,7 @@ DIRECT_PAGE = "\N{INPUT SYMBOL FOR NUMBERS}"
 NEXT_PAGE = "\N{BLACK RIGHT-POINTING TRIANGLE}"
 LAST_PAGE = "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}"
 HELP_PAGE = "\N{BLACK QUESTION MARK ORNAMENT}"
+DOWNLOAD_PAGE = ":update:264184209617321984"
 PAGINATOR_BUTTONS = [FIRST_PAGE, PREV_PAGE, STOP_PAGE, DIRECT_PAGE, NEXT_PAGE, LAST_PAGE, HELP_PAGE]
 PAGINATOR_HELP_EMBED = discord.Embed(
     title="How to use paginator",
@@ -28,16 +30,19 @@ PAGINATOR_HELP_EMBED = discord.Embed(
     *PAGINATOR_BUTTONS))
 
 
-def split_into_pages(units, page_length, separator):
+def split_into_pages(units, page_length, separator, maxlines=2000):
     """Group the input into strings of max page_length."""
     units = iter(units)
     buf = next(units)
+    lines = 1
     for unit in units:
-        if (len(buf) + len(separator) + len(unit)) <= page_length:
+        if (len(buf) + len(separator) + len(unit)) <= page_length and lines <= maxlines:
             buf += separator + unit
+            lines += 1
         else:
             yield buf
             buf = unit
+            lines = 1
     yield buf
 
 
@@ -47,6 +52,13 @@ def make_embed(title, description, idx, pages):
     e.set_footer(text="Page {} of {}".format(
         idx + 1, pages))
     return e
+
+def norm_emoji(emoji):
+    if isinstance(emoji, str):
+        return emoji
+    if not emoji.id:
+        return emoji.name
+    return ":%s:%d" % (emoji.name, emoji.id)
 
 
 class EmbedPaginator:
@@ -66,15 +78,15 @@ class EmbedPaginator:
         self._ask_task = None
         self.msg = None
 
-        self.dispatch = {
-            FIRST_PAGE: lambda: self.set_page(0),
-            PREV_PAGE: lambda: self.set_page(self.idx - 1),
-            STOP_PAGE: lambda: self.close(),
-            DIRECT_PAGE: lambda: self.launch_ask_task(),
-            NEXT_PAGE: lambda: self.set_page(self.idx + 1),
-            LAST_PAGE: lambda: self.set_page(len(self.pages) - 1),
-            HELP_PAGE: lambda: self.toggle_help_page()
-        }
+        self.dispatch = OrderedDict((
+            (FIRST_PAGE, lambda: self.set_page(0)),
+            (PREV_PAGE, lambda: self.set_page(self.idx - 1)),
+            (STOP_PAGE, lambda: self.close()),
+            (DIRECT_PAGE, lambda: self.launch_ask_task()),
+            (NEXT_PAGE, lambda: self.set_page(self.idx + 1)),
+            (LAST_PAGE, lambda: self.set_page(len(self.pages) - 1)),
+            (HELP_PAGE, lambda: self.toggle_help_page())
+        ))
 
     def embed(self):
         """Generate the embed we need."""
@@ -159,14 +171,14 @@ class EmbedPaginator:
                 pass
 
     async def add_buttons(self):
-        for button in PAGINATOR_BUTTONS:
+        for button in self.dispatch.keys():
             await self.msg.add_reaction(button)
 
     async def cleanup_buttons(self):
         if self.ctx.channel.permissions_for(self.ctx.me).manage_messages:
             await self.msg.clear_reactions()
         else:
-            for button in PAGINATOR_BUTTONS:
+            for button in self.dispatch.keys():
                 await self.msg.remove_reaction(button, self.ctx.me)
 
     async def send(self):
@@ -186,13 +198,14 @@ class EmbedPaginator:
                         'reaction_add', timeout=60,
                         check=lambda reaction, user: reaction.message.id == self.msg.id and
                                                      user.id == self.ctx.author.id)
+                    emoji = norm_emoji(reaction.emoji)
                 except asyncio.TimeoutError:
                     await self.close()
                 else:
-                    if reaction.emoji in self.dispatch:
+                    if emoji in self.dispatch:
                         if self.ctx.channel.permissions_for(self.ctx.me).manage_messages:
                             utils.create_task(self.msg.remove_reaction(reaction, user))
-                        await self.dispatch[reaction.emoji]()
+                        await self.dispatch[emoji]()
         finally:
             buttons.cancel()
             if self._ask_task:
@@ -203,9 +216,36 @@ class EmbedPaginator:
                 pass
 
     @classmethod
-    def from_lines(cls, ctx, lines, title=""):
+    def from_lines(cls, ctx, lines, title="", maxlines=2000):
         """Construct a EmbedPaginator from the given lines to be joined by newline."""
-        split_pages = list(split_into_pages(lines, MAX_EMBED_DESCRIPTION_LENGTH, "\n"))
+        split_pages = list(split_into_pages(lines, MAX_EMBED_DESCRIPTION_LENGTH, "\n", maxlines))
         pages = [make_embed(title, page_content, idx, len(split_pages))
                       for idx, page_content in enumerate(split_pages)]
+
+        full_content = "\n".join(lines)
         return cls(ctx, pages)
+
+class GroupLinesPaginator(EmbedPaginator):
+    """EmbedPaginator from given lines joined by newline.
+
+    Also provides a download button for the full content.
+    """
+    def __init__(self, ctx, lines, title="", maxlines=2000):
+        split_pages = list(split_into_pages(lines, MAX_EMBED_DESCRIPTION_LENGTH, "\n", maxlines))
+        pages = [make_embed(title, page_content, idx, len(split_pages))
+                      for idx, page_content in enumerate(split_pages)]
+
+        self.full_content = "\n".join(lines)
+
+        super().__init__(ctx, pages)
+
+        self.dispatch[DOWNLOAD_PAGE] = self.send_full_content
+
+    async def send_full_content(self):
+        """Delete our paginator and send the content instead."""
+        await self.ctx.send(self.full_content)
+        if self.msg:
+            await self.msg.delete()
+        await self.close()
+
+

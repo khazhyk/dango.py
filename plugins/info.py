@@ -13,16 +13,18 @@ import humanize
 import tabulate
 
 from .common import utils
+from .common.paginator import GroupLinesPaginator
 
 async def _send_find_results(ctx, matches):
     if len(matches) == 0:
         await ctx.send("No matches!")
     else:
-        await ctx.send("{} results.\n{}".format(
-            len(matches), "\n".join(["`{}` {}#{}".format(
-                member.id, utils.clean_formatting(
-                    member.name),
-                member.discriminator) for member in matches])))
+        match_lines = ["`{}` {}#{}".format(
+                member.id, utils.clean_formatting(member.name), member.discriminator)
+            for member in matches]
+        await GroupLinesPaginator(ctx, match_lines, "{} results".format(len(matches)), 30).send()
+        # await ctx.send("{} results.\n{}".format(
+        #     len(matches), "\n".join(match_lines)))
 
 
 def _is_hard_to_mention(name):
