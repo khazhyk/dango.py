@@ -5,6 +5,9 @@ import re
 import subprocess
 import sys
 
+import discord
+from discord.ext.commands import errors
+
 
 log = logging.getLogger(__name__)
 
@@ -185,3 +188,24 @@ class InfoBuilder:
         for k, v in self.fields:
             e.add_field(name=k, value=v)
         return e
+
+def resolve_color(value):
+    """Resolve a custom or pre-defined color.
+
+    This allows html style #123456.
+    """
+    if value.startswith('#'):
+        value = value[1:]  # assumes no named color starts with #
+
+    try:
+        intval = int(value, 16)
+    except ValueError:
+        pass
+    else:
+        if intval >= (1 << 24):
+            raise errors.BadArgument("Invalid color {} is too big!".format(value))
+        return discord.Colour(intval)
+    try:
+        return getattr(discord.Colour, value)()
+    except AttributeError:
+        raise errors.BadArgument("Invalid color {}".format(value))
