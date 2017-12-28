@@ -24,8 +24,6 @@ async def _send_find_results(ctx, matches):
                 member.id, utils.clean_formatting(member.name), member.discriminator)
             for member in matches]
         await GroupLinesPaginator(ctx, match_lines, "{} results".format(len(matches)), 30).send()
-        # await ctx.send("{} results.\n{}".format(
-        #     len(matches), "\n".join(match_lines)))
 
 
 def _is_hard_to_mention(name):
