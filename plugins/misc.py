@@ -18,7 +18,7 @@ import unicodedata
 
 from .common import utils
 from .common.utils import resolve_color
-from .common.paginator import EmbedPaginator
+from .common.paginator import ListPaginator
 
 FULLWIDTH_OFFSET = 65248
 ZALGO_CHARS = [chr(x) for x in range(768, 879)]
@@ -94,7 +94,7 @@ class Emoji:
         ]
 
         if emojis:
-            await EmbedPaginator.from_lines(ctx, emojis, "Guild Emojis").send()
+            await ListPaginator.from_lines(ctx, emojis, "Guild Emojis").send()
         else:
             await ctx.message.add_reaction(":discordok:293495010719170560")
 
@@ -115,7 +115,7 @@ class Emoji:
                 by_guild[e.guild].append(e)
 
             lines = ("{}: {}".format(g, "".join(map(str,emojis))) for g, emojis in by_guild.items())
-            await EmbedPaginator.from_lines(ctx, lines, "Found Emojis").send()
+            await ListPaginator.from_lines(ctx, lines, "Found Emojis").send()
         else:
             await ctx.message.add_reaction(":discordok:293495010719170560")
 
@@ -136,7 +136,7 @@ class Emoji:
                 by_guild[e.guild].append(e)
 
             lines = ("{}: {}".format(g, "".join(map(str,emojis))) for g, emojis in by_guild.items())
-            await EmbedPaginator.from_lines(ctx, lines, "Found Emojis").send()
+            await ListPaginator.from_lines(ctx, lines, "Found Emojis").send()
 
         else:
             await ctx.message.add_reaction(":discordok:293495010719170560")

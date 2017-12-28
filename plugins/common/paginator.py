@@ -2,6 +2,9 @@
 
 import asyncio
 from collections import OrderedDict
+import functools
+import itertools
+
 import discord
 
 from . import utils
@@ -60,11 +63,14 @@ def render_emoji(emoji):
 class EmbedPaginator:
     """Given a sequence of embed pages, provides pagination.
 
+    Provides a help page that is always last.
+
     Args:
       ctx: :class:`discord.Context`
       pages: Sequence[discord.Embed]
+      buttons: Main action buttons
     """
-    def __init__(self, ctx, pages, extra_buttons=None):
+    def __init__(self, ctx, pages, buttons):
         self.ctx = ctx
         self.pages = pages
 
@@ -78,15 +84,8 @@ class EmbedPaginator:
         self.actions = []
 
 
-        self.register_action(FIRST_PAGE, lambda: self.set_page(0), "First page")
-        self.register_action(PREV_PAGE, lambda: self.set_page(self.idx - 1), "Previous page")
-        self.register_action(STOP_PAGE, lambda: self.close(), "Stop (and remove buttons)")
-        self.register_action(DIRECT_PAGE, lambda: self.launch_ask_task(), "Enter page number")
-        self.register_action(NEXT_PAGE, lambda: self.set_page(self.idx + 1), "Next page")
-        self.register_action(LAST_PAGE, lambda: self.set_page(len(self.pages) - 1), "Last page")
-        if extra_buttons:
-            for eb in extra_buttons:
-                self.register_action(*eb)
+        for button in buttons:
+            self.register_action(*button)
         self.register_action(HELP_PAGE, lambda: self.toggle_help_page(), "Toggle this help screen")
 
     def register_action(self, emoji, callback, help_):
@@ -224,6 +223,24 @@ class EmbedPaginator:
             except discord.NotFound:  # Message was deleted
                 pass
 
+class ListPaginator(EmbedPaginator):
+    """List with prev/next etc.
+
+    extra_buttons: extra buttons that come before help.
+    """
+
+    def __init__(self, ctx, pages, extra_buttons=None):
+        extra_buttons = extra_buttons or []
+
+        super().__init__(ctx, pages, itertools.chain((
+                (FIRST_PAGE, lambda: self.set_page(0), "First page"),
+                (PREV_PAGE, lambda: self.set_page(self.idx - 1), "Previous page"),
+                (STOP_PAGE, lambda: self.close(), "Stop (and remove buttons)"),
+                (DIRECT_PAGE, lambda: self.launch_ask_task(), "Enter page number"),
+                (NEXT_PAGE, lambda: self.set_page(self.idx + 1), "Next page"),
+                (LAST_PAGE, lambda: self.set_page(len(self.pages) - 1), "Last page")),
+            extra_buttons))
+
     @classmethod
     def from_lines(cls, ctx, lines, title="", maxlines=2000):
         """Construct a EmbedPaginator from the given lines to be joined by newline."""
@@ -234,7 +251,7 @@ class EmbedPaginator:
         full_content = "\n".join(lines)
         return cls(ctx, pages)
 
-class GroupLinesPaginator(EmbedPaginator):
+class GroupLinesPaginator(ListPaginator):
     """EmbedPaginator from given lines joined by newline.
 
     Also provides a download button for the full content.
@@ -255,5 +272,34 @@ class GroupLinesPaginator(EmbedPaginator):
         if self.msg:
             await self.msg.delete()
         await self.close()
+
+def emoji_url(norm):
+    """Take a norm_emoji and turn it into a url."""
+    if norm[0] == ":":
+        return "https://discordapp.com/api/emojis/{}.png".format(norm[1:].split(":")[1])
+    return "http://twemoji.maxcdn.com/2/72x72/{}.png".format(
+        "-".join("{:x}".format(ord(c)) for c in norm))
+
+
+class RadioPaginator(EmbedPaginator):
+    """Radio buttons shows pages.
+
+    Page embed title is used for page title.
+
+    Args:
+        ctx: ctx
+        pages: Collection of (emoji, embed).
+    """
+
+    def __init__(self, ctx, pages):
+
+        actions = []
+
+        for idx, (emoji, embed) in enumerate(pages):
+            embed.set_footer(text="Page {} of {}".format(idx + 1, len(pages)),
+                icon_url=emoji_url(emoji))
+            actions.append((emoji, functools.partial(self.set_page, idx), embed.title))
+
+        super().__init__(ctx, [p for _, p in pages], actions)
 
 
