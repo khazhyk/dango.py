@@ -16,18 +16,6 @@ NEXT_PAGE = "\N{BLACK RIGHT-POINTING TRIANGLE}"
 LAST_PAGE = "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}"
 HELP_PAGE = "\N{BLACK QUESTION MARK ORNAMENT}"
 DOWNLOAD_PAGE = ":update:264184209617321984"
-PAGINATOR_BUTTONS = [FIRST_PAGE, PREV_PAGE, STOP_PAGE, DIRECT_PAGE, NEXT_PAGE, LAST_PAGE, HELP_PAGE]
-PAGINATOR_HELP_EMBED = discord.Embed(
-    title="How to use paginator",
-    description="""
-{} - First page
-{} - Previous page
-{} - Stop (and remove buttons)
-{} - Enter page number
-{} - Next page
-{} - Last page
-{} - Toggle this help screen""".format(
-    *PAGINATOR_BUTTONS))
 
 
 def split_into_pages(units, page_length, separator, maxlines=2000):
@@ -54,11 +42,19 @@ def make_embed(title, description, idx, pages):
     return e
 
 def norm_emoji(emoji):
+    """Output reaction style emoji."""
     if isinstance(emoji, str):
         return emoji
     if not emoji.id:
         return emoji.name
     return ":%s:%d" % (emoji.name, emoji.id)
+
+def render_emoji(emoji):
+    """Given norm_emoji, output text style emoji."""
+    if emoji[0] == ":":
+        return "<%s>" % emoji
+    return emoji
+
 
 
 class EmbedPaginator:
@@ -68,7 +64,7 @@ class EmbedPaginator:
       ctx: :class:`discord.Context`
       pages: Sequence[discord.Embed]
     """
-    def __init__(self, ctx, pages):
+    def __init__(self, ctx, pages, extra_buttons=None):
         self.ctx = ctx
         self.pages = pages
 
@@ -78,20 +74,33 @@ class EmbedPaginator:
         self._ask_task = None
         self.msg = None
 
-        self.dispatch = OrderedDict((
-            (FIRST_PAGE, lambda: self.set_page(0)),
-            (PREV_PAGE, lambda: self.set_page(self.idx - 1)),
-            (STOP_PAGE, lambda: self.close()),
-            (DIRECT_PAGE, lambda: self.launch_ask_task()),
-            (NEXT_PAGE, lambda: self.set_page(self.idx + 1)),
-            (LAST_PAGE, lambda: self.set_page(len(self.pages) - 1)),
-            (HELP_PAGE, lambda: self.toggle_help_page())
-        ))
+        self.dispatch = {}
+        self.actions = []
+
+
+        self.register_action(FIRST_PAGE, lambda: self.set_page(0), "First page")
+        self.register_action(PREV_PAGE, lambda: self.set_page(self.idx - 1), "Previous page")
+        self.register_action(STOP_PAGE, lambda: self.close(), "Stop (and remove buttons)")
+        self.register_action(DIRECT_PAGE, lambda: self.launch_ask_task(), "Enter page number")
+        self.register_action(NEXT_PAGE, lambda: self.set_page(self.idx + 1), "Next page")
+        self.register_action(LAST_PAGE, lambda: self.set_page(len(self.pages) - 1), "Last page")
+        if extra_buttons:
+            for eb in extra_buttons:
+                self.register_action(*eb)
+        self.register_action(HELP_PAGE, lambda: self.toggle_help_page(), "Toggle this help screen")
+
+    def register_action(self, emoji, callback, help_):
+        self.dispatch[emoji] = callback
+        self.actions.append((emoji, help_))
 
     def embed(self):
         """Generate the embed we need."""
         if self._helping:
-            return PAGINATOR_HELP_EMBED
+            return discord.Embed(
+                title="How to use paginator",
+                description="\n".join(
+                    "{} - {}".format(render_emoji(emoji), help_) for
+                    emoji, help_ in self.actions))
         return self.pages[self.idx]
 
     async def clean_messages(self, msgs):
@@ -171,14 +180,14 @@ class EmbedPaginator:
                 pass
 
     async def add_buttons(self):
-        for button in self.dispatch.keys():
+        for button, _ in self.actions:
             await self.msg.add_reaction(button)
 
     async def cleanup_buttons(self):
         if self.ctx.channel.permissions_for(self.ctx.me).manage_messages:
             await self.msg.clear_reactions()
         else:
-            for button in self.dispatch.keys():
+            for button, _ in self.actions:
                 await self.msg.remove_reaction(button, self.ctx.me)
 
     async def send(self):
@@ -237,9 +246,8 @@ class GroupLinesPaginator(EmbedPaginator):
 
         self.full_content = "\n".join(lines)
 
-        super().__init__(ctx, pages)
-
-        self.dispatch[DOWNLOAD_PAGE] = self.send_full_content
+        super().__init__(ctx, pages, [
+            (DOWNLOAD_PAGE, self.send_full_content, "Send this as a single message instead.")])
 
     async def send_full_content(self):
         """Delete our paginator and send the content instead."""
