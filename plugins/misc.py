@@ -74,7 +74,7 @@ def idc_emoji_or_just_string(val):
 def idc_emoji(val):
     match = re.match(r'<(?P<animated>a)?:(?P<name>[a-zA-Z0-9]+):(?P<id>[0-9]+)>$', val)
     if not match:
-        raise errors.BadArgument("Not a valid custom emoji")
+        return val
     return FakeEmoji(match.group("name"), match.group("id"), bool(match.group("animated")))
 
 @dcog()
@@ -168,7 +168,10 @@ class Emoji:
     @command()
     async def bigmoji(self, ctx, emoji: idc_emoji):
         """Link to the full sized image for an emoji."""
-        await ctx.send(emoji.url)
+        if isinstance(emoji, FakeEmoji):
+            await ctx.send(emoji.url)
+        else:
+            await ctx.send(utils.emoji_url(emoji))
 
 
 @dcog()

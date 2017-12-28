@@ -209,3 +209,8 @@ def resolve_color(value):
         return getattr(discord.Colour, value)()
     except AttributeError:
         raise errors.BadArgument("Invalid color {}".format(value))
+
+
+def emoji_url(emoji):
+    return "http://twemoji.maxcdn.com/2/72x72/{}.png".format(
+        "-".join("{:x}".format(ord(c)) for c in emoji))
