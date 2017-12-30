@@ -77,7 +77,6 @@ class EmbedPaginator:
         self.idx = 0
         self._helping = False
         self._closed = False
-        self._ask_task = None
         self.msg = None
 
         self.dispatch = {}
@@ -130,6 +129,71 @@ class EmbedPaginator:
     async def update(self):
         await self.msg.edit(embed=self.embed())
 
+    async def add_buttons(self):
+        for button, _ in self.actions:
+            await self.msg.add_reaction(button)
+
+    async def cleanup_buttons(self):
+        if self.ctx.channel.permissions_for(self.ctx.me).manage_messages:
+            await self.msg.clear_reactions()
+        else:
+            for button, _ in self.actions:
+                await self.msg.remove_reaction(button, self.ctx.me)
+
+    async def cleanup(self):
+        self._buttons_task.cancel()
+        try:
+            await self.cleanup_buttons()
+        except discord.NotFound:  # Message was deleted
+            pass
+
+    async def send(self):
+        """Send message and wait for reactions."""
+        if len(self.pages) == 1:
+            await self.ctx.send(embed=self.embed())
+            return
+
+        self.msg = await self.ctx.send(embed=self.embed())
+
+        self._buttons_task = utils.create_task(self.add_buttons())
+
+        try:
+            while not self._closed:
+                try:
+                    reaction, user = await self.ctx.bot.wait_for(
+                        'reaction_add', timeout=60,
+                        check=lambda reaction, user: reaction.message.id == self.msg.id and
+                                                     user.id == self.ctx.author.id)
+                    emoji = norm_emoji(reaction.emoji)
+                except asyncio.TimeoutError:
+                    await self.close()
+                else:
+                    if emoji in self.dispatch:
+                        if self.ctx.channel.permissions_for(self.ctx.me).manage_messages:
+                            utils.create_task(self.msg.remove_reaction(reaction, user))
+                        await self.dispatch[emoji]()
+        finally:
+            await self.cleanup()
+
+class ListPaginator(EmbedPaginator):
+    """List with prev/next etc.
+
+    extra_buttons: extra buttons that come before help.
+    """
+
+    def __init__(self, ctx, pages, extra_buttons=None):
+        extra_buttons = extra_buttons or []
+        self._ask_task = None
+
+        super().__init__(ctx, pages, itertools.chain((
+                (FIRST_PAGE, lambda: self.set_page(0), "First page"),
+                (PREV_PAGE, lambda: self.set_page(self.idx - 1), "Previous page"),
+                (STOP_PAGE, self.close, "Stop (and remove buttons)"),
+                (DIRECT_PAGE, self.launch_ask_task, "Enter page number"),
+                (NEXT_PAGE, lambda: self.set_page(self.idx + 1), "Next page"),
+                (LAST_PAGE, lambda: self.set_page(len(self.pages) - 1), "Last page")),
+            extra_buttons))
+
     async def launch_ask_task(self):
         """Let user select a page by number in the background."""
         if self._ask_task:
@@ -178,68 +242,11 @@ class EmbedPaginator:
             except discord.NotFound:  # Messages were deleted
                 pass
 
-    async def add_buttons(self):
-        for button, _ in self.actions:
-            await self.msg.add_reaction(button)
-
-    async def cleanup_buttons(self):
-        if self.ctx.channel.permissions_for(self.ctx.me).manage_messages:
-            await self.msg.clear_reactions()
-        else:
-            for button, _ in self.actions:
-                await self.msg.remove_reaction(button, self.ctx.me)
-
-    async def send(self):
-        """Send message and wait for reactions."""
-        if len(self.pages) == 1:
-            await self.ctx.send(embed=self.embed())
-            return
-
-        self.msg = await self.ctx.send(embed=self.embed())
-
-        buttons = utils.create_task(self.add_buttons())
-
-        try:
-            while not self._closed:
-                try:
-                    reaction, user = await self.ctx.bot.wait_for(
-                        'reaction_add', timeout=60,
-                        check=lambda reaction, user: reaction.message.id == self.msg.id and
-                                                     user.id == self.ctx.author.id)
-                    emoji = norm_emoji(reaction.emoji)
-                except asyncio.TimeoutError:
-                    await self.close()
-                else:
-                    if emoji in self.dispatch:
-                        if self.ctx.channel.permissions_for(self.ctx.me).manage_messages:
-                            utils.create_task(self.msg.remove_reaction(reaction, user))
-                        await self.dispatch[emoji]()
-        finally:
-            buttons.cancel()
-            if self._ask_task:
-                self._ask_task.cancel()
-            try:
-                await self.cleanup_buttons()
-            except discord.NotFound:  # Message was deleted
-                pass
-
-class ListPaginator(EmbedPaginator):
-    """List with prev/next etc.
-
-    extra_buttons: extra buttons that come before help.
-    """
-
-    def __init__(self, ctx, pages, extra_buttons=None):
-        extra_buttons = extra_buttons or []
-
-        super().__init__(ctx, pages, itertools.chain((
-                (FIRST_PAGE, lambda: self.set_page(0), "First page"),
-                (PREV_PAGE, lambda: self.set_page(self.idx - 1), "Previous page"),
-                (STOP_PAGE, lambda: self.close(), "Stop (and remove buttons)"),
-                (DIRECT_PAGE, lambda: self.launch_ask_task(), "Enter page number"),
-                (NEXT_PAGE, lambda: self.set_page(self.idx + 1), "Next page"),
-                (LAST_PAGE, lambda: self.set_page(len(self.pages) - 1), "Last page")),
-            extra_buttons))
+    async def cleanup(self):
+        if self._ask_task:
+            self._ask_task.cancel()
+            self._ask_task = None
+        await super().cleanup()
 
     @classmethod
     def from_lines(cls, ctx, lines, title="", maxlines=2000):
@@ -272,34 +279,3 @@ class GroupLinesPaginator(ListPaginator):
         if self.msg:
             await self.msg.delete()
         await self.close()
-
-def emoji_url(norm):
-    """Take a norm_emoji and turn it into a url."""
-    if norm[0] == ":":
-        return "https://discordapp.com/api/emojis/{}.png".format(norm[1:].split(":")[1])
-    return "http://twemoji.maxcdn.com/2/72x72/{}.png".format(
-        "-".join("{:x}".format(ord(c)) for c in norm))
-
-
-class RadioPaginator(EmbedPaginator):
-    """Radio buttons shows pages.
-
-    Page embed title is used for page title.
-
-    Args:
-        ctx: ctx
-        pages: Collection of (emoji, embed).
-    """
-
-    def __init__(self, ctx, pages):
-
-        actions = []
-
-        for idx, (emoji, embed) in enumerate(pages):
-            embed.set_footer(text="Page {} of {}".format(idx + 1, len(pages)),
-                icon_url=emoji_url(emoji))
-            actions.append((emoji, functools.partial(self.set_page, idx), embed.title))
-
-        super().__init__(ctx, [p for _, p in pages], actions)
-
-
