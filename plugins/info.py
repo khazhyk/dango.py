@@ -266,7 +266,11 @@ class Info:
         if user is None:
             user = ctx.message.author
 
-        await ctx.send(user.avatar_url_as(static_format='png'))
+        avatar_url = user.avatar_url_as(static_format='png')
+        if user.is_avatar_animated() and not avatar_url.endswith('.gif'):
+            avatar_url += "&discord_is_buggy_af=.gif"
+
+        await ctx.send(avatar_url)
 
     @command()
     async def defaultavatar(self, ctx, *, user: discord.User=None):
