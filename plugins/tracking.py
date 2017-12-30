@@ -546,6 +546,9 @@ class Tracking:
             author = channel.guild.get_member(user_id)
         else:
             author = self.bot.get_user(user_id)
+        if not author:
+            log.warning("Got raw_reaction_add for non-existant author %s, %s, %s, %s",
+                        emoji, message_id, channel_id, user_id)
         await self.update_last_update(author)
 
     # Name related commands
