@@ -45,12 +45,12 @@ class Find:
 
     @command()
     @commands.guild_only()
-    async def find(self, ctx, *, username=""):
+    async def find(self, ctx, *, username):
         """Find users with simple matching."""
         username = username.lower()
 
         if len(username) < 2:
-            raise errors.BadArgument("")
+            raise errors.BadArgument("Username must be at least 2 characters.")
 
         matches = [
             member for member
