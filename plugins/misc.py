@@ -336,14 +336,3 @@ class Misc:
 
         await ctx.send("```json\n{}```".format(
             utils.clean_triple_backtick(json.dumps(raw, indent=2))))
-
-    @command()
-    async def corrupt(self, ctx, *, user: discord.User=None):
-        """Corrupt a user's avatar."""
-        user = user or ctx.message.author
-        async with aiohttp.ClientSession() as sess:
-            async with sess.get(user.avatar_url_as(format='jpg')) as resp:
-                img_buff = bytearray(await resp.read())
-        for i in range(random.randint(5, 25)):
-            img_buff[random.randint(0, len(img_buff))] = random.randint(1, 254)
-        await ctx.send(file=discord.File(io.BytesIO(img_buff), filename="img.jpg"))

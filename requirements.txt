@@ -9,6 +9,7 @@ ruamel.yaml
 tabulate
 humanize
 numpy
+Pillow
 
 # debug
 objgraph
