@@ -143,7 +143,7 @@ class Osu:
         embed.color = hash(str(osu_acct.user_id)) % (1 << 24)
         if isinstance(account, discord.abc.User):
             embed.set_author(
-                name=str(account), icon_url=account.avatar_url)
+                name=str(account), icon_url=account.avatar_url_as(static_format="png"))
         embed.set_thumbnail(
             url="http://a.ppy.sh/%s?_=%s" % (osu_acct.user_id, time.time()))
 

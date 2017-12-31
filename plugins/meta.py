@@ -126,8 +126,8 @@ class Meta:
         embed.color = 0xb19bd9
 
         embed.set_author(
-            name=ctx.bot.user.name, icon_url=ctx.bot.user.avatar_url)
-        embed.set_thumbnail(url=ctx.bot.user.avatar_url)
+            name=ctx.bot.user.name, icon_url=ctx.bot.user.avatar_url_as(static_format="png"))
+        embed.set_thumbnail(url=ctx.bot.user.avatar_url_as(static_format="png"))
 
         servers = len(ctx.bot.guilds)
         members = sum(len(g.members) for g in ctx.bot.guilds)
