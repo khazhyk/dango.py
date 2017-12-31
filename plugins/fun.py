@@ -16,6 +16,7 @@ import io
 import os
 import random
 
+import aiohttp
 from dango import dcog
 import discord
 from discord.ext.commands import command, group
