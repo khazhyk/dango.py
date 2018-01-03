@@ -19,7 +19,7 @@ import random
 import aiohttp
 from dango import dcog
 import discord
-from discord.ext.commands import command, group
+from discord.ext.commands import command, errors, group
 from PIL import Image
 
 ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
@@ -103,6 +103,8 @@ class ImgFun:
         user = user or ctx.message.author
         async with aiohttp.ClientSession() as sess:
             async with sess.get(user.avatar_url_as(format='jpg')) as resp:
+                if resp.status != 200:
+                    raise errors.CommandError("Your avatar is broken :(")
                 img_buff = bytearray(await resp.read())
         for i in range(random.randint(5, 25)):
             img_buff[random.randint(0, len(img_buff))] = random.randint(1, 254)
