@@ -187,7 +187,7 @@ class Misc:
             lambda c: chr(ord(c) + FULLWIDTH_OFFSET) if (ord(c) >= 0x21 and ord(c) <= 0x7E) else c,
             msg)).replace(" ", chr(0x3000)))
 
-    @command(pass_context=True, aliases="\N{CLAPPING HANDS SIGN}")
+    @command(pass_context=True, aliases=["\N{CLAPPING HANDS SIGN}"])
     async def clap(self, ctx, *, msg: clean_content()):
         """\N{CLAPPING HANDS SIGN}"""
         await ctx.send(" \N{CLAPPING HANDS SIGN} ".join(msg.split()))
