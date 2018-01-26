@@ -127,7 +127,7 @@ class Debug:
 
     @command()
     @checks.is_owner()
-    async def reload(self, ctx):
+    async def reload(self, ctx, extension):
         """Reloads an extension.
         """
         try:
