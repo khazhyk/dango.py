@@ -1,6 +1,6 @@
 git+https://github.com/khazhyk/discord.py@rewrite
 #git+https://github.com/Rapptz/discord.py@rewrite
-aiohttp
+aiohttp<3
 watchdog
 psutil
 lru-dict
