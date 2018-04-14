@@ -10,17 +10,20 @@ import discord
 from discord.ext.commands import command
 from discord.ext.commands import errors
 from discord.ext.commands import group
-import pip
 import psutil
 
 from .common import utils
 
 try:
-    pip_util = pip.util
-except AttributeError:
-    pip_util = pip.utils
-discord_version = discord.utils.get(
-    pip_util.get_installed_distributions(), project_name="discord.py").version
+    from pip._internal.utils import misc as pip_utils_misc
+    discord_version = pip_utils_misc.get_installed_version("discord.py")
+except ImportError:
+    try:
+        from pip import util as pip_utils
+    except ImportError:
+        from pip import utils as pip_utils
+    discord_version = discord.utils.get(
+        pip_util.get_installed_distributions(), project_name="discord.py").version
 
 
 SOURCE_URL = "https://github.com/khazhyk/dango.py/tree/master"

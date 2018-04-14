@@ -36,3 +36,5 @@ mcstatus
 
 # overwatch
 git+https://github.com/khazhyk/pachimari
+
+pip<=10.0
