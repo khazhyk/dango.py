@@ -23,7 +23,7 @@ except ImportError:
     except ImportError:
         from pip import utils as pip_utils
     discord_version = discord.utils.get(
-        pip_util.get_installed_distributions(), project_name="discord.py").version
+        pip_utils.get_installed_distributions(), project_name="discord.py").version
 
 
 SOURCE_URL = "https://github.com/khazhyk/dango.py/tree/master"
