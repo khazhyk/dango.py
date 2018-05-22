@@ -123,9 +123,17 @@ class Meta:
             cmd = cmd.format('`%h`')
         stdout, _ = await utils.run_subprocess(cmd)
 
-        embed = discord.Embed(description='Latest Changes:\n' + stdout)
-        embed.title = "spoo.py Server Invite"
-        embed.url = "https://discord.gg/0j3CB6tlXwou6Xb1"
+        self._application_info = getattr(self, "_application_info", await ctx.bot.application_info())
+
+        invite_url = discord.utils.oauth_url(
+                self._application_info.id,
+                discord.Permissions(-1)  # TODO
+        )
+
+        embed = discord.Embed(
+            description="[spoo.py server invite]({})\n\nLatest Changes:\n{}".format("https://discord.gg/0j3CB6tlXwou6Xb1", stdout))
+        embed.title = "Add me to your server"
+        embed.url = invite_url
         embed.color = 0xb19bd9
 
         embed.set_author(
