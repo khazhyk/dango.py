@@ -498,7 +498,8 @@ class Tracking:
     async def on_typing(self, channel, user, when):
         await self.update_last_update(user)
 
-    async def on_raw_message_edit(self, message_id, data):
+    async def on_raw_message_edit(self, raw_event):
+        message_id, data = raw_event.message_id, raw_event.data
         if 'author' not in data:
             return  # This is a automatic discord embed edit, ignore.
 
@@ -540,15 +541,15 @@ class Tracking:
     async def on_private_channel_pins_update(self, channel, last_pin):
         self._recent_pins[str(channel.id)] = datetime.utcnow()
 
-    async def on_raw_reaction_add(self, emoji, message_id, channel_id, user_id):
-        channel = self.bot.get_channel(channel_id)
+    async def on_raw_reaction_add(self, raw_event):
+        channel = self.bot.get_channel(raw_event.channel_id)
         if isinstance(channel, discord.abc.GuildChannel):
-            author = channel.guild.get_member(user_id)
+            author = channel.guild.get_member(raw_event.user_id)
         else:
-            author = self.bot.get_user(user_id)
+            author = self.bot.get_user(raw_event.user_id)
         if not author:
             log.warning("Got raw_reaction_add for non-existant author %s, %s, %s, %s",
-                        emoji, message_id, channel_id, user_id)
+                        raw_event.emoji, raw_event.message_id, raw_event.channel_id, raw_event.user_id)
         await self.update_last_update(author)
 
     # Name related commands
