@@ -149,6 +149,16 @@ def format_time(time):
         humanize.naturaltime(time + (datetime.now() - datetime.utcnow())), time)
 
 
+def activity_string(activity):
+    if isinstance(activity, (discord.Game, discord.Streaming)):
+        return str(activity)
+    ret = activity.name
+    if activity.details:
+        ret += " ({})".format(activity.details)
+    if activity.state:
+        ret += " - {}".format(activity.state)
+    return ret
+
 @dcog()
 class Info:
     """Info about things."""
@@ -237,8 +247,8 @@ class Info:
         if isinstance(user, discord.Member):
             i.add_field("Roles", ", ".join(
                 [r.name for r in sorted(user.roles, key=lambda r: -r.position)]))
-        if isinstance(user, discord.Member) and user.game:
-            i.add_field("Playing", user.game)
+        if isinstance(user, discord.Member) and user.activity:
+            i.add_field("Playing", activity_string(user.activity))
 
         await ctx.send(i.code_block())
 
