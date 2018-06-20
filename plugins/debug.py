@@ -86,6 +86,11 @@ class Debug:
     async def test(self, ctx):
         await ctx.send("\N{AUBERGINE}")
 
+    @command()
+    async def shard_id(self, ctx, shard_count:int=None):
+        shard_count = shard_count or ctx.bot.shard_count or 1
+        await ctx.send("{}:{}".format((ctx.guild.id >> 22) % shard_count, shard_count))
+
     @command(name="objgraph")
     @checks.is_owner()
     async def objgraph_(self, ctx):
