@@ -192,7 +192,8 @@ class PrometheusMetrics:
         self.declare_metric(
             "command_errors", prometheus_client.Counter, 'Command Errors', ['command', 'error'])
         self.declare_metric(
-            "command_timing", prometheus_client.Histogram, 'Command Timing', ['command'])
+            "command_timing", prometheus_client.Histogram, 'Command Timing', ['command'],
+            buckets=[0.001, 0.003, 0.006, 0.016, 0.039, 0.098, 0.244, 0.61, 1.526, 3.815, 9.537, 23.842, 59.605, 149.012, 372.529, 931.323, 2328.306])
         self.declare_metric(
             "server_count", prometheus_client.Gauge, "Server Count",
             function=lambda: len(self.bot.guilds))
