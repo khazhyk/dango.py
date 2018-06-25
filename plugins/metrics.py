@@ -218,15 +218,6 @@ class PrometheusMetrics:
     def _member_count_factory(self, status):
         return lambda: self._member_counts[status]
 
-    # Member counts
-    async def on_ready(self):
-        self._member_counts = {
-            status: 0 for status in discord.Status
-        }
-
-        for member in self.bot.get_all_members():
-            self._member_counts[member.status] += 1
-
     async def on_member_update(self, before, member):
         if before.status != member.status:
             self._member_counts[member.status] += 1
@@ -237,6 +228,14 @@ class PrometheusMetrics:
 
     async def on_member_remove(self, member):
         self._member_counts[member.status] -= 1
+
+    async def on_guild_available(self, guild):
+        for member in guild.members:
+            self._member_counts[member.status] += 1
+
+    async def on_guild_unavailable(self, guild):
+        for member in guild.members:
+            self._member_counts[member.status] += 1
 
     async def on_guild_join(self, guild):
         for member in guild.members:
