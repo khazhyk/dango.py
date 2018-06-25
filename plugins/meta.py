@@ -106,6 +106,8 @@ class Meta:
     """Information about the bot itself."""
 
     def __init__(self, config):
+        self.proc = psutil.Process()
+        self.proc.cpu_percent()
         pass
 
     @command()
@@ -147,7 +149,9 @@ class Meta:
                              if m.status != discord.Status.offline)
         text_channels = sum(len(g.text_channels) for g in ctx.bot.guilds)
         voice_channels = sum(len(g.voice_channels) for g in ctx.bot.guilds)
-        memory = psutil.Process(os.getpid()).memory_full_info().rss / (1024 * 1024)
+        memory = self.proc.memory_info().rss / (1024 * 1024)
+        cpu_time = self.proc.cpu_percent()
+
         # messages = 10
         # commands = 10
 
@@ -158,7 +162,7 @@ class Meta:
             name="Channels",
             value="%d text\n%d voice" % (text_channels, voice_channels))
         embed.add_field(name="Servers", value=servers)
-        embed.add_field(name="Process", value="%.2fMiB RSS\n%s Uptime" % (memory, uptime()))
+        embed.add_field(name="Process", value="%.2fMiB RSS\n%s%% CPU\n%s Uptime" % (memory, cpu_time, uptime()))
         embed.set_footer(text="dangopy | discord.py v{}".format(discord_version))
         # embed.add_field(name="Messages", value="%d messages\n%d commands" % (messages, commands))
         # embed.add_field(name="Shards", value=shard_id(ctx.bot))
