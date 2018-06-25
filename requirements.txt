@@ -13,6 +13,7 @@ Pillow
 
 # debug
 objgraph
+gprof2dot
 
 # zerobin
 sjcl

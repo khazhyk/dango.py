@@ -1,9 +1,11 @@
 import asyncio
 import copy
 from contextlib import redirect_stdout
+import cProfile
 import logging
 import io
 import os
+import tempfile
 import sys
 
 import aiohttp
@@ -180,3 +182,21 @@ class Debug:
             async with s.get(url) as resp:
                 await ctx.bot.user.edit(avatar=await resp.read())
         await ctx.message.add_reaction(":helYea:236243426662678528")
+
+    @command()
+    @checks.is_owner()
+    async def cProfile(self, ctx, time=60):
+        profile = cProfile.Profile()
+
+        profile.enable()
+        await asyncio.sleep(time)
+        profile.disable()
+
+        profile_file = tempfile.mktemp()
+        profile.dump_stats(profile_file)
+        stdout, stderr = await utils.run_subprocess("python -m gprof2dot -f pstats %s" % profile_file)
+        await ctx.send(files=[
+            discord.File(profile_file, "profile.pstats"),
+            discord.File(io.StringIO(stdout), "profile.dot")
+        ])
+        os.remove(profile_file)
