@@ -83,11 +83,6 @@ DISPATCH_NAMES = [
 def _opcode_name(opcode):
     return OPCODE_NAMES.get(opcode, opcode)
 
-
-def _count_members_fac(bot, status):
-    return lambda: sum(m.status == status for m in bot.get_all_members())
-
-
 def uptime():
     """Returns uptime in seconds."""
     p = psutil.Process(os.getpid())
@@ -201,7 +196,13 @@ class PrometheusMetrics:
             "member_count", prometheus_client.Gauge, "Member Count", ['status'])
         for status in discord.Status:
             self.member_count.labels(status=status.name).set_function(
-                _count_members_fac(bot, status))
+                self._member_count_factory(status))
+
+        self._member_counts = {
+            status: 0 for status in discord.Status
+        }
+        for member in bot.get_all_members():
+            self._member_counts[member.status] += 1
 
         for opcode in OPCODE_NAMES.values():
             self.opcodes.labels(opcode=opcode)
@@ -213,6 +214,37 @@ class PrometheusMetrics:
         self.bot = bot
 
         http.add_handler("GET", "/metrics", self.handle_metrics)
+
+    def _member_count_factory(self, status):
+        return lambda: self._member_counts[status]
+
+    # Member counts
+    async def on_ready(self):
+        self._member_counts = {
+            status: 0 for status in discord.Status
+        }
+
+        for member in self.bot.get_all_members():
+            self._member_counts[member.status] += 1
+
+    async def on_member_update(self, before, member):
+        if before.status != member.status:
+            self._member_counts[member.status] += 1
+            self._member_counts[before.status] -= 1
+
+    async def on_member_join(self, member):
+        self._member_counts[member.status] += 1
+
+    async def on_member_remove(self, member):
+        self._member_counts[member.status] -= 1
+
+    async def on_guild_join(self, guild):
+        for member in guild.members:
+            self._member_counts[member.status] += 1
+
+    async def on_guild_remove(self, guild):
+        for member in guild.members:
+            self._member_counts[member.status] -= 1
 
     async def handle_metrics(self, req):
         """aiohttp handler for Prometheus metrics."""
