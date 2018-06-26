@@ -124,11 +124,9 @@ class Debug:
     @command()
     @checks.is_owner()
     async def update_and_restart(self, ctx):
-        await ctx.message.add_reaction("a:loading:393852367751086090")
-        await utils.run_subprocess("git pull --rebase")
-        await utils.run_subprocess("python -m pip install --upgrade -r requirements.txt")
-        await ctx.message.remove_reaction("a:loading:393852367751086090", ctx.me)
-        await ctx.message.add_reaction(":helYea:236243426662678528")
+        async with utils.loading_emoji(ctx):
+            await utils.run_subprocess("git pull --rebase")
+            await utils.run_subprocess("python -m pip install --upgrade -r requirements.txt")
         log.info("Restarting due to update_and_restart")
         os.execve(sys.executable, ['python', '-m', 'dango'], os.environ)
 
@@ -188,15 +186,17 @@ class Debug:
     async def cProfile(self, ctx, time=60):
         profile = cProfile.Profile()
 
-        profile.enable()
-        await asyncio.sleep(time)
-        profile.disable()
+        async with utils.loading_emoji(ctx):
+            profile.enable()
+            await asyncio.sleep(time)
+            profile.disable()
 
-        profile_file = tempfile.mktemp()
-        profile.dump_stats(profile_file)
-        stdout, stderr = await utils.run_subprocess("python -m gprof2dot -f pstats %s" % profile_file)
-        await ctx.send(files=[
-            discord.File(profile_file, "profile.pstats"),
-            discord.File(io.StringIO(stdout), "profile.dot")
-        ])
-        os.remove(profile_file)
+            profile_file = tempfile.mktemp()
+            profile.dump_stats(profile_file)
+            stdout, stderr = await utils.run_subprocess("python -m gprof2dot -f pstats %s" % profile_file)
+
+            await ctx.send(files=[
+                discord.File(profile_file, "profile.pstats"),
+                discord.File(io.StringIO(stdout), "profile.dot")
+            ])
+            os.remove(profile_file)

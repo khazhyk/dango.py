@@ -214,3 +214,21 @@ def resolve_color(value):
 def emoji_url(emoji):
     return "http://twemoji.maxcdn.com/2/72x72/{}.png".format(
         "-".join("{:x}".format(ord(c)) for c in emoji))
+
+
+class _LoadingEmojiContext():
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    async def __aenter__(self):
+        await self.ctx.message.add_reaction("a:loading:393852367751086090")
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.ctx.message.remove_reaction("a:loading:393852367751086090", self.ctx.me)
+        if exc is None:
+            await self.ctx.message.add_reaction(":helYea:236243426662678528")
+        else:
+            await self.ctx.message.add_reaction(":discordok:293495010719170560")
+
+def loading_emoji(ctx):
+    return _LoadingEmojiContext(ctx)
