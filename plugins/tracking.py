@@ -524,9 +524,9 @@ class Tracking:
             log.info("Got edit with old timestamp, missed pin? %s", data)
             return  # This *may* be a pin, since it's old, but we didn't get a pin event.
 
-        channel = self.bot.get_channel(int(data['channel_id']))
-        if isinstance(channel, discord.abc.GuildChannel):
-            author = channel.guild.get_member(int(data['author']['id']))
+        if data['guild_id']:
+            guild = self.bot.get_guild(int(data['guild_id']))
+            author = guild.get_member(int(data['author']['id']))
         else:
             author = self.bot.get_user(int(data['author']['id']))
 
@@ -542,9 +542,9 @@ class Tracking:
         self._recent_pins[str(channel.id)] = datetime.utcnow()
 
     async def on_raw_reaction_add(self, raw_event):
-        channel = self.bot.get_channel(raw_event.channel_id)
-        if isinstance(channel, discord.abc.GuildChannel):
-            author = channel.guild.get_member(raw_event.user_id)
+        if raw_event.guild_id:
+            guild = self.bot.get_guild(raw_event.guild_id)
+            author = guild.get_member(raw_event.user_id)
         else:
             author = self.bot.get_user(raw_event.user_id)
         if not author:
