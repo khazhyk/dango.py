@@ -336,3 +336,20 @@ class Misc:
 
         await ctx.send("```json\n{}```".format(
             utils.clean_triple_backtick(json.dumps(raw, indent=2))))
+
+    @command()
+    async def nostalgia(self, ctx, date: utils.convert_date=None, *, channel: discord.TextChannel=None):
+        """Jump to a specific date.
+
+        The format of the date must be either YYYY-MM-DD or YYYY/MM/DD.
+
+        If no date is provided, jumps to the first message in this channel.
+        """
+        if channel is None:
+            channel = ctx.message.channel
+
+        if date is None:
+            date = channel
+
+        async for m in channel.history(after=date, limit=1):
+            await ctx.send(utils.jump_url(m))

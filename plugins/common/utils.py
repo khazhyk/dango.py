@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import logging
 import os
 import re
@@ -210,6 +211,20 @@ def resolve_color(value):
     except AttributeError:
         raise errors.BadArgument("Invalid color {}".format(value))
 
+def convert_date(argument):
+    formats = (
+        '%Y/%m/%d',
+        '%Y-%m-%d',
+    )
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(argument, fmt)
+        except ValueError:
+            continue
+
+    raise errors.BadArgument(
+        'Cannot convert to date. Expected YYYY/MM/DD or YYYY-MM-DD.')
 
 def emoji_url(emoji):
     return "http://twemoji.maxcdn.com/2/72x72/{}.png".format(
@@ -232,3 +247,6 @@ class _LoadingEmojiContext():
 
 def loading_emoji(ctx):
     return _LoadingEmojiContext(ctx)
+
+def jump_url(message):
+  return "<https://discordapp.com/channels/{0.channel.guild.id}/{0.channel.id}/{0.id}>".format(message)
