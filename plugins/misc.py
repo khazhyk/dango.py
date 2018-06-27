@@ -338,7 +338,7 @@ class Misc:
             utils.clean_triple_backtick(json.dumps(raw, indent=2))))
 
     @command()
-    async def nostalgia(self, ctx, date: utils.convert_date=None, *, channel: discord.TextChannel=None):
+    async def nostalgia(self, ctx, channel: discord.TextChannel=None, date: utils.convert_date=None):
         """Jump to a specific date.
 
         The format of the date must be either YYYY-MM-DD or YYYY/MM/DD.
