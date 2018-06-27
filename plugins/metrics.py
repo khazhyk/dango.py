@@ -222,7 +222,7 @@ class PrometheusMetrics:
         self._member_counts = {
             status: 0 for status in discord.Status
         }
-        for member in bot.get_all_members():
+        for member in self.bot.get_all_members():
             self._member_counts[member.status] += 1
 
     async def on_member_update(self, before, member):
