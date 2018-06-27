@@ -242,7 +242,7 @@ class PrometheusMetrics:
 
     async def on_guild_unavailable(self, guild):
         for member in guild.members:
-            self._member_counts[member.status] += 1
+            self._member_counts[member.status] -= 1
 
     async def on_guild_join(self, guild):
         for member in guild.members:
