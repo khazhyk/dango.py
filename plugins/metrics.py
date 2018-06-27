@@ -218,6 +218,13 @@ class PrometheusMetrics:
     def _member_count_factory(self, status):
         return lambda: self._member_counts[status]
 
+    async def on_ready(self):
+        self._member_counts = {
+            status: 0 for status in discord.Status
+        }
+        for member in bot.get_all_members():
+            self._member_counts[member.status] += 1
+
     async def on_member_update(self, before, member):
         if before.status != member.status:
             self._member_counts[member.status] += 1
