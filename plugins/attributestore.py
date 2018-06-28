@@ -32,6 +32,7 @@ class AttributeStore:
         self._lru = LRU(2048)
         self._lru_types = set()
 
+        # Member can't be LRU mapped if we have multi-process bot.
         self.register_mapping(discord.abc.User, 'member')
         self.register_mapping(discord.Guild, 'server')
         self.register_mapping(discord.TextChannel, 'channel')
