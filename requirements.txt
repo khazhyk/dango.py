@@ -1,6 +1,6 @@
 git+https://github.com/khazhyk/discord.py@rewrite
 #git+https://github.com/Rapptz/discord.py@rewrite
-aiohttp<3
+aiohttp
 watchdog
 psutil
 lru-dict
@@ -38,4 +38,4 @@ mcstatus
 # overwatch
 git+https://github.com/khazhyk/pachimari
 
-pip<=10.0
+pip

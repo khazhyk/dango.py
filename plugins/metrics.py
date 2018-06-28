@@ -129,6 +129,7 @@ class HTTP:
         for (method, location), handler in self.handlers.items():
             self.app.router.add_route(method, location, handler)
 
+        self.app.freeze()
         await self.app.startup()
 
         self.handler = self.app.make_handler()
