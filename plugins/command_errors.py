@@ -1,4 +1,5 @@
 import logging
+import traceback
 from dango import dcog
 import discord
 from discord.ext.commands import errors
@@ -37,6 +38,7 @@ class CommandErrors:
     """
 
     def __init__(self, config):
+        self.verbose_errors = config.register("verbose_errors", False)
         pass
 
     async def on_command_error(self, ctx, exp):
@@ -55,6 +57,8 @@ class CommandErrors:
 
         if isinstance(exp, discord.errors.HTTPException) and exp.response.status == 500:
             msg = "Discord broke, try again."
+        elif self.verbose_errors.value:
+            msg = "```{}```".format("".join(traceback.format_exception(*tbtpl(main_exp))))
         else:
             msg = "An unknown error occured."
 
