@@ -84,14 +84,14 @@ class Mentions:
     def __init__(self, bot, config, attr):
         self.proxy_token = config.register("proxy_token", "")  # TODO
         self.attr = attr
-        self.bot_id = bot.user.id
+        self.bot = bot
 
     async def _get_mode(self, user: discord.User):
         return PmMentionMode(await self.attr.get_attribute(user, "pm_mentions_mode", "off"))
 
     async def _message_user(self, mention, message, context):
         # Can't pm ourselves.
-        if mention.id == self.bot_id:
+        if mention.id == self.bot.user.id:
             return
 
         mode = await self._get_mode(mention)
@@ -126,7 +126,7 @@ class Mentions:
                 await self.attr.set_attributes(mention, pm_mentions_mode=PmMentionMode.off.value)
 
     async def on_message(self, message):
-        if isinstance(message.channel, discord.DMChannel) or not message.mentions or message.author.id == self.bot_id:
+        if isinstance(message.channel, discord.DMChannel) or not message.mentions or message.author.id == self.bot.user.id:
             return
 
         if len(message.mentions) > 10:
