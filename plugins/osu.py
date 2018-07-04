@@ -10,7 +10,10 @@ from discord.ext.commands import converter
 from discord.ext.commands import errors
 import osuapi
 from osuapi.model import OsuMode
+from lru import LRU
+from discord.utils import cached_property
 
+from .common import utils
 
 class StringOrMentionConverter(converter.Converter):
     async def convert(self, ctx, argument):
@@ -29,6 +32,34 @@ def osu_map_url(value):
     raise errors.BadArgument("Not recognized as a beatmap url!")
 
 
+class OsuRichPresence:
+
+    def __init__(self, activity: discord.Activity):
+        if activity.name != "osu!":
+            raise InvalidArgumentError("not osu!")
+        self._activity = activity
+
+    @cached_property
+    def username(self):
+        if not self._activity.large_image_text:
+            return None
+        return self._activity.large_image_text.split()[0]
+
+    @cached_property
+    def rank(self):
+        return int(re.match(r".* \(rank #(.*)\)", self._activity.large_image_text).group(1).replace(",", ""))
+
+    @property
+    def state(self):
+        return self._activity.state
+
+    @property
+    def multiplayer_lobby(self):
+        if not self._activity.party.get('size'):
+            return None
+        return self._activity.state
+
+
 @dcog(depends=["AttributeStore"])
 class Osu:
     """osu! API commands."""
@@ -39,6 +70,7 @@ class Osu:
         self.osuapi = osuapi.OsuApi(
             self.api_key(), connector=osuapi.AHConnector(
                 aiohttp.ClientSession(loop=asyncio.get_event_loop())))
+        self._osu_presence_username_cache = LRU(4<<10)
 
     def __unload(self):
         self.osuapi.close()
@@ -59,6 +91,12 @@ class Osu:
                 "There is no osu user by the name {}".format(username))
 
         return res[0]
+
+    async def on_member_update(self, before, member):
+        if member.activity and member.activity.name == "osu!" and isinstance(member.activity, discord.Activity):
+            rp = OsuRichPresence(member.activity)
+            if rp.username:
+                self._osu_presence_username_cache[member.id] = rp.username
 
     @command()
     async def setosu(self, ctx, *, username: str):
@@ -99,13 +137,26 @@ class Osu:
         if osu_user_id:
             return await self._lookup_acct(osu_user_id, mode=mode)
 
-        if ctx.author != user:
+        if ctx.author.id != user.id:
             raise errors.BadArgument(
                 "I don't know {}'s osu username!".format(user))
+
+        presence_username = self._osu_presence_username_cache.get(user.id)
+
+        clean_prefix = utils.clean_double_backtick(ctx.prefix)
+
+        if presence_username:
+            await ctx.send(
+                "I don't know your osu username! I'm setting your osu username"
+                "to {}, which rich presence showed you recently playing as. "
+                "If this is wrong use ``{}setosu <username>``".format(
+                presence_username, clean_prefix))
+            return await self._set_osu_username(user, presence_username)
+
         await ctx.send(
-            "I don't know your osu name! I'm setting your osu name to {}, "
-            "if this is wrong use {}setosu <name>".format(
-                user.name, ctx.prefix))
+            "I don't know your osu username! I'm setting your osu username "
+            "to {}, if this is wrong use ``{}setosu <username>``".format(
+                user.name, clean_prefix))
         return await self._set_osu_username(user, user.name)
 
     @command(pass_context=True, aliases=['taiko', 'ctb', 'mania'])
