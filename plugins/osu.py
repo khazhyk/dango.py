@@ -1,19 +1,26 @@
 import asyncio
 import collections
+import datetime
 import time
 import re
+
 import aiohttp
 from dango import dcog
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import converter
 from discord.ext.commands import errors
+from discord.utils import cached_property
+import humanize
+from lru import LRU
 import osuapi
 from osuapi.model import OsuMode
-from lru import LRU
-from discord.utils import cached_property
 
 from .common import utils
+
+# date ranked, UTC+8 for now
+DATE_OFFSET = datetime.timedelta(hours=-8) + (datetime.datetime.now() - datetime.datetime.utcnow())
+
 
 class StringOrMentionConverter(converter.Converter):
     async def convert(self, ctx, argument):
@@ -71,6 +78,8 @@ class Osu:
             self.api_key(), connector=osuapi.AHConnector(
                 aiohttp.ClientSession(loop=asyncio.get_event_loop())))
         self._osu_presence_username_cache = LRU(4<<10)
+
+        self._beatmap_cache = LRU(256)
 
     def __unload(self):
         self.osuapi.close()
@@ -158,6 +167,79 @@ class Osu:
             "to {}, if this is wrong use ``{}setosu <username>``".format(
                 user.name, clean_prefix))
         return await self._set_osu_username(user, user.name)
+
+    async def _get_beatmap(self, beatmap_id):
+        if beatmap_id in self._beatmap_cache:
+            return self._beatmap_cache[beatmap_id]
+        beatmaps = await self.osuapi.get_beatmaps(beatmap_id=beatmap_id)
+        if not beatmaps:
+            return None
+        self._beatmap_cache[beatmap_id] = beatmaps[0]
+        return beatmaps[0]
+
+    @command(aliases=['taikorecent', 'ctbrecent', 'maniarecent'])
+    async def osurecent(self, ctx, *, account: StringOrMentionConverter=None):
+        """Show a user's recent osu plays.
+
+        Use + to give a raw account name. e.g.:
+        osu +cookiezi
+        osu @ppy
+        """
+        account = account or ctx.message.author
+
+        mode = {
+            'osurecent': OsuMode.osu,
+            'taikorecent': OsuMode.taiko,
+            'maniarecent': OsuMode.mania,
+            'ctbrecent': OsuMode.ctb
+        }[ctx.invoked_with]
+
+        with ctx.typing():
+            if account is None:
+                raise errors.BadArgument("Invalid mention...!")
+
+            if isinstance(account, discord.abc.User):
+                osu_acct = await self._get_osu_account(ctx, account, mode)
+            else:
+                osu_acct = await self._lookup_acct(account, mode=mode)
+
+            recent_scores = await self.osuapi.get_user_recent(
+                osu_acct.user_id, mode=mode)
+
+        embed = discord.Embed()
+
+        embed = discord.Embed()
+        embed.title = osu_acct.username
+        embed.url = "https://osu.ppy.sh/u/%s" % osu_acct.user_id
+        embed.color = hash(str(osu_acct.user_id)) % (1 << 24)
+        if isinstance(account, discord.abc.User):
+            embed.set_author(
+                name=str(account), icon_url=account.avatar_url_as(static_format="png"))
+
+        if not recent_scores:
+            embed.description = "%s hasn't played %s recently" % (
+                osu_acct.username, mode.name)
+        else:
+            map_descriptions = []
+
+            for score in recent_scores:
+                beatmap = await self._get_beatmap(score.beatmap_id)
+                if not beatmap:
+                    continue
+
+                map_descriptions.append(
+                    ("**{rank}{mods} - {score.score:,} ({percent:.2f}%) {score.maxcombo}x - {map.difficultyrating:.2f} Stars** - {ago}\n"
+                     "[{map.artist} - {map.title}[{map.version}]]({map.url}) by {map.creator}").format(
+                     rank=score.rank.upper(),
+                     mods=" +{:s}".format(score.enabled_mods) if score.enabled_mods.value else "",
+                     percent=100*score.accuracy(mode),
+                     ago=humanize.naturaltime(score.date + DATE_OFFSET),
+                     score=score,
+                     map=beatmap))
+
+                embed.description = "\n".join(map_descriptions)
+
+        await ctx.send(embed=embed)
 
     @command(pass_context=True, aliases=['taiko', 'ctb', 'mania'])
     async def osu(self, ctx, *, account: StringOrMentionConverter=None):

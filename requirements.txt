@@ -4,7 +4,8 @@ aiohttp
 watchdog
 psutil
 lru-dict
-osuapi
+#osuapi
+git+https://github.com/khazhyk/osuapi
 ruamel.yaml
 tabulate
 humanize
