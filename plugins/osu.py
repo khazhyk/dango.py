@@ -156,7 +156,7 @@ class Osu:
 
         if presence_username:
             await ctx.send(
-                "I don't know your osu username! I'm setting your osu username"
+                "I don't know your osu username! I'm setting your osu username "
                 "to {}, which rich presence showed you recently playing as. "
                 "If this is wrong use ``{}setosu <username>``".format(
                 presence_username, clean_prefix))
