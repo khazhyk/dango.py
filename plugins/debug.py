@@ -125,7 +125,7 @@ class Debug:
     @checks.is_owner()
     async def update_and_restart(self, ctx):
         async with utils.loading_emoji(ctx):
-            await utils.run_subprocess("git pull --rebase")
+            await utils.run_subprocess("git fetch origin master && git reset --hard FETCH_HEAD")
             await utils.run_subprocess("python -m pip install --upgrade -r requirements.txt")
         log.info("Restarting due to update_and_restart")
         os.execve(sys.executable, ['python', '-m', 'dango'], os.environ)
