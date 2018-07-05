@@ -127,23 +127,33 @@ class Logging:
         if self.bot._connection._get_message(raw.message_id):
             return
 
-        self.logger.emit((
-            None,
-            None,
-            "%s#%s" % (raw.data['author']['username'],raw.data['author']['discriminator']),
-            None,
-            json.dumps(raw.data['embeds']),
-            json.dumps([d['url'] for d in raw.data['attachments']]),
-            raw.data.get('guild_id'),
-            raw.data['channel_id'],
-            raw.data['author']['id'],
-            raw.data['id'],
-            raw.data['content'],
-            # Note: these timestamps are of a different format than
-            # datetimes given by discord
-            raw.data['timestamp'],
-            raw.data['edited_timestamp'],
-            ))
+        try:
+            if 'author' in raw.data:
+                author_name = "%s#%s" % (raw.data['author']['username'],raw.data['author']['discriminator'])
+                author_id = raw.data['author']['id']
+            else:
+                author_name = None
+                author_id = None
+
+            self.logger.emit((
+                None,
+                None,
+                author_name,
+                None,
+                json.dumps(raw.data['embeds']),
+                json.dumps([d['url'] for d in raw.data.get('attachments', [])]),
+                raw.data.get('guild_id'),
+                raw.data['channel_id'],
+                author_id,
+                raw.data['id'],
+                raw.data.get('content'),
+                # Note: these timestamps are of a different format than
+                # datetimes given by discord
+                raw.data.get('timestamp'),
+                raw.data.get('edited_timestamp'),
+                ))
+        except:
+            logging.exception("Unable to log raw edit %s", raw.data)
 
     def _record_message(self, message):
         if isinstance(message.channel, discord.DMChannel):
