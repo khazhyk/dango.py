@@ -88,12 +88,13 @@ class DangoBotBase(commands.bot.BotBase):
             self.token = cgroup.register("token")
             self.plugins = cgroup.register("plugins", default="plugins")
             self.waaai_api_key = cgroup.register("waaai_api_key")
+            self._is_bot = cgroup.register("bot", default=True).value
         finally:
             # Raise and fail to start on invalid core config
             self._config.save()
 
         self._dango_unloaded_cogs = {}
-        super().__init__(self.prefix.value, *args, **kwargs)
+        super().__init__(self.prefix.value, *args, self_bot=not self._is_bot, **kwargs)
 
     def run(self, *args, **kwargs):
         if isinstance(self.plugins(), str):
@@ -101,7 +102,7 @@ class DangoBotBase(commands.bot.BotBase):
         else:
             for plugin_dir in self.plugins():
                 self.watch_plugin_dir(plugin_dir)
-        super().run(self.token.value, *args, **kwargs)
+        super().run(self.token.value, *args, bot=self._is_bot, **kwargs)
 
     async def on_error(self, event, *args, **kwargs):
         log.exception(
