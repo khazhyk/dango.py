@@ -1,7 +1,7 @@
 import asyncio
 import copy
-from contextlib import redirect_stdout
 import cProfile
+import functools
 import logging
 import io
 import os
@@ -103,10 +103,7 @@ class Debug:
     @checks.is_owner()
     async def objgrowth(self, ctx):
         stdout = io.StringIO()
-
-        with redirect_stdout(stdout):
-            await ctx.bot.loop.run_in_executor(None, objgraph.show_growth)
-
+        await ctx.bot.loop.run_in_executor(None, functools.partial(objgraph.show_growth, file=stdout))
         await ctx.send(stdout.getvalue())
 
     @command()
