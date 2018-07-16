@@ -20,6 +20,7 @@ IGNORED = (
 )
 
 ERROR_MAP = utils.TypeMap({
+    errors.ConversionError: None,  # Probably a programming error...
     errors.BadArgument: "Bad argument: {exp}",
     errors.MissingRequiredArgument:
         "Missing argument: {exp.param.name}. Run `` {ctx.prefix}help "
