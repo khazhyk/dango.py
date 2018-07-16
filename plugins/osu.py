@@ -16,6 +16,7 @@ from lru import LRU
 import osuapi
 from osuapi.model import OsuMode
 
+from .common import converters
 from .common import utils
 
 # date ranked, UTC+8 for now
@@ -26,7 +27,7 @@ class StringOrMentionConverter(converter.Converter):
     async def convert(self, ctx, argument):
         if argument.startswith("+"):
             return argument[1:]
-        return await converter.MemberConverter().convert(ctx, argument)
+        return await converters.UserMemberConverter().convert(ctx, argument)
 
 
 def osu_map_url(value):
