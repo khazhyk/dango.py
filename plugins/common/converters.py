@@ -65,6 +65,8 @@ class UserMemberConverter(Converter):
         if len(matches) == 1:
             return matches[0]
 
+        matches = sorted(matches, key=lambda x: x.discriminator)
+
         pager = paginator.GroupLinesPaginator(ctx, [
             "%d: %s" % (idx + 1, match) for
             (idx, match) in enumerate(matches)
