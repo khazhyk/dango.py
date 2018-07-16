@@ -245,7 +245,7 @@ class PluginDirLoadTest(unittest.TestCase):
     def test_load_folder(self):
         b = self.b
 
-        b.watch_plugin_dir("test_data")
+        b._loader.watch_spec("test_data.*")
 
         self.assertIn("InModule", b.cogs)
         self.assertIn("SubModule", b.cogs)

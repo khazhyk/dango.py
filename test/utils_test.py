@@ -1,6 +1,6 @@
 import unittest
 
-from plugins.common import utils
+from dango.plugins.common import utils
 import discord
 
 

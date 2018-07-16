@@ -5,7 +5,7 @@ import random
 import unittest
 
 from dango import config
-from plugins import database
+from dango.plugins import database
 
 
 conf = config.StringConfiguration("""

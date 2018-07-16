@@ -5,9 +5,9 @@ import unittest
 
 from dango import config
 import discord
-from plugins import database
-from plugins import redis
-from plugins import tracking
+from dango.plugins import database
+from dango.plugins import redis
+from dango.plugins import tracking
 
 
 conf = config.StringConfiguration("""

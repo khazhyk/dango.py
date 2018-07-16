@@ -67,6 +67,7 @@ class WatchdogExtensionLoader:
     def __init__(self, bot):
         self.bot = bot
         self._watches = {}
+        self._observer = None
 
     def start(self):
         self._observer = observers.Observer()
@@ -75,7 +76,9 @@ class WatchdogExtensionLoader:
         self._observer.start()
 
     def close(self):
-        self._observer.close()
+        if self._observer:
+            self._observer.close()
+        self._observer = None
 
     def watch_spec(self, plugin_spec):
         """Watch the plugin spec for changes.
