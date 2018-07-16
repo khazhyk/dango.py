@@ -150,7 +150,7 @@ class EmbedPaginator:
     async def send(self):
         """Send message and wait for reactions."""
         if len(self.pages) == 1:
-            await self.ctx.send(embed=self.embed())
+            self.msg = await self.ctx.send(embed=self.embed())
             return
 
         self.msg = await self.ctx.send(embed=self.embed())
@@ -165,7 +165,7 @@ class EmbedPaginator:
                         check=lambda reaction, user: reaction.message.id == self.msg.id and
                                                      user.id == self.ctx.author.id)
                     emoji = norm_emoji(reaction.emoji)
-                except asyncio.TimeoutError:
+                except (asyncio.TimeoutError, asyncio.CancelledError):
                     await self.close()
                 else:
                     if emoji in self.dispatch:
