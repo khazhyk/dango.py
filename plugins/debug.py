@@ -180,6 +180,10 @@ class Debug:
         await ctx.message.add_reaction(":helYea:236243426662678528")
 
     @command()
+    async def do_jumps_work_in_embeds_yet(self, ctx):
+        await ctx.send(embed=discord.Embed(description="[Jump!](%s)" % ctx.message.jump_url))
+
+    @command()
     @checks.is_owner()
     async def cProfile(self, ctx, time=60):
         profile = cProfile.Profile()
