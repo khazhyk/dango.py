@@ -1,8 +1,12 @@
 """Converters..."""
+import asyncio
 import re
 
 import discord
 from discord.ext.commands import Converter, errors
+
+from . import paginator
+from . import utils
 
 tag_regex = re.compile(r'(.*)#(\d{4})')
 lax_id_regex = re.compile(r'([0-9]{15,21})$')
@@ -58,7 +62,37 @@ class UserMemberConverter(Converter):
         return []
 
     async def disambiguate(self, ctx, matches):
-        return matches[0]
+        if len(matches) == 1:
+            return matches[0]
+
+        pager = paginator.GroupLinesPaginator(ctx, [
+            "%d: %s" % (idx + 1, match) for
+            (idx, match) in enumerate(matches)
+            ], title="Multiple matches, select one...", maxlines=10)
+
+        pager_task = utils.create_task(pager.send())
+
+        try:
+            msg = await ctx.bot.wait_for('message', timeout=10,
+                    check=lambda m: m.author.id == ctx.author.id and
+                                    m.channel.id == ctx.channel.id)
+        except asyncio.TimeoutError:
+            raise errors.BadArgument("Timed out waiting for disambiguation...")
+        else:
+            try:
+                idx = int(msg.content) - 1
+            except ValueError:
+                raise errors.BadArgument("{} is not a number... try again?".format(msg.content))
+
+            if idx < 0 or idx >= len(matches):
+                raise errors.BadArgument("Bad index... Try typing what you see in the embed...?")
+
+            return matches[idx]
+        finally:
+            await pager.close()
+            pager_task.cancel()
+            if pager.msg:
+                utils.create_task(pager.msg.delete())
 
     async def find_match(self, ctx, argument):
         """Get a match...
