@@ -15,6 +15,7 @@ import discord
 from discord.ext.commands import command
 import objgraph
 
+from .common import converters
 from .common import utils
 from .common.paginator import EmbedPaginator
 
@@ -156,7 +157,7 @@ class Debug:
 
     @command(name="as")
     @checks.is_owner()
-    async def as_(self, ctx, who: discord.Member, *, cmd):
+    async def as_(self, ctx, who: converters.UserMemberConverter, *, cmd):
         """Run a command impersonating another user."""
         fake_msg = copy.copy(ctx.message)
 

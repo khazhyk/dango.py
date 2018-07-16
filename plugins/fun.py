@@ -22,6 +22,8 @@ import discord
 from discord.ext.commands import command, errors, group
 from PIL import Image
 
+from .common import converters
+
 ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 
 
@@ -98,7 +100,7 @@ class ImgFun:
         pass
 
     @command()
-    async def corrupt(self, ctx, *, user: discord.User=None):
+    async def corrupt(self, ctx, *, user: converters.UserMemberConverter=None):
         """Corrupt a user's avatar."""
         user = user or ctx.message.author
         async with aiohttp.ClientSession() as sess:

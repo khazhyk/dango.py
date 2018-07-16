@@ -18,6 +18,7 @@ import tabulate
 
 from plugins.database import multi_insert_str
 
+from .common import converters
 from .common import utils
 
 log = logging.getLogger(__name__)
@@ -555,7 +556,7 @@ class Tracking:
     # Name related commands
 
     @group(invoke_without_command=True)
-    async def names(self, ctx, *, user: discord.Member=None):
+    async def names(self, ctx, *, user: converters.UserMemberConverter=None):
         """Shows a user's previous names within the last 30 days."""
         if user is None:
             user = ctx.message.author
@@ -566,7 +567,7 @@ class Tracking:
             user, names))
 
     @names.command(name="all")
-    async def allnames(self, ctx, *, user: discord.Member=None):
+    async def allnames(self, ctx, *, user: converters.UserMemberConverter=None):
         """Shows a all of a user's previous names."""
         if user is None:
             user = ctx.message.author

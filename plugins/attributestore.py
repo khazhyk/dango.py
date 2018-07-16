@@ -6,6 +6,7 @@ import discord
 from discord.ext.commands import command
 from lru import LRU
 
+from .common import converters
 from .common import utils
 
 
@@ -118,7 +119,7 @@ class AttributeStore:
 
     @command()
     @checks.is_owner()
-    async def attributes(self, ctx, user: discord.User):
+    async def attributes(self, ctx, user: converters.UserMemberConverter):
         attr = await self.get(user)
         if not attr:
             await ctx.send("No attributes")

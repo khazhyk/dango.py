@@ -12,6 +12,7 @@ from discord.ext.commands import errors
 import humanize
 import tabulate
 
+from .common import converters
 from .common import utils
 from .common.utils import InfoBuilder
 from .common.paginator import GroupLinesPaginator
@@ -216,7 +217,7 @@ class Info:
         await ctx.send(i.code_block())
 
     @command()
-    async def userinfo(self, ctx, *, user: discord.User=None):  # TODO - custom converter
+    async def userinfo(self, ctx, *, user: converters.UserMemberConverter=None):  # TODO - custom converter
         """Show information about a user."""
         if user is None:
             user = ctx.message.author
@@ -271,7 +272,7 @@ class Info:
         await ctx.send(rd.code_block())
 
     @command()
-    async def avatar(self, ctx, *, user: discord.User=None):
+    async def avatar(self, ctx, *, user: converters.UserMemberConverter=None):
         """Show a user's avatar."""
         if user is None:
             user = ctx.message.author
@@ -279,7 +280,7 @@ class Info:
         await ctx.send(user.avatar_url_as(static_format='png'))
 
     @command()
-    async def defaultavatar(self, ctx, *, user: discord.User=None):
+    async def defaultavatar(self, ctx, *, user: converters.UserMemberConverter=None):
         """Show the default avatar for a user.
 
         (If a user has a custom avatar, it will show what it would be if they removed it).
