@@ -9,7 +9,6 @@ import re
 import discord
 from discord.ext import commands
 from discord.utils import cached_property
-from watchdog import observers
 
 from . import config
 from . import plugin_watchdog
@@ -86,22 +85,24 @@ class DangoBotBase(commands.bot.BotBase):
         try:
             self.prefix = cgroup.register("prefix", default="test ")
             self.token = cgroup.register("token")
-            self.plugins = cgroup.register("plugins", default="plugins")
+            self.plugins = cgroup.register("plugins", default="dango.plugins.*")
             self.waaai_api_key = cgroup.register("waaai_api_key")
             self._is_bot = cgroup.register("bot", default=True).value
         finally:
             # Raise and fail to start on invalid core config
             self._config.save()
 
+        self._loader = plugin_watchdog.WatchdogExtensionLoader(self)
         self._dango_unloaded_cogs = {}
         super().__init__(self.prefix.value, *args, self_bot=not self._is_bot, **kwargs)
 
     def run(self, *args, **kwargs):
         if isinstance(self.plugins(), str):
-            self.watch_plugin_dir(self.plugins())
+            self._loader.watch_spec(self.plugins())
         else:
             for plugin_dir in self.plugins():
-                self.watch_plugin_dir(plugin_dir)
+                self._loader.watch_spec(plugin_dir)
+        self._loader.start()
         super().run(self.token.value, *args, bot=self._is_bot, **kwargs)
 
     async def on_error(self, event, *args, **kwargs):
@@ -207,37 +208,9 @@ class DangoBotBase(commands.bot.BotBase):
 
         self.extensions[name] = lib
 
-    def watch_plugin_dir(self, dire):
-        # TODO - story is kind of icky for folder modules - we need to import
-        # cogs into __init__.py, not much better than setup() in __init__.py
-        for item in os.listdir(dire):
-            lib = plugin_watchdog.module_name(os.path.join(dire, item))
-            if lib:
-                try:
-                    self.load_extension(lib)
-                except config.InvalidConfig:
-                    log.error("Could not load %s due to invalid config!", lib)
-
-        if self._dango_unloaded_cogs:
-            log.warning(
-                "Some plugins were unable to load due to missing deps: %s",
-                ",".join("%s.%s" % (c.__module__, c.__name__)
-                         for c in self._dango_unloaded_cogs.values()))
-        self.watchdog_dir(dire)
-
-    @cached_property
-    def observer(self):
-        ob = observers.Observer()
-        ob.start()
-        return ob
-
     async def close(self):
-        self.observer.stop()
+        self._loader.close()
         return await super().close()
-
-    def watchdog_dir(self, dire):
-        self.observer.schedule(
-            plugin_watchdog.PluginDirWatchdog(self), dire, recursive=True)
 
 
 class DangoAutoShardedBot(DangoBotBase, discord.AutoShardedClient):

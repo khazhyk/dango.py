@@ -16,7 +16,7 @@ from discord.ext.commands import group
 import lru
 import tabulate
 
-from plugins.database import multi_insert_str
+from dango.plugins.database import multi_insert_str
 
 from .common import converters
 from .common import utils
