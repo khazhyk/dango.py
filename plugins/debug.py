@@ -40,7 +40,7 @@ class Debug:
                   ctx.command.qualified_name, ctx.author, ctx.message.content)
 
     @command(pass_context=True, no_pm=True)
-    async def perminfo(self, ctx, chn: discord.TextChannel=None, usr: discord.Member=None):
+    async def perminfo(self, ctx, chn: converters.ChannelConverter=None, usr: discord.Member=None):
         """Show permissions for a user."""
         if usr is None:
             usr = ctx.message.author

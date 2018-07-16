@@ -169,7 +169,7 @@ class Info:
 
     @command()
     @commands.guild_only()
-    async def channelinfo(self, ctx, *, channel: discord.TextChannel=None):
+    async def channelinfo(self, ctx, *, channel: converters.ChannelConverter=None):
         """Get info about a text channel."""
         channel = channel or ctx.message.channel
         i = InfoBuilder()
@@ -180,7 +180,7 @@ class Info:
 
     @command()
     @commands.guild_only()
-    async def topic(self, ctx, *, channel: discord.TextChannel=None):
+    async def topic(self, ctx, *, channel: converters.ChannelConverter=None):
         """Quote the channel topic at people."""
         if channel is None:
             channel = ctx.message.channel

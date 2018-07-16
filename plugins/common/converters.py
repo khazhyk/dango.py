@@ -3,7 +3,7 @@ import asyncio
 import re
 
 import discord
-from discord.ext.commands import Converter, errors
+from discord.ext.commands import Converter, converter, errors
 
 from . import paginator
 from . import utils
@@ -11,6 +11,42 @@ from . import utils
 tag_regex = re.compile(r'(.*)#(\d{4})')
 lax_id_regex = re.compile(r'([0-9]{15,21})$')
 mention_regex = re.compile(r'<@!?([0-9]+)>$')
+
+
+async def disambiguate(ctx, matches):
+    if len(matches) == 1:
+        return matches[0]
+
+    matches = sorted(matches, key=lambda x: x.discriminator)
+
+    pager = paginator.GroupLinesPaginator(ctx, [
+        "%d: %s" % (idx + 1, match) for
+        (idx, match) in enumerate(matches)
+        ], title="Multiple matches, select one...", maxlines=10)
+
+    pager_task = utils.create_task(pager.send())
+
+    try:
+        msg = await ctx.bot.wait_for('message', timeout=10,
+                check=lambda m: m.author.id == ctx.author.id and
+                                m.channel.id == ctx.channel.id)
+    except asyncio.TimeoutError:
+        raise errors.BadArgument("Timed out waiting for disambiguation...")
+    else:
+        try:
+            idx = int(msg.content) - 1
+        except ValueError:
+            raise errors.BadArgument("{} is not a number... try again?".format(msg.content))
+
+        if idx < 0 or idx >= len(matches):
+            raise errors.BadArgument("Bad index... Try typing what you see in the embed...?")
+
+        return matches[idx]
+    finally:
+        await pager.close()
+        pager_task.cancel()
+        if pager.msg:
+            utils.create_task(pager.msg.delete())
 
 
 class UserMemberConverter(Converter):
@@ -61,41 +97,6 @@ class UserMemberConverter(Converter):
             return [m for m in ctx.guild.members if pred(m)]
         return []
 
-    async def disambiguate(self, ctx, matches):
-        if len(matches) == 1:
-            return matches[0]
-
-        matches = sorted(matches, key=lambda x: x.discriminator)
-
-        pager = paginator.GroupLinesPaginator(ctx, [
-            "%d: %s" % (idx + 1, match) for
-            (idx, match) in enumerate(matches)
-            ], title="Multiple matches, select one...", maxlines=10)
-
-        pager_task = utils.create_task(pager.send())
-
-        try:
-            msg = await ctx.bot.wait_for('message', timeout=10,
-                    check=lambda m: m.author.id == ctx.author.id and
-                                    m.channel.id == ctx.channel.id)
-        except asyncio.TimeoutError:
-            raise errors.BadArgument("Timed out waiting for disambiguation...")
-        else:
-            try:
-                idx = int(msg.content) - 1
-            except ValueError:
-                raise errors.BadArgument("{} is not a number... try again?".format(msg.content))
-
-            if idx < 0 or idx >= len(matches):
-                raise errors.BadArgument("Bad index... Try typing what you see in the embed...?")
-
-            return matches[idx]
-        finally:
-            await pager.close()
-            pager_task.cancel()
-            if pager.msg:
-                utils.create_task(pager.msg.delete())
-
     async def find_match(self, ctx, argument):
         """Get a match...
 
@@ -117,7 +118,7 @@ class UserMemberConverter(Converter):
 
         results = await self.get_by_name(ctx, argument)
         if results:
-            return await self.disambiguate(ctx, results)
+            return await disambiguate(ctx, results)
 
     async def convert(self, ctx, argument):
         match = await self.find_match(ctx, argument)
@@ -126,3 +127,17 @@ class UserMemberConverter(Converter):
             raise errors.BadArgument(
                 'User "{}" not found'.format(argument))
         return match
+
+class ChannelConverter(Converter):
+    """Like the old ChannelConverter, match both text and voice."""
+
+    async def convert(self, ctx, argument):
+        try:
+            return await converter.TextChannelConverter().convert(ctx, argument)
+        except errors.BadArgument:
+            pass
+        try:
+            return await converter.VoiceChannelConverter().convert(ctx, argument)
+        except errors.BadArgument:
+            pass
+        return await converter.CategoryChannelConverter().convert(ctx, argument)
