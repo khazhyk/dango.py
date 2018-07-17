@@ -27,7 +27,7 @@ except ImportError:
 
 
 SOURCE_URL = "https://github.com/khazhyk/dango.py/tree/master"
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+DPY_SOURCE_URL = "https://github.com/Rapptz/discord.py/tree/rewrite/discord"
 
 
 class NoSuchCommand(Exception):
@@ -108,7 +108,18 @@ class Meta:
     def __init__(self, config):
         self.proc = psutil.Process()
         self.proc.cpu_percent()
-        pass
+        self._git_base = None
+        self._dpy_base = None
+
+    async def get_git_path(self, full_path):
+        if not self._git_base:
+            git_base, _ = await utils.run_subprocess("git rev-parse --show-toplevel")
+            self._git_base = os.path.normpath(git_base.strip())
+        if not self._dpy_base:
+            self._dpy_base = discord.__spec__.submodule_search_locations[0]
+        full_path = full_path.replace(self._dpy_base, DPY_SOURCE_URL)
+        full_path = full_path.replace(self._git_base, SOURCE_URL)
+        return full_path
 
     @command()
     async def uptime(self, ctx):
@@ -184,7 +195,7 @@ class Meta:
         srclines, srclineno = inspect.getsourcelines(cog_or)
 
         lines = "L{}-L{}".format(srclineno, srclineno + len(srclines) - 1)
-        url = srcfile.replace(BASE_DIR, SOURCE_URL) + "#" + lines
+        url = (await self.get_git_path(srcfile)) + "#" + lines
 
         await ctx.send(url)
 
