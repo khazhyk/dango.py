@@ -90,6 +90,7 @@ class Fun:
                 if not _allowed_ext(item):
                     continue
                 cmd = ImgFileCmd(os.path.splitext(item)[0], fullpath)
+            cmd.instance = self
             self.meme.add_command(cmd)
             bot.add_command(cmd)
 
