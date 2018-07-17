@@ -181,7 +181,14 @@ class Debug:
 
     @command()
     async def do_jumps_work_in_embeds_yet(self, ctx):
-        await ctx.send(embed=discord.Embed(description="[Jump!](%s)" % ctx.message.jump_url))
+        embed = discord.Embed(
+            description="[Jump!](%s)" % ctx.message.jump_url,
+            title="Jump!",
+            url=ctx.message.jump_url,
+                    )
+        embed.set_author(name="Jump!", url=ctx.message.jump_url,
+                         icon_url=ctx.bot.user.avatar_url)
+        await ctx.send(embed=embed)
 
     @command()
     @checks.is_owner()
