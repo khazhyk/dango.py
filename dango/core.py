@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.utils import cached_property
 
 from . import config
-from . import plugin_watchdog
+from . import extensions
 from . import utils
 from . import waaai
 from . import zerobin
@@ -92,7 +92,7 @@ class DangoBotBase(commands.bot.BotBase):
             # Raise and fail to start on invalid core config
             self._config.save()
 
-        self._loader = plugin_watchdog.WatchdogExtensionLoader(self)
+        self._loader = extensions.WatchdogExtensionLoader(self)
         self._dango_unloaded_cogs = {}
         super().__init__(self.prefix.value, *args, self_bot=not self._is_bot, **kwargs)
 

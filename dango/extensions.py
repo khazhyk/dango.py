@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import os
+import time
+import threading
 import sys
 import importlib
 from watchdog import events
@@ -10,8 +12,7 @@ from . import config
 
 log = logging.getLogger(__name__)
 
-
-class PluginDirWatchdog(events.FileSystemEventHandler):
+class ModuleDirWatchdog(events.FileSystemEventHandler):
 
     def __init__(self, bot, module_lookup):
         self.bot = bot
@@ -136,7 +137,7 @@ class WatchdogExtensionLoader:
                     except config.InvalidConfig:
                         log.error("Could not load %s due to invalid config!", lib)
 
-            self._watches[watched_location] = PluginDirWatchdog(self.bot, lambda e: _module_name(e.src_path))
+            self._watches[watched_location] = ModuleDirWatchdog(self.bot, lambda e: _module_name(e.src_path))
         else:
             if plugin_spec in sys.modules:
                 log.warning("%s is already loaded by some outside source, we "
@@ -156,7 +157,7 @@ class WatchdogExtensionLoader:
                         return
                     return plugin_spec
                 watched_location = os.path.split(mod.__spec__.origin)[0]
-            self._watches[watched_location] = PluginDirWatchdog(self.bot, module_name)
+            self._watches[watched_location] = ModuleDirWatchdog(self.bot, module_name)
             try:
                 self.bot.load_extension(plugin_spec)
             except config.InvalidConfig:
