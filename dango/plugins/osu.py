@@ -230,7 +230,7 @@ class Osu:
 
                 map_descriptions.append(
                     ("**{rank}{mods} - {score.score:,} ({percent:.2f}%) {score.maxcombo}x - {map.difficultyrating:.2f} Stars** - {ago}\n"
-                     "[{map.artist} - {map.title}[{map.version}]]({map.url}) by {map.creator}").format(
+                     "[{map.artist} - {map.title}[{map.version}]]({map.url}) by [{map.creator}](https://osu.ppy.sh/u/{map.creator_id})").format(
                      rank=score.rank.upper(),
                      mods=" +{:s}".format(score.enabled_mods) if score.enabled_mods.value else "",
                      percent=100*score.accuracy(mode),
