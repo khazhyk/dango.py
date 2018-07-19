@@ -27,7 +27,10 @@ class StringOrMentionConverter(converter.Converter):
     async def convert(self, ctx, argument):
         if argument.startswith("+"):
             return argument[1:]
-        return await converters.UserMemberConverter().convert(ctx, argument)
+        try:
+            return await converters.UserMemberConverter().convert(ctx, argument)
+        except errors.BadArgument:
+            return argument
 
 
 def osu_map_url(value):
