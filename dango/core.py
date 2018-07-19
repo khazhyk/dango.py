@@ -14,7 +14,7 @@ from . import config
 from . import extensions
 from . import utils
 from . import waaai
-from . import zerobin
+from . import privatebin
 
 log = logging.getLogger(__name__)
 
@@ -60,14 +60,16 @@ class DangoContext(commands.Context):
 
             if len(content) > 2000:
                 try:
-                    zbin_url = await zerobin.upload_zerobin(content)
-                    waaai_url = await waaai.send_to_waaai(
-                        zbin_url, self.bot.waaai_api_key())
+                    pbin_url = await privatebin.upload(content)
+                    waaai_url = await waaai.shorten(
+                        pbin_url, self.bot.waaai_api_key())
                     content = "Content too long: %s" % waaai_url
-                except BaseException:  # TODO
-                    log.exception("Exception when uploading to zerobin...")
-                    # text_file = io.BytesIO(content.encode('utf8'))
+                except privatebin.PrivateBinException:
+                    log.exception("Exception when uploading to privatebin...")
                     content = "Way too big..."
+                except waaai.AkariError:
+                    log.exception("Exception when uploading to waa.ai...")
+                    content = pbin_url
 
         sent_message = await super().send(content, *args, **kwargs)
         self.bot.dispatch("dango_message_sent", sent_message, self)
