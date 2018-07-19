@@ -112,7 +112,7 @@ class WatchdogExtensionLoader:
             if not mod.__spec__.submodule_search_locations:
                 raise ValueError("There's no submodules to watch here...")
 
-            watched_location = os.path.normpath(mod.__spec__.submodule_search_locations[0])
+            watched_location = os.path.normpath(list(mod.__spec__.submodule_search_locations)[0])
             def _module_name(src_path):
                 assert src_path.startswith(watched_location)
 
