@@ -6,6 +6,7 @@ import logging
 import struct
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 
 from dango import dcog
 from dango import checks
@@ -73,13 +74,15 @@ def member_last_spoke_key(member):
 
 
 def datetime_to_redis(datetime_obj):
-    return struct.pack('q', int(datetime_obj.timestamp() * 1000))
+    """Pass in datetime in UTC, gives timestamp in UTC"""
+    return struct.pack('q', int(datetime_obj.replace(tzinfo=timezone.utc).timestamp() * 1000))
 
 
 def datetime_from_redis(bytes_obj):
+    """Pass in timestamp in UTC, gives datetime in UTC"""
     if bytes_obj is None:
         return datetime.utcfromtimestamp(0)
-    return datetime.fromtimestamp(struct.unpack('q', bytes_obj)[0] / 1000)
+    return datetime.utcfromtimestamp(struct.unpack('q', bytes_obj)[0] / 1000)
 
 
 @dcog(depends=['Database', 'Redis'], pass_bot=True)
