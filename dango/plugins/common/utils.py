@@ -193,7 +193,9 @@ class InfoBuilder:
 def resolve_color(value):
     """Resolve a custom or pre-defined color.
 
-    This allows html style #123456.
+    This allows html style #RRGGBB and #AARRGGBB
+
+    Returns (r, g, b) or (a, r, g, b)
     """
     if value.startswith('#'):
         value = value[1:]  # assumes no named color starts with #
@@ -203,11 +205,14 @@ def resolve_color(value):
     except ValueError:
         pass
     else:
-        if intval >= (1 << 24):
+        if intval >= (1 << 32):
             raise errors.BadArgument("Invalid color {} is too big!".format(value))
-        return discord.Colour(intval)
+        if len(value) > 6:
+            color = discord.Colour(intval)
+            return (color.r, color.g, color.b, color._get_byte(3))
+        return discord.Colour(intval).to_rgb()
     try:
-        return getattr(discord.Colour, value)()
+        return getattr(discord.Colour, value)().to_rgb()
     except AttributeError:
         raise errors.BadArgument("Invalid color {}".format(value))
 

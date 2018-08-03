@@ -262,7 +262,7 @@ class Misc:
 
         imgwidth = 128 * len(colors)
 
-        img = Image.new('RGB', (imgwidth, 128), colors[0])
+        img = Image.new('RGBA', (imgwidth, 128), colors[0])
         draw = ImageDraw.Draw(img)
 
         for i in range(1, len(colors)):
@@ -279,11 +279,7 @@ class Misc:
     @command(aliases=['showcolour'], require_var_positional=True)
     async def showcolor(self, ctx, *color: resolve_color):
         """Show a color."""
-        # PIL colors must be tuples
-        pil_colors = [(col.value >> 16, col.value >> 8 & 0xff,
-                       col.value & 0xff) for col in color]
-
-        color_image = await ctx.bot.loop.run_in_executor(None, self.make_pil_color_preview, *pil_colors)
+        color_image = await ctx.bot.loop.run_in_executor(None, self.make_pil_color_preview, *color)
 
         await ctx.send(file=discord.File(color_image, filename="showcolor.png"))
 
