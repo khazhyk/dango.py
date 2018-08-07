@@ -66,13 +66,13 @@ def better_int(val):
 
 
 def idc_emoji_or_just_string(val):
-    match = re.match(r'<(?P<animated>a)?:(?P<name>[a-zA-Z0-9]+):(?P<id>[0-9]+)>$', val)
+    match = re.match(r'<(?P<animated>a)?:(?P<name>[a-zA-Z0-9_]+):(?P<id>[0-9]+)>$', val)
     if match:
         return FakeEmoji(match.group("name"), match.group("id"), bool(match.group("animated")))
     return FakeEmoji(val.replace(':', ''), None, False)  # guess it's not animated
 
 def idc_emoji(val):
-    match = re.match(r'<(?P<animated>a)?:(?P<name>[a-zA-Z0-9]+):(?P<id>[0-9]+)>$', val)
+    match = re.match(r'<(?P<animated>a)?:(?P<name>[a-zA-Z0-9_]+):(?P<id>[0-9]+)>$', val)
     if not match:
         return val
     return FakeEmoji(match.group("name"), match.group("id"), bool(match.group("animated")))
