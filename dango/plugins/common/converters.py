@@ -92,8 +92,9 @@ class UserMemberConverter(Converter):
                 return [result]
 
         if ctx.guild:
+            user_name = user_name.lower()
             def pred(member):
-                return member.nick == user_name or member.name == user_name
+                return (member.nick and member.nick.lower() == user_name) or member.name.lower() == user_name
             return [m for m in ctx.guild.members if pred(m)]
         return []
 
