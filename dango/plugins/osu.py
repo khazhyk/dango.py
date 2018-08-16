@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import datetime
+import logging
 import time
 import re
 
@@ -18,6 +19,8 @@ from osuapi.model import OsuMode
 
 from .common import converters
 from .common import utils
+
+log = logging.getLogger(__name__)
 
 # date ranked, UTC+8 for now
 DATE_OFFSET = datetime.timedelta(hours=-8) + (datetime.datetime.now() - datetime.datetime.utcnow())
@@ -54,7 +57,7 @@ class OsuRichPresence:
     def username(self):
         if not self._activity.large_image_text:
             return None
-        return self._activity.large_image_text.split()[0]
+        return self._activity.large_image_text.split('(')[0].strip()
 
     @cached_property
     def rank(self):
