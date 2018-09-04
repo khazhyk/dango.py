@@ -174,7 +174,7 @@ class Debug:
         if not url:
             if ctx.message.attachments and ctx.message.attachments[0].url:
                 url = ctx.message.attachments[0].url
-        with aiohttp.ClientSession() as s:
+        async with aiohttp.ClientSession() as s:
             async with s.get(url) as resp:
                 await ctx.bot.user.edit(avatar=await resp.read())
         await ctx.message.add_reaction(":helYea:236243426662678528")
