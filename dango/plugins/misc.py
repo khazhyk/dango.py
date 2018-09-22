@@ -180,6 +180,48 @@ class Misc:
     def __init__(self, config):
         self.eightballqs = {}
 
+    @command()
+    async def hunger_games(self, ctx, *members: discord.Member):
+        """json to use with http://orteil.dashnet.org/murdergames/."""
+        perks = ["no perk", "leader", "peaceful", "sociopath", "kind", "unstable", "bulky",
+                 "meek", "naive", "devious", "seductive", "suicidal", "cute", "annoying",
+                 "scrappy", "survivalist", "rich", "inventor", "goth", "lunatic",]
+        weapons = ["no item", "big stick", "pitchfork", "sword", "axe", "handgun", "shotgun",
+                   "grenade", "slingshot", "bow", "flamethrower", "lasergun", "magic wand",
+                   "ancient scepter", "pet wolf", "pet tiger", "pet turtle", "wish ring",]
+        teams = []
+        players = []
+
+        if not members:
+            t = ctx.bot.get_cog("Tracking")
+            if t:
+                ms = ctx.guild.members.copy()
+                last_seen = await t.bulk_last_seen(ms)
+                members = [
+                    m for
+                    m, _ in
+                    sorted(
+                        zip(ms, last_seen),
+                        key=lambda x: x[1].server_last_spoke
+                    )[-100:]]
+            else:
+                members = ctx.guild.members[-100:]
+
+        for idx, m in enumerate(members):
+          teams.append({"name": m.display_name})
+          players.append({
+            "name": m.display_name,
+            "g": pyrandom.choice([0,1,2]),
+            "pic": m.avatar_url,
+            "team": m.display_name,
+            "perks": [pyrandom.choice(perks), pyrandom.choice(perks), pyrandom.choice(weapons)],
+          })
+        await ctx.send(json.dumps({
+            "teams": teams,
+            "chars": players,
+        }))
+
+
     @command(aliases=['fw', 'fullwidth', 'ａｅｓｔｈｅｔｉｃ'])
     async def aesthetic(self, ctx, *, msg="aesthetic"):
         """ａｅｓｔｈｅｔｉｃ."""
