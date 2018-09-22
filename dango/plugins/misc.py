@@ -16,6 +16,7 @@ from discord.ext.commands import group
 from numpy import random
 import random as pyrandom
 import unicodedata
+import urllib.parse
 
 from .common import utils
 from .common import converters
@@ -174,6 +175,13 @@ class Emoji:
             await ctx.send(emoji.url)
         else:
             await ctx.send(utils.emoji_url(emoji))
+
+    @command(aliases=['google', 'lmgtfy'])
+    async def g(self, ctx, *, query):
+        await ctx.send("{}{}".format(
+            random.choice(["https://google.com/search?q=", "https://lmgtfy.com/?q="],
+                p=[0.99, 0.01]),
+            urllib.parse.quote_plus(query)))
 
 
 @dcog()
