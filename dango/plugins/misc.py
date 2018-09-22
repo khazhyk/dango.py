@@ -18,6 +18,7 @@ import random as pyrandom
 import unicodedata
 
 from .common import utils
+from .common import converters
 from .common.utils import resolve_color
 from .common.paginator import ListPaginator
 
@@ -182,7 +183,7 @@ class Misc:
         self.eightballqs = {}
 
     @command()
-    async def hunger_games(self, ctx, *members: discord.Member):
+    async def hunger_games(self, ctx, *members: converters.UserMemberConverter):
         """json to use with http://orteil.dashnet.org/murdergames/."""
         perks = ["no perk", "leader", "peaceful", "sociopath", "kind", "unstable", "bulky",
                  "meek", "naive", "devious", "seductive", "suicidal", "cute", "annoying",
