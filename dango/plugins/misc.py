@@ -6,6 +6,7 @@ import random
 import re
 
 import aiohttp
+import dango
 from dango import dcog
 import discord
 from discord.ext.commands import command
@@ -216,10 +217,15 @@ class Misc:
             "team": m.display_name,
             "perks": [pyrandom.choice(perks), pyrandom.choice(perks), pyrandom.choice(weapons)],
           })
-        await ctx.send(json.dumps({
+
+        pbin_url = await dango.privatebin.upload(json.dumps({
             "teams": teams,
             "chars": players,
         }))
+        waaai_url = await dango.waaai.shorten(
+                        pbin_url, ctx.bot.waaai_api_key())
+        await ctx.send("Use {} at http://orteil.dashnet.org/murdergames/".format(
+            waaai_url))
 
 
     @command(aliases=['fw', 'fullwidth', 'ａｅｓｔｈｅｔｉｃ'])
