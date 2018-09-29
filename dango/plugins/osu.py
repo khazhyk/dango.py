@@ -229,22 +229,30 @@ class Osu:
         else:
             map_descriptions = []
 
+            expected_len = 0
+
             for score in recent_scores:
                 beatmap = await self._get_beatmap(score.beatmap_id)
                 if not beatmap:
                     continue
 
-                map_descriptions.append(
-                    ("**{rank}{mods} - {score.score:,} ({percent:.2f}%) {score.maxcombo}x - {map.difficultyrating:.2f} Stars** - {ago}\n"
-                     "[{map.artist} - {map.title}[{map.version}]]({map.url}) by [{map.creator}](https://osu.ppy.sh/u/{map.creator_id})").format(
-                     rank=score.rank.upper(),
-                     mods=" +{:s}".format(score.enabled_mods) if score.enabled_mods.value else "",
-                     percent=100*score.accuracy(mode),
-                     ago=humanize.naturaltime(score.date + DATE_OFFSET),
-                     score=score,
-                     map=beatmap))
+                entry = (
+                    "**{rank}{mods} - {score.score:,} ({percent:.2f}%) {score.maxcombo}x - {map.difficultyrating:.2f} Stars** - {ago}\n"
+                    "[{map.artist} - {map.title}[{map.version}]]({map.url}) by [{map.creator}](https://osu.ppy.sh/u/{map.creator_id})").format(
+                        rank=score.rank.upper(),
+                        mods=" +{:s}".format(score.enabled_mods) if score.enabled_mods.value else "",
+                        percent=100*score.accuracy(mode),
+                        ago=humanize.naturaltime(score.date + DATE_OFFSET),
+                        score=score,
+                        map=beatmap)
 
-                embed.description = "\n".join(map_descriptions)
+                if expected_len + len(entry) + 1 <= 2048:
+                    map_descriptions.append(entry)
+                    expected_len += len(entry) + 1
+                else:
+                    break
+
+            embed.description = "\n".join(map_descriptions)
 
         await ctx.send(embed=embed)
 
