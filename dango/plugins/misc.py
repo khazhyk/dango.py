@@ -388,7 +388,7 @@ class Misc:
         raw = await ctx.bot.http.get_message(ctx.channel.id, msg_id)
 
         await ctx.send("```json\n{}```".format(
-            utils.clean_triple_backtick(json.dumps(raw, indent=2))))
+            utils.clean_triple_backtick(json.dumps(raw, indent=2, ensure_ascii=False))))
 
     @command()
     async def nostalgia(self, ctx, channel: discord.TextChannel=None, date: utils.convert_date=None):
