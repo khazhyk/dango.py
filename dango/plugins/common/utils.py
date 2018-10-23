@@ -85,7 +85,7 @@ def clean_invite_embed(line):
 def clean_single_backtick(line):
     """Clean string for insertion in single backtick code section."""
     if re.search('[^`]`[^`]', line) is not None:
-        raise ValueError("Cannot be cleaned")
+        return "`%s`" % clean_double_backtick(line)
     if (line[:2] == '``'):
         line = '\u200b' + line
     if (line[-1] == '`'):

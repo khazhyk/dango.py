@@ -74,15 +74,12 @@ class TestFormattingUtils(unittest.TestCase):
             ['`\u200b', '`'],
             ['\u200b``\u200b', '``'],
             ['\u200b`` ``\u200b', '`` ``'],
-            [' ``` ``\u200b', ' ``` ``']
+            [' ``` ``\u200b', ' ``` ``'],
+            ['`test `single backtick` on interior`', 'test `single backtick` on interior'],
         ]
 
         for sample in samples:
             self.assertEquals(sample[0], utils.clean_single_backtick(sample[1]))
-
-    def test_uncleanable_single_backtick(self):
-        with self.assertRaises(ValueError):
-            utils.clean_single_backtick('test `single backtick` on interior')
 
     def test_clean_triple_backtick(self):
         samples = [
