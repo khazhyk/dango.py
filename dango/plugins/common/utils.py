@@ -83,28 +83,41 @@ def clean_invite_embed(line):
 
 
 def clean_single_backtick(line):
-    """Clean string for insertion in single backtick code section."""
+    """Clean string for insertion in single backtick code section.
+
+    Clean backticks so we don't accidentally escape, and escape custom emojis
+    that would be discordified.
+    """
     if re.search('[^`]`[^`]', line) is not None:
         raise ValueError("Cannot be cleaned")
     if (line[:2] == '``'):
         line = '\u200b' + line
     if (line[-1] == '`'):
         line = line + '\u200b'
-    return line
+    return clean_emojis(line)
 
 
 def clean_double_backtick(line):
-    """Clean string for isnertion in double backtick code section."""
+    """Clean string for isnertion in double backtick code section.
+
+    Clean backticks so we don't accidentally escape, and escape custom emojis
+    that would be discordified.
+    """
     line.replace('``', '`\u200b`')
     if (line[0] == '`'):
         line = '\u200b' + line
     if (line[-1] == '`'):
         line = line + '\u200b'
-    return line
+
+    return clean_emojis(line)
 
 
 def clean_triple_backtick(line):
-    """Clean string for insertion in triple backtick code section."""
+    """Clean string for insertion in triple backtick code section.
+
+    Clean backticks so we don't accidentally escape, and escape custom emojis
+    that would be discordified.
+    """
     if not line:
         return line
 
@@ -122,7 +135,7 @@ def clean_triple_backtick(line):
     if line[-1] == '`':
         line += '\u200b'
 
-    return line
+    return clean_emojis(line)
 
 
 def clean_newline(line):
@@ -153,6 +166,10 @@ def clean_formatting(line):
 def clean_mentions(line):
     """Escape anything that could resolve to mention."""
     return line.replace("@", "@\u200b")
+
+def clean_emojis(line):
+    """Escape custom emojis."""
+    return re.sub(r'<:(.+):(\d+)>', '<\u200b:\\1:\\2>', line)
 
 def log_task(fut):
     try:

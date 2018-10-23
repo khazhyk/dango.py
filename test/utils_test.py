@@ -54,6 +54,14 @@ class TestFormattingUtils(unittest.TestCase):
         for sample in samples:
             self.assertEquals(sample[1], utils.clean_mentions(sample[0]))
 
+    def test_clean_emojis(self):
+        samples = [
+            ["<:dab:260592515759996928>", '<\u200b:dab:260592515759996928>'],
+        ]
+
+        for sample in samples:
+            self.assertEquals(sample[1], utils.clean_emojis(sample[0]))
+
     def test_clean_single_backtick(self):
         samples = [
             [
