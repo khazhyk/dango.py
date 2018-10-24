@@ -167,9 +167,13 @@ def clean_mentions(line):
     """Escape anything that could resolve to mention."""
     return line.replace("@", "@\u200b")
 
-def clean_emojis(line):
+def clean_emojis(text):
     """Escape custom emojis."""
-    return re.sub(r'<:(.+):(\d+)>', '<\u200b:\\1:\\2>', line)
+    return re.sub(
+        r'<(?P<animated>a?):(?P<name>\w+):(?P<id>\d+)>',
+        '<(?P=animated)\u200b:(?P=name)\u200b:(?P=id)>',
+        text,
+        re.ASCII)
 
 def log_task(fut):
     try:
