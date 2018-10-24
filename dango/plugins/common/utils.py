@@ -169,7 +169,7 @@ def clean_mentions(line):
 
 def clean_emojis(line):
     """Escape custom emojis."""
-    return re.sub(r'<:(.+):(\d+)>', '<\u200b:\\1:\\2>', line)
+    return re.sub(r'<(a)?:([a-zA-Z0-9_]+):([0-9]+)>', '<\u200b\\1:\\2:\\3>', line)
 
 def log_task(fut):
     try:
