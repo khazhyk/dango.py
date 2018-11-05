@@ -1,6 +1,7 @@
 """Converters..."""
 import asyncio
 import re
+import typing
 
 import discord
 from discord.ext.commands import Converter, converter, errors
@@ -129,16 +130,7 @@ class UserMemberConverter(Converter):
                 'User "{}" not found'.format(argument))
         return match
 
-class ChannelConverter(Converter):
-    """Like the old ChannelConverter, match both text and voice."""
-
-    async def convert(self, ctx, argument):
-        try:
-            return await converter.TextChannelConverter().convert(ctx, argument)
-        except errors.BadArgument:
-            pass
-        try:
-            return await converter.VoiceChannelConverter().convert(ctx, argument)
-        except errors.BadArgument:
-            pass
-        return await converter.CategoryChannelConverter().convert(ctx, argument)
+ChannelConverter = typing.Union[
+    converter.TextChannelConverter,
+    converter.VoiceChannelConverter,
+    converter.CategoryChannelConverter]
