@@ -22,8 +22,8 @@ from .common import utils
 
 log = logging.getLogger(__name__)
 
-# date ranked, UTC+8 for now
-DATE_OFFSET = datetime.timedelta(hours=-8) + (datetime.datetime.now() - datetime.datetime.utcnow())
+# date ranked, UTC+0 for now
+DATE_OFFSET = (datetime.datetime.now() - datetime.datetime.utcnow())
 
 
 class StringOrMentionConverter(converter.Converter):
