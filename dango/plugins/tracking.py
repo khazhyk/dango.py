@@ -560,13 +560,13 @@ class Tracking:
 
     @group(invoke_without_command=True)
     async def names(self, ctx, *, user: converters.UserMemberConverter=None):
-        """Shows a user's previous names within the last 30 days."""
+        """Shows a user's previous names within the last 90 days."""
         if user is None:
             user = ctx.message.author
-        names = await self.names_for(user, since=timedelta(days=30))
+        names = await self.names_for(user, since=timedelta(days=90))
         names = utils.clean_formatting(", ".join(names))
         names = utils.clean_mentions(names)
-        await ctx.send("Names for {} in the last 30 days\n{}".format(
+        await ctx.send("Names for {} in the last 90 days\n{}".format(
             user, names))
 
     @names.command(name="all")
@@ -574,7 +574,7 @@ class Tracking:
         """Shows a all of a user's previous names."""
         if user is None:
             user = ctx.message.author
-        names = await self.names_for(user, since=timedelta(days=90))
+        names = await self.names_for(user)
         names = utils.clean_formatting(", ".join(names))
         names = utils.clean_mentions(names)
         await ctx.send("Names for {}\n{}".format(user, names))
@@ -582,13 +582,13 @@ class Tracking:
     @group(invoke_without_command=True)
     @commands.guild_only()
     async def nicks(self, ctx, *, user: discord.Member=None):
-        """Shows a members's previous nicks within the last 30 days."""
+        """Shows a members's previous nicks within the last 90 days."""
         if user is None:
             user = ctx.message.author
-        names = await self.nicks_for(user, since=timedelta(days=30))
+        names = await self.nicks_for(user, since=timedelta(days=90))
         names = utils.clean_formatting(", ".join(names))
         names = utils.clean_mentions(names)
-        await ctx.send("Nicks for {} in the last 30 days\n{}".format(
+        await ctx.send("Nicks for {} in the last 90 days\n{}".format(
             user, names))
 
     @nicks.command(name="all")
@@ -597,7 +597,7 @@ class Tracking:
         """Shows a all of a member's previous nicks."""
         if user is None:
             user = ctx.message.author
-        names = await self.nicks_for(user, since=timedelta(days=90))
+        names = await self.nicks_for(user)
         names = utils.clean_formatting(", ".join(names))
         names = utils.clean_mentions(names)
         await ctx.send("Nicks for {}\n{}".format(
