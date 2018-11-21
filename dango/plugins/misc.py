@@ -197,11 +197,87 @@ class Emoji:
         await ctx.send("Go!")
 
 
+def number_emoji(num):
+    if 0 <= num <= 9:
+        return "%d\N{COMBINING ENCLOSING KEYCAP}" % num
+    return "\N{KEYCAP TEN}"
+
+
+def emoji_number(string):
+    if string[0].isdigit():
+        return int(string[0])
+    return 10
+
+
+def is_number_emoji(string):
+    return string[0].isdigit() or string == "\N{KEYCAP TEN}"
+
+
+def joinand(arr):
+    if len(arr) == 2:
+        return "%s and %s" % (arr[0], arr[1])
+    return "%s, and %s" % (
+        ", ".join(arr[:-1]), arr[-1])
+
+
 @dcog()
 class Misc:
 
     def __init__(self, config):
         self.eightballqs = {}
+
+    @command(require_var_positional=True)
+    async def poll(self, ctx, *options: clean_content):
+        """Run a poll with up to 11 options.
+
+        Poll ends 30 seconds after the last response.
+        """
+        if len(options) > 11:
+            raise errors.BadArgument("No more than 11 options")
+
+        e = discord.Embed(title="Vote now!", description="\n".join(
+                "%s %s" % (number_emoji(idx), text)
+                for idx, text in enumerate(options)
+            ))
+        e.set_footer(text="Voting ends 30 seconds after the last response!")
+
+        msg = await ctx.send(embed=e)
+        for i in range(len(options)):
+            await msg.add_reaction(number_emoji(i))
+
+        while True:
+            try:
+                resp = await ctx.bot.wait_for(
+                    "raw_reaction_add", timeout=30,
+                    check=lambda r: r.message_id == msg.id and
+                                    is_number_emoji(r.emoji.name))
+            except asyncio.TimeoutError:
+                break
+
+        msg = await ctx.get_message(msg.id)
+
+        max_val = 0
+        results = []
+        for reaction in msg.reactions:
+            if isinstance(reaction.emoji, str) and is_number_emoji(reaction.emoji):
+                idx = emoji_number(reaction.emoji)
+                if idx >= len(options):
+                    continue
+                if reaction.count > max_val:
+                    max_val = reaction.count
+                    results = [idx]
+                elif reaction.count == max_val:
+                    results.append(idx)
+
+        if max_val == 1:
+            await ctx.send("No one voted...")
+        elif len(results) > 1:
+            final = "all" if len(results) > 2 else "both"
+            await ctx.send("Tie! %s %s won!" % (
+                joinand([options[idx] for idx in results]),
+                final))
+        else:
+            await ctx.send("The best choice is clearly %s" % options[results[0]])
 
     @command()
     async def hunger_games(self, ctx, *members: converters.UserMemberConverter):
