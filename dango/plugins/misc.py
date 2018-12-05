@@ -461,7 +461,7 @@ class Misc:
             for c in text
         ))
 
-    @command()
+    @command(aliases=['msgsrc', 'msgtext'])
     async def msgsource(self, ctx, *, msg_id: int):
         """Show source for a message."""
         try:
@@ -471,7 +471,7 @@ class Misc:
         else:
             await ctx.send("```{}```".format(utils.clean_triple_backtick(msg.content)))
 
-    @command()
+    @command(aliases=['msgjson'])
     async def msgraw(self, ctx, *, msg_id: int):
         """Show raw JSON for a message."""
         raw = await ctx.bot.http.get_message(ctx.channel.id, msg_id)
