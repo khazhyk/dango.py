@@ -15,6 +15,7 @@ Tag types:
 import io
 import os
 import random
+import time
 
 import aiohttp
 from dango import dcog
@@ -94,6 +95,9 @@ class Fun:
             self.meme.add_command(cmd)
             bot.add_command(cmd)
 
+def get_lum(r,g,b,a=1):
+    return (0.299*r + 0.587*g + 0.114*b) * a
+
 @dcog()
 class ImgFun:
 
@@ -112,6 +116,64 @@ class ImgFun:
         for i in range(random.randint(5, 25)):
             img_buff[random.randint(0, len(img_buff))] = random.randint(1, 254)
         await ctx.send(file=discord.File(io.BytesIO(img_buff), filename="img.jpg"))
+
+    @staticmethod
+    def _gifmap(avy1, avy2):
+        """stolen from cute."""
+        maxres = 200
+        avy1 = Image.open(avy1).resize((maxres,maxres), resample=Image.BICUBIC)
+        avy2 = Image.open(avy2).resize((maxres,maxres), resample=Image.BICUBIC)
+
+        avy1data = avy1.load()
+        avy1data = [[(x,y),avy1data[x,y]] for x in range(maxres) for y in range(maxres)]
+        avy1data.sort(key = lambda c : get_lum(*c[1]))
+
+        avy2data = avy2.load()
+        avy2data = [[(x,y),avy2data[x,y]] for x in range(maxres) for y in range(maxres)]
+        avy2data.sort(key = lambda c : get_lum(*c[1]))
+
+        frames = []
+        for mult in range(-10,11,1):
+            m = 1 - (1/(1+(1.7**-mult)))
+
+            base = Image.new('RGBA', (maxres,maxres))
+            basedata = base.load()
+            for i, d in enumerate(avy1data):
+                x1, y1 = d[0]
+                x2, y2 = avy2data[i][0]
+                x, y = round(x1 + (x2 - x1)*m), round(y1 + (y2 - y1) * m)
+                basedata[x, y] = avy2data[i][1]
+            frames.append(base)
+
+        frames = frames + frames[::-1]
+
+        b = io.BytesIO()
+        frames[0].save(b, 'gif', save_all=True, append_images=frames[1:], loop=0, duration=60)
+        b.seek(0)
+        return b
+
+    @command()
+    async def colormap3(self, ctx, source: discord.Member, dest: discord.Member = None):
+        """Hello my name is Koishi."""
+        dest = dest or ctx.author
+
+        start = time.time()
+        async with ctx.typing():
+            async with aiohttp.ClientSession() as sess:
+                async with sess.get(source.avatar_url_as(format="png")) as resp:
+                    resp.raise_for_status()
+                    source_bytes = await resp.content.read()
+
+                async with sess.get(dest.avatar_url_as(format="png")) as resp:
+                    resp.raise_for_status()
+                    dest_bytes = await resp.content.read()
+
+            img_buff = await ctx.bot.loop.run_in_executor(None,
+                    self._gifmap, io.BytesIO(dest_bytes), io.BytesIO(source_bytes)
+                )
+        elapsed = time.time() - start
+        await ctx.send("took %02fs" % elapsed,
+            file=discord.File(img_buff, filename="%s_to_%s.gif" % (source, dest)))
 
 
     @staticmethod
