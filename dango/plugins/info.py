@@ -131,11 +131,11 @@ class Find:
         for (last_seen, last_spoke, server_last_spoke), member in zip(last_seens, ctx.message.guild.members):
             if last_seen < cutoff:
                 old_members.append(
-                    (str(member), member.id, last_spoke, last_seen))
+                    (str(member), member.id, last_spoke, last_seen, server_last_spoke))
 
         msg += tabulate.tabulate(
             old_members, tablefmt="simple",
-            headers=("Member", "ID", "Last Spoke", "Last Seen"))
+            headers=("Member", "ID", "Last Spoke", "Last Seen", "Server Last Spoke"))
 
         await ctx.send(msg)
 
