@@ -1,10 +1,11 @@
 import asyncio
-import logging
 import sys
 import unittest
 
 from dango import core
 from dango import dcog
+
+from common import setup_logging
 
 loop = asyncio.get_event_loop()
 
@@ -25,21 +26,6 @@ class B:
 class C:
     def __init__(self, config, b):
         self.b = b
-
-
-def setup_logging():
-    if hasattr(setup_logging, 'once'):
-        return
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-
-    formatter = logging.Formatter(
-        "[%(asctime)s][%(name)s][%(levelname)s] %(message)s")
-
-    stdouthandler = logging.StreamHandler(sys.stdout)
-    stdouthandler.setFormatter(formatter)
-    root.addHandler(stdouthandler)
-    setattr(setup_logging, 'once', None)
 
 
 class TestPluginLoading(unittest.TestCase):
