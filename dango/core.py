@@ -172,8 +172,8 @@ class DangoBotBase(commands.bot.BotBase):
 
         if hasattr(cog, PLUGIN_DESC):
             self.unload_cog_deps(cog)
+            self._config.root.remove_group(utils.snakify(name))
 
-        self._config.root.remove_group(utils.snakify(name))
         super().remove_cog(name)
         log.debug("Unloaded dcog %s", name)
 
