@@ -154,7 +154,7 @@ class TestExtensionLoading(unittest.TestCase):
     def test_load(self):
         b = self.b
 
-        b.load_extension("test_data._core_test_extension")
+        b.load_extension("test_data.core_test_extension")
 
         self.assertIn("A", b.cogs)
         self.assertIn("B", b.cogs)
@@ -164,8 +164,8 @@ class TestExtensionLoading(unittest.TestCase):
     def test_load2(self):
         b = self.b
 
-        b.load_extension("test_data._core_test_extension")
-        b.load_extension("test_data._core_test_extension2")
+        b.load_extension("test_data.core_test_extension")
+        b.load_extension("test_data.core_test_extension2")
 
         self.assertIn("A", b.cogs)
         self.assertIn("B", b.cogs)
@@ -177,8 +177,8 @@ class TestExtensionLoading(unittest.TestCase):
     def test_unload(self):
         b = self.b
 
-        b.load_extension("test_data._core_test_extension")
-        b.unload_extension("test_data._core_test_extension")
+        b.load_extension("test_data.core_test_extension")
+        b.unload_extension("test_data.core_test_extension")
 
         self.assertNotIn("A", b.cogs)
         self.assertNotIn("B", b.cogs)
@@ -188,10 +188,10 @@ class TestExtensionLoading(unittest.TestCase):
     def test_depend_unload(self):
         b = self.b
 
-        b.load_extension("test_data._core_test_extension")
-        b.load_extension("test_data._core_test_extension2")
+        b.load_extension("test_data.core_test_extension")
+        b.load_extension("test_data.core_test_extension2")
 
-        b.unload_extension("test_data._core_test_extension")
+        b.unload_extension("test_data.core_test_extension")
 
         self.assertNotIn("A", b.cogs)
         self.assertNotIn("B", b.cogs)
@@ -203,11 +203,11 @@ class TestExtensionLoading(unittest.TestCase):
     def test_depend_reload(self):
         b = self.b
 
-        b.load_extension("test_data._core_test_extension")
-        b.load_extension("test_data._core_test_extension2")
+        b.load_extension("test_data.core_test_extension")
+        b.load_extension("test_data.core_test_extension2")
 
-        b.unload_extension("test_data._core_test_extension")
-        b.load_extension("test_data._core_test_extension")
+        b.unload_extension("test_data.core_test_extension")
+        b.load_extension("test_data.core_test_extension")
 
         self.assertIn("A", b.cogs)
         self.assertIn("B", b.cogs)
@@ -220,12 +220,12 @@ class TestExtensionLoading(unittest.TestCase):
         """This test case checks we do unload cogs in submodules."""
         b = self.b
 
-        b.load_extension("test_data._recursive_test_extension")
+        b.load_extension("test_data.recursive_test_extension")
 
         self.assertIn("InModule", b.cogs)
         self.assertIn("SubModule", b.cogs)
 
-        b.unload_extension("test_data._recursive_test_extension")
+        b.unload_extension("test_data.recursive_test_extension")
 
         self.assertNotIn("InModule", b.cogs)
         self.assertNotIn("SubModule", b.cogs)
@@ -238,14 +238,14 @@ class TestExtensionLoading(unittest.TestCase):
         """
         b = self.b
 
-        b.load_extension("test_data._core_test_extension")
-        b.load_extension("test_data._core_test_extension2")
+        b.load_extension("test_data.core_test_extension")
+        b.load_extension("test_data.core_test_extension2")
 
-        b.unload_extension("test_data._core_test_extension")
-        b.unload_extension("test_data._core_test_extension2")
+        b.unload_extension("test_data.core_test_extension")
+        b.unload_extension("test_data.core_test_extension2")
 
-        b.load_extension("test_data._core_test_extension")
-        b.load_extension("test_data._core_test_extension2")
+        b.load_extension("test_data.core_test_extension")
+        b.load_extension("test_data.core_test_extension2")
 
         self.assertIn("A", b.cogs)
         self.assertIn("B", b.cogs)
