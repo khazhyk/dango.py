@@ -11,4 +11,8 @@ def bot_needs(perms):
     return commands.check(_)
 
 def is_owner():
-    return commands.check(lambda ctx: ctx.author.id == 86607397321207808)
+    def _(ctx):
+        if ctx.author.id != 86607397321207808:
+            raise errors.CheckFailure("I don't think you can do that...")
+        return True
+    return commands.check(_)
