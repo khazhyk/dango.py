@@ -230,6 +230,29 @@ class TestExtensionLoading(unittest.TestCase):
         self.assertNotIn("InModule", b.cogs)
         self.assertNotIn("SubModule", b.cogs)
 
+    def test_multiple_extension_unload(self):
+        """Tests the case we unload multiple extensions at once, then readd.
+
+        In particular, test that when unloading extensions in strange orders
+        we never hold references to cogs in unloaded extensions.
+        """
+        b = self.b
+
+        b.load_extension("test_data._core_test_extension")
+        b.load_extension("test_data._core_test_extension2")
+
+        b.unload_extension("test_data._core_test_extension")
+        b.unload_extension("test_data._core_test_extension2")
+
+        b.load_extension("test_data._core_test_extension")
+        b.load_extension("test_data._core_test_extension2")
+
+        self.assertIn("A", b.cogs)
+        self.assertIn("B", b.cogs)
+        self.assertIn("C", b.cogs)
+        self.assertIn("D", b.cogs)
+        self.assertIn("E", b.cogs)
+
 
 class PluginDirLoadTest(unittest.TestCase):
 

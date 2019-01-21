@@ -187,10 +187,7 @@ class DangoBotBase(commands.bot.BotBase):
                 self.remove_cog(cog_name, remove=False)
 
     def load_extension(self, name):
-        """Override load extension to auto-detect dcogs.
-
-        Note: We do not override unload_extension, as it works fine.
-        """
+        """Override load extension to auto-detect dcogs."""
         if name in self.extensions:
             return
 
@@ -209,6 +206,17 @@ class DangoBotBase(commands.bot.BotBase):
             setup(self)
 
         self.extensions[name] = lib
+
+    def unload_extension(self, name):
+        """Override unload extension to cleanup cog dependencies."""
+        removelist = []
+        for k, v in self._dango_unloaded_cogs.items():
+            if _is_submodule(name, v.__module__):
+                removelist.append(k)
+        for k in removelist:
+            del self._dango_unloaded_cogs[k]
+
+        return super().unload_extension(name)
 
     async def close(self):
         self._loader.close()
