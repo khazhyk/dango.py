@@ -20,10 +20,11 @@ import time
 import aiohttp
 from dango import dcog
 import discord
-from discord.ext.commands import command, errors, group
+from discord.ext.commands import command, check, errors, group
 from PIL import Image
 
 from .common import converters
+from .common import checks
 
 ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 
@@ -153,6 +154,7 @@ class ImgFun:
         return b
 
     @command()
+    @checks.bot_needs(["attach_files"])
     async def colormap3(self, ctx, source: discord.Member, dest: discord.Member = None):
         """Hello my name is Koishi."""
         dest = dest or ctx.author
@@ -188,6 +190,7 @@ class ImgFun:
 
 
     @command()
+    @checks.bot_needs(["attach_files"])
     async def dot(self, ctx):
         res = await ctx.bot.loop.run_in_executor(None, self.make_dot)
         await ctx.send(file=discord.File(res, filename="dot.png"))

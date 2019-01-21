@@ -9,13 +9,13 @@ import tempfile
 import sys
 
 import aiohttp
-from dango import checks
 from dango import dcog
 import discord
 from discord.ext.commands import command
 import objgraph
 
 from .common import converters
+from .common import checks
 from .common import utils
 from .common.paginator import EmbedPaginator
 
@@ -38,6 +38,11 @@ class Debug:
     async def on_command(self, ctx):
         log.debug("Command triggered: command=%s author=%s msg=%s",
                   ctx.command.qualified_name, ctx.author, ctx.message.content)
+
+    async def __local_check(self, ctx):
+        """Cog-level check."""
+        log.info("Local check")
+        return True
 
     @command(pass_context=True, no_pm=True)
     async def perminfo(self, ctx, chn: converters.ChannelConverter=None, usr: discord.Member=None):

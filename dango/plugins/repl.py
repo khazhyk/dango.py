@@ -4,10 +4,10 @@ import textwrap
 import traceback
 
 from contextlib import redirect_stdout
-from dango import checks
 import discord
 from discord.ext import commands
 
+from .common import checks
 
 class REPL:
     def __init__(self, bot):

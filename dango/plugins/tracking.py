@@ -9,7 +9,6 @@ from datetime import timedelta
 from datetime import timezone
 
 from dango import dcog
-from dango import checks
 import discord
 from discord.ext import commands
 from discord.ext.commands import command
@@ -19,6 +18,7 @@ import tabulate
 
 from dango.plugins.database import multi_insert_str
 
+from .common import checks
 from .common import converters
 from .common import utils
 
