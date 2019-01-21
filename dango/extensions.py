@@ -25,6 +25,7 @@ class ModuleDirWatchdog(events.FileSystemEventHandler):
         self._register = register
         self.module_lookup = module_lookup
         self.loop = loop or asyncio.get_event_loop()
+        self.debounce = collections.defaultdict(int)
         super().__init__()
 
     def _call(self, coro):
@@ -37,7 +38,13 @@ class ModuleDirWatchdog(events.FileSystemEventHandler):
         self._register.unload_extension(mod_to_unload)
 
     async def _try_reload(self, mod_to_reload):
+        now = time.time()
+        if self.debounce[mod_to_reload] + 2 > now:
+            log.warning("Debouncing reloading of %s", mod_to_reload)
+            return
+        self.debounce[mod_to_reload] = now
         try:
+            log.info("Reloading %s", mod_to_reload)
             self._register.reload_extension(mod_to_reload)
         except BaseException:
             log.exception("Failed to reload! %s", mod_to_reload)
@@ -124,6 +131,9 @@ class WatchdogExtensionLoader:
             watched_location = os.path.normpath(list(mod.__spec__.submodule_search_locations)[0])
             def _module_name(src_path):
                 assert src_path.startswith(watched_location)
+
+                if "__pycache__" in src_path:
+                    return
 
                 subpath = src_path[len(watched_location)+1:]
                 subparts = subpath.split(os.sep)
