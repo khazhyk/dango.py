@@ -3,7 +3,7 @@ import asyncio
 import re
 
 import discord
-from discord.ext.commands import Converter, converter, errors
+from discord.ext.commands import Converter, ParamDefault, converter, errors
 
 from . import paginator
 from . import utils
@@ -142,3 +142,24 @@ class ChannelConverter(Converter):
         except errors.BadArgument:
             pass
         return await converter.CategoryChannelConverter().convert(ctx, argument)
+
+
+class AnyImage(Converter):
+    """Match anything that can be converted to an image.
+
+    - User
+    - Url (TODO: consider only allowing proxied images - wait for embed)
+    """
+
+    async def convert(self, ctx, argument):
+        if argument.startswith("http://") or argument.startswith("https://"):
+            return argument
+        member = await UserMemberConverter().convert(ctx, argument)
+
+        return member.avatar_url_as(format="png")
+
+
+class AuthorAvatar(ParamDefault):
+
+    async def default(self, ctx, argument):
+        return ctx.author.avatar_url_as(format="png")

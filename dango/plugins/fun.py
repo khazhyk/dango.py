@@ -12,16 +12,18 @@ Tag types:
  - Custom tags
    - Python custom image generation (everything else).
 """
+import asyncio
 import io
 import os
 import random
 import time
 
 import aiohttp
+import yarl
 from dango import dcog
 import discord
 from discord.ext.commands import command, check, errors, group
-from PIL import Image
+from PIL import Image, ImageFont, ImageDraw
 
 from .common import converters
 from .common import checks
@@ -70,6 +72,45 @@ class ImgFileCmd(discord.ext.commands.Command):
         await ctx.send(file=discord.File(self.filename, filename=self.upload_name))
 
 
+async def fetch_image(url):
+    """Fetch the given image."""
+    async with aiohttp.ClientSession() as sess:
+        # proxy_url must be passed exactly - encoded=True
+        # https://github.com/aio-libs/aiohttp/issues/3424#issuecomment-443760653
+        async with sess.get(yarl.URL(url, encoded=True)) as resp:
+            try:
+                resp.raise_for_status()
+                content_length = int(resp.headers.get('Content-Length', 50<<20))
+                if content_length > 50<<20:
+                    raise errors.BadArgument("File too big")
+
+                blocks = []
+                readlen = 0
+                tested_image = False
+                # Read up to X bytes, raise otherwise
+                while True:
+                    block = await resp.content.readany()
+                    if not block:
+                        break
+                    blocks.append(block)
+                    readlen += len(block)
+                    if readlen >= 10<<10 and not tested_image:
+                        try:
+                            Image.open(io.BytesIO(b''.join(blocks)))
+                        except OSError:
+                            raise errors.BadArgument("This doesn't look like an image to me")
+                        else:
+                            tested_image = True
+                    if readlen > content_length:
+                        raise errors.BadArgument("File too big")
+                source_bytes = b''.join(blocks)
+            finally:
+                # Workaround https://github.com/aio-libs/aiohttp/issues/3426
+                if resp.connection:
+                    resp.connection.transport.abort()
+    return source_bytes
+
+
 @dcog(["Database"], pass_bot=True)
 class Fun:
 
@@ -77,6 +118,7 @@ class Fun:
         self.db = database
         self.image_galleries_dir = config.register("image_galleries_dir")
         self._init_image_galleries(bot, self.image_galleries_dir())
+
 
     @group()
     async def meme(self, ctx):
@@ -99,21 +141,17 @@ class Fun:
 def get_lum(r,g,b,a=1):
     return (0.299*r + 0.587*g + 0.114*b) * a
 
-@dcog()
+@dcog(["Res"])
 class ImgFun:
 
-    def __init__(self, cfg):
-        pass
+    def __init__(self, cfg, res):
+        self.res = res
 
     @command()
     async def corrupt(self, ctx, *, user: converters.UserMemberConverter=None):
         """Corrupt a user's avatar."""
         user = user or ctx.message.author
-        async with aiohttp.ClientSession() as sess:
-            async with sess.get(user.avatar_url_as(format='jpg')) as resp:
-                if resp.status != 200:
-                    raise errors.CommandError("Your avatar is broken :(")
-                img_buff = bytearray(await resp.read())
+        img_buff = bytearray(await fetch_image(user.avatar_url_as(format="jpg")))
         for i in range(random.randint(5, 25)):
             img_buff[random.randint(0, len(img_buff))] = random.randint(1, 254)
         await ctx.send(file=discord.File(io.BytesIO(img_buff), filename="img.jpg"))
@@ -161,14 +199,8 @@ class ImgFun:
 
         start = time.time()
         async with ctx.typing():
-            async with aiohttp.ClientSession() as sess:
-                async with sess.get(source.avatar_url_as(format="png")) as resp:
-                    resp.raise_for_status()
-                    source_bytes = await resp.content.read()
-
-                async with sess.get(dest.avatar_url_as(format="png")) as resp:
-                    resp.raise_for_status()
-                    dest_bytes = await resp.content.read()
+            source_bytes = await fetch_image(source.avatar_url_as(format="png"))
+            dest_bytes = await fetch_image(dest.avatar_url_as(format="png"))
 
             img_buff = await ctx.bot.loop.run_in_executor(None,
                     self._gifmap, io.BytesIO(dest_bytes), io.BytesIO(source_bytes)
@@ -194,3 +226,44 @@ class ImgFun:
     async def dot(self, ctx):
         res = await ctx.bot.loop.run_in_executor(None, self.make_dot)
         await ctx.send(file=discord.File(res, filename="dot.png"))
+
+    def make_dont_image(self, content):
+        inset = Image.open(io.BytesIO(content))
+
+        img = Image.new('RGB', (800, 600), 'White')
+
+        img.paste(inset.resize((400, 400)), (271, 17, 671, 417))
+
+        img.paste(inset.resize((128, 128)), (190, 387, 318, 515))
+
+        f = ImageFont.truetype(
+            font=self.res.dir() + "/font/comic sans ms/comic.ttf",
+            size=26, encoding="unic")
+
+        ayy = ImageDraw.Draw(img)
+
+        ayy.text((340, 430), "dont talk to me or my son\never again",
+                 (0, 0, 0), font=f)
+
+        buff = io.BytesIO()
+        img.save(buff, 'jpeg')
+
+        buff.seek(0)
+
+        return buff
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def dont(self, ctx, *, url: converters.AnyImage=converters.AuthorAvatar):
+        """dont run me or my son ever again"""
+        print(url)
+        if url is None:
+            url = ctx.message.author.get_avatar_url(format='png')
+            if not url:
+                url = ctx.message.author.default_avatar_url
+
+        with ctx.typing():
+            content = await fetch_image(url)
+            img_buff = await ctx.bot.loop.run_in_executor(None, self.make_dont_image, content)
+
+            await ctx.send(file=discord.File(img_buff, filename="dont.jpg"))
