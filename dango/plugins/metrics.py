@@ -121,6 +121,7 @@ class HTTP:
 
     async def reload(self):
         await self.stop_app()
+        self.app = web.Application(loop=self.loop)
         await self.start_app()
 
     async def start_app(self):
