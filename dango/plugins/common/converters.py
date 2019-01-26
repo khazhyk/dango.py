@@ -163,3 +163,18 @@ class AuthorAvatar(ParamDefault):
 
     async def default(self, ctx):
         return ctx.author.avatar_url_as(format="png")
+
+
+class LastImage(ParamDefault):
+    """Default param which finds the last image in chat.
+
+    Can be None."""
+
+    async def default(self, ctx):
+        async for message in ctx.history(limit=100):
+            for embed in message.embeds:
+                if embed.thumbnail and embed.thumbnail.proxy_url:
+                    return embed.thumbnail.proxy_url
+            for attachment in message.attachments:
+                if attachment.proxy_url:
+                    return attachment.proxy_url

@@ -14,6 +14,7 @@ Tag types:
 """
 import asyncio
 import io
+import math
 import os
 import random
 import time
@@ -23,7 +24,7 @@ import yarl
 from dango import dcog
 import discord
 from discord.ext.commands import command, check, errors, group
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageOps, ImageFilter, ImageChops
 
 from .common import converters
 from .common import checks
@@ -260,3 +261,122 @@ class ImgFun:
             img_buff = await ctx.bot.loop.run_in_executor(None, self.make_dont_image, content)
 
             await ctx.send(file=discord.File(img_buff, filename="dont.jpg"))
+
+    def make_rip(self, inset):
+        inset_img = Image.open(io.BytesIO(inset))
+
+        rip_img = Image.open(self.res.dir() + "/img/rip-tombstone.png")
+
+        inset_contoured = ImageOps.autocontrast(inset_img.convert('L').filter(ImageFilter.CONTOUR)).filter(
+            ImageFilter.SMOOTH)  # .point(lambda x: 0 if x < 224 else 255, "1").convert('L')
+
+        inset_layer = Image.new(
+            "RGBA", (rip_img.width, rip_img.height), 'White')
+
+        inset_layer.paste(inset_contoured.resize((225, 225)), (130, 285))
+
+        final = ImageChops.multiply(rip_img, inset_layer)
+
+        buff = io.BytesIO()
+        final.save(buff, "png")
+        buff.seek(0)
+        return buff
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def rip(self, ctx, *, url: converters.AnyImage=converters.AuthorAvatar):
+        """RIP in Peace."""
+        with ctx.typing():
+            content = await fetch_image(url)
+            img_buff = await ctx.bot.loop.run_in_executor(None, self.make_rip, content)
+            await ctx.send(file=discord.File(img_buff, filename="rip.png"))
+
+    @staticmethod
+    def make_triggered(inset, scale_down=.9, max_shift=.1):
+        inset_img = Image.open(io.BytesIO(inset))
+        frames = []
+        out_size = (math.floor(inset_img.width * scale_down),
+                    math.floor(inset_img.height * scale_down))
+        offset_range = (math.ceil(inset_img.width * max_shift),
+                        math.ceil(inset_img.height * max_shift))
+
+        # First frame will be centered.
+        first_frame = Image.new("RGBA", out_size)
+        first_frame.paste(inset_img, (-round(offset_range[0]/2),
+                                      -round(offset_range[1]/2)))
+        first_frame = first_frame.convert("P", dither=False)
+
+        for i in range(10):
+            frame = Image.new("RGBA", out_size)
+            frame.paste(inset_img, (random.randrange(-offset_range[0], 0),
+                                    random.randrange(-offset_range[1], 0)))
+            frame = frame.convert("P", dither=False)
+            frames.append(frame)
+
+        buff = io.BytesIO()
+        first_frame.save(buff, "gif", save_all=True, append_images=frames,
+                         duration=20, loop=0xffff)
+        buff.seek(0)
+        return buff
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def triggered(self, ctx, *, url: converters.AnyImage=converters.AuthorAvatar):
+        """TRIGGERED."""
+
+        with ctx.typing():
+            content = await fetch_image(url)
+            img_buff = await ctx.bot.loop.run_in_executor(None, self.make_triggered, content)
+            await ctx.send(file=discord.File(img_buff, filename="TRIGGERED.gif"))
+
+    def make_dead(self, inset):
+        inset_img = Image.open(io.BytesIO(inset))
+
+        rip_img = Image.open(self.res.dir() + "/img/dead-already.png")
+
+        final = Image.new("RGB", (rip_img.width, rip_img.height))
+
+        final.paste(inset_img.resize((1024, 1024)), (448, 4))
+        final.paste(rip_img, mask=rip_img)
+
+        buff = io.BytesIO()
+        final.save(buff, "jpeg")
+        buff.seek(0)
+        return buff
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def dead(self, ctx, *, url: converters.AnyImage=converters.AuthorAvatar):
+        """They're dead. Deal with it already.
+
+        @roadcrosser"""
+        with ctx.typing():
+            content = await fetch_image(url)
+            img_buff = await ctx.bot.loop.run_in_executor(None, self.make_dead, content)
+            await ctx.send(file=discord.File(img_buff, filename="dead.png"))
+
+    def make_more_jpeg(self, before):
+        img = Image.open(io.BytesIO(before))
+
+        buff = io.BytesIO()
+        img.convert("RGB").save(buff, "jpeg", quality=random.randrange(1, 10))
+        buff.seek(0)
+
+        return buff
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def needsmorejpeg(self, ctx, url=converters.LastImage):
+        with ctx.typing():
+            if url is None:
+                raise errors.CommandError("No images found.")
+
+            async with aiohttp.ClientSession() as sess:
+                # proxy_url must be passed exactly - encoded=True
+                # https://github.com/aio-libs/aiohttp/issues/3424#issuecomment-443760653
+                async with sess.get(yarl.URL(url, encoded=True)) as resp:
+                    resp.raise_for_status()
+                    content = await resp.content.read()
+
+            jpeg_buff = await ctx.bot.loop.run_in_executor(None, self.make_more_jpeg, content)
+            await ctx.send(file=discord.File(jpeg_buff, filename="more_jpeg.jpg"))
