@@ -14,6 +14,7 @@ Tag types:
 """
 import asyncio
 import io
+import inspect
 import math
 import os
 import random
@@ -51,9 +52,9 @@ class ImgDirCmd(discord.ext.commands.Command):
     def __init__(self, name, directory):
         super().__init__(name, self.callback)
         self.directory = directory
-        self.module = self.__module__
+        self.callback = self._callback
 
-    async def callback(self, ctx, idx: int=None):
+    async def _callback(self, cog, ctx, idx: int=None):
         files = [f for f in os.listdir(self.directory)
                  if _allowed_ext(f)]
         if idx is None or 0 > idx >= len(files):
@@ -69,9 +70,9 @@ class ImgFileCmd(discord.ext.commands.Command):
         self.filename = filename
         self.upload_name = "{}{}".format(
             self.name, os.path.splitext(filename)[1])
-        self.module = self.__module__
+        self.callback = self._callback
 
-    async def callback(self, ctx, idx: int=None):
+    async def _callback(self, cog, ctx, idx: int=None):
         await ctx.send(file=discord.File(self.filename, filename=self.upload_name))
 
 
