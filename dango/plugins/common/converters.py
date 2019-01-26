@@ -161,5 +161,5 @@ class AnyImage(Converter):
 
 class AuthorAvatar(ParamDefault):
 
-    async def default(self, ctx, argument):
+    async def default(self, ctx):
         return ctx.author.avatar_url_as(format="png")
