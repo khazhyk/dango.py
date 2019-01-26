@@ -76,40 +76,37 @@ class ImgFileCmd(discord.ext.commands.Command):
 
 async def fetch_image(url):
     """Fetch the given image."""
-    async with aiohttp.ClientSession() as sess:
+    # Workaround https://github.com/aio-libs/aiohttp/issues/3426            
+    async with aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(enable_cleanup_closed=True)) as sess:
         # proxy_url must be passed exactly - encoded=True
         # https://github.com/aio-libs/aiohttp/issues/3424#issuecomment-443760653
         async with sess.get(yarl.URL(url, encoded=True)) as resp:
-            try:
-                resp.raise_for_status()
-                content_length = int(resp.headers.get('Content-Length', 50<<20))
-                if content_length > 50<<20:
-                    raise errors.BadArgument("File too big")
+            resp.raise_for_status()
+            content_length = int(resp.headers.get('Content-Length', 50<<20))
+            if content_length > 50<<20:
+                raise errors.BadArgument("File too big")
 
-                blocks = []
-                readlen = 0
-                tested_image = False
-                # Read up to X bytes, raise otherwise
-                while True:
-                    block = await resp.content.readany()
-                    if not block:
-                        break
-                    blocks.append(block)
-                    readlen += len(block)
-                    if readlen >= 10<<10 and not tested_image:
-                        try:
-                            Image.open(io.BytesIO(b''.join(blocks)))
-                        except OSError:
-                            raise errors.BadArgument("This doesn't look like an image to me")
-                        else:
-                            tested_image = True
-                    if readlen > content_length:
-                        raise errors.BadArgument("File too big")
-                source_bytes = b''.join(blocks)
-            finally:
-                # Workaround https://github.com/aio-libs/aiohttp/issues/3426
-                if resp.connection:
-                    resp.connection.transport.abort()
+            blocks = []
+            readlen = 0
+            tested_image = False
+            # Read up to X bytes, raise otherwise
+            while True:
+                block = await resp.content.readany()
+                if not block:
+                    break
+                blocks.append(block)
+                readlen += len(block)
+                if readlen >= 10<<10 and not tested_image:
+                    try:
+                        Image.open(io.BytesIO(b''.join(blocks)))
+                    except OSError:
+                        raise errors.BadArgument("This doesn't look like an image to me")
+                    else:
+                        tested_image = True
+                if readlen > content_length:
+                    raise errors.BadArgument("File too big")
+            source_bytes = b''.join(blocks)
     return source_bytes
 
 
@@ -258,12 +255,6 @@ class ImgFun:
     @checks.bot_needs(["attach_files"])
     async def dont(self, ctx, *, url: converters.AnyImage=converters.AuthorAvatar):
         """dont run me or my son ever again"""
-        print(url)
-        if url is None:
-            url = ctx.message.author.get_avatar_url(format='png')
-            if not url:
-                url = ctx.message.author.default_avatar_url
-
         with ctx.typing():
             content = await fetch_image(url)
             img_buff = await ctx.bot.loop.run_in_executor(None, self.make_dont_image, content)
