@@ -29,7 +29,9 @@ def setup_logging():
 def main():
     setup_logging()
     bot = DangoAutoShardedBot(
-        game=discord.Game(name="rewrite is the future!"))
+        game=discord.Game(name="rewrite is the future!"),
+        pm_help=None,
+        )
     bot.run()
 
 
