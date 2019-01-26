@@ -11,7 +11,7 @@ import sys
 import aiohttp
 from dango import dcog
 import discord
-from discord.ext.commands import command
+from discord.ext.commands import command, errors
 import objgraph
 
 from .common import converters
@@ -28,6 +28,7 @@ class Debug:
 
     def __init__(self, bot, config):
         self.bot = bot
+        self.footgun = config.register("footgun", True)
 
     async def on_ready(self):
         log.info("Logged in as")
@@ -127,6 +128,9 @@ class Debug:
     @command()
     @checks.is_owner()
     async def update_and_restart(self, ctx):
+        if not self.footgun():
+            raise errors.CommandError("You probably don't want to run this...")
+
         async with utils.loading_emoji(ctx):
             await utils.run_subprocess("git fetch origin master && git reset --hard FETCH_HEAD")
             await utils.run_subprocess("python -m pip install --upgrade -r requirements.txt")
@@ -150,6 +154,9 @@ class Debug:
     @command()
     @checks.is_owner()
     async def sh(self, ctx, *, cmd):
+        if not self.footgun():
+            raise errors.CommandError("You probably don't want to run this...")
+
         with ctx.typing():
             stdout, stderr = await utils.run_subprocess(cmd)
 
