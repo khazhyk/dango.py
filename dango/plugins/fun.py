@@ -371,12 +371,6 @@ class ImgFun:
             if url is None:
                 raise errors.CommandError("No images found.")
 
-            async with aiohttp.ClientSession() as sess:
-                # proxy_url must be passed exactly - encoded=True
-                # https://github.com/aio-libs/aiohttp/issues/3424#issuecomment-443760653
-                async with sess.get(yarl.URL(url, encoded=True)) as resp:
-                    resp.raise_for_status()
-                    content = await resp.content.read()
-
+            content = await fetch_image(url)
             jpeg_buff = await ctx.bot.loop.run_in_executor(None, self.make_more_jpeg, content)
             await ctx.send(file=discord.File(jpeg_buff, filename="more_jpeg.jpg"))
