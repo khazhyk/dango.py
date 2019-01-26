@@ -269,7 +269,7 @@ class ImgFun:
         rip_img = Image.open(self.res.dir() + "/img/rip-tombstone.png")
 
         inset_contoured = ImageOps.autocontrast(inset_img.convert('L').filter(ImageFilter.CONTOUR)).filter(
-            ImageFilter.SMOOTH)  # .point(lambda x: 0 if x < 224 else 255, "1").convert('L')
+            ImageFilter.SMOOTH)
 
         inset_layer = Image.new(
             "RGBA", (rip_img.width, rip_img.height), 'White')
