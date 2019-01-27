@@ -26,6 +26,7 @@ from dango import dcog
 import discord
 from discord.ext.commands import command, check, errors, group
 from PIL import Image, ImageFont, ImageDraw, ImageOps, ImageFilter, ImageChops
+import textwrap
 
 from .common import converters
 from .common import checks
@@ -394,3 +395,170 @@ class ImgFun:
             content = await fetch_image(url)
             jpeg_buff = await ctx.bot.loop.run_in_executor(None, self.make_more_jpeg, content)
             await ctx.send(file=discord.File(jpeg_buff, filename="more_jpeg.jpg"))
+
+    def make_img_macro(self, base_image, *lines, format='png'):
+        img = Image.open(base_image)
+
+        for line in lines:
+            # TODO: generate some fonts with unicode... ow
+            text = line['text'].encode('utf8').decode('ascii', 'ignore')
+            if not text:
+                continue
+            outline_width = line.get('outline_width', 0)
+            font = ImageFont.truetype(
+                line['font'], encoding='unic', size=line['size'])
+            left, bottom, color = line['left'], line['bottom'], line['color']
+
+            draw = ImageDraw.Draw(img)
+
+            lines_go_up = line.get('lines_go_up', False)
+
+            if "\n" not in text:
+                avg_width, _ = font.getsize(text)
+                px_per_char = max(avg_width / len(text), 1)
+                text = textwrap.wrap(text, int(line.get("max_width", img.width) / px_per_char))
+            else:
+                text = text.split('\n')
+
+            top_pad = 0
+
+            sublines = text
+            if lines_go_up:
+                sublines = reversed(sublines)
+
+            for subtext in sublines:
+                w, h_ = font.getsize(subtext)
+
+                h = h_ - top_pad * (-1 if lines_go_up else 1)
+                top_pad += h_ * 1.2
+
+                if outline_width:
+                    outline = line['outline_color']
+                    draw.text(((img.width - w - left) / 2 + outline_width,
+                               img.height - h - bottom), subtext, outline, font=font)
+                    draw.text(((img.width - w - left) / 2 - outline_width,
+                               img.height - h - bottom), subtext, outline, font=font)
+                    draw.text(((img.width - w - left) / 2, img.height -
+                               h - bottom + outline_width), subtext, outline, font=font)
+                    draw.text(((img.width - w - left) / 2, img.height -
+                               h - bottom - outline_width), subtext, outline, font=font)
+                    draw.text(((img.width - w - left) / 2 + outline_width, img.height - h - bottom - outline_width),
+                              subtext, outline, font=font)
+                    draw.text(((img.width - w - left) / 2 - outline_width, img.height - h - bottom + outline_width),
+                              subtext, outline, font=font)
+                    draw.text(((img.width - w - left) / 2 + outline_width, img.height - h - bottom + outline_width),
+                              subtext, outline, font=font)
+                    draw.text(((img.width - w - left) / 2 - outline_width, img.height - h - bottom - outline_width),
+                              subtext, outline, font=font)
+                draw.text(((img.width - w - left) / 2, img.height -
+                           h - bottom), subtext, color, font=font)
+
+        buff = io.BytesIO()
+        img.save(buff, format)
+
+        buff.seek(0)
+
+        return buff
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def nobully(self, ctx):
+        """Anti bully ranger comes to save the day!"""
+        text = ctx.message.clean_content[ctx.view.index + 1:]
+        if not text:
+            text = "Transform: Anti-bully Ranger!"
+
+        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/antibully.jpg', dict(
+            text=text,
+            font=self.res.dir() + '/font/Aller/Aller_Bd.ttf',
+            bottom=20,
+            size=50,
+            color='#ffffff',
+            outline_color='#14466b',
+            outline_width=2,
+            left=0,
+            lines_go_up=True,
+        ))
+
+        await ctx.send(file=discord.File(img_buff, filename="nobully.png"))
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def nonobully(self, ctx):
+        """Anti anti bully ranger comes to save? the day!"""
+        text = ctx.message.clean_content[ctx.view.index + 1:]
+        if not text:
+            text = "PREPARE TO BE BULLIED NERDS"
+
+        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/antiantibully.jpg', dict(
+            text=text,
+            font=self.res.dir() + '/font/impact/IMPACT.ttf',
+            bottom=25,
+            size=70,
+            color='#ff0000',
+            outline_color='#ffffff',
+            outline_width=2,
+            left=0,
+            lines_go_up=True,
+        ))
+
+        await ctx.send(file=discord.File(img_buff, filename="nonobully.png"))
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def hate(self, ctx):
+        """How could you !"""
+        text = ctx.message.clean_content[ctx.view.index + 1:]
+        if not text:
+            text = ctx.message.author.name
+
+        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/hate_new2.png', dict(
+            text=text,
+            font=self.res.dir() + '/font/anime-ace/animeace.ttf',
+            bottom=146,
+            size=14,
+            color='#000000',
+            left=145,
+            max_width=110,
+        ))
+
+        await ctx.send(file=discord.File(img_buff, filename="hate.png"))
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def love(self, ctx):
+        """Akarin loves you."""
+        text = ctx.message.clean_content[ctx.view.index + 1:]
+        if not text:
+            text = ctx.message.author.name
+
+        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/love.png', dict(
+            text=text,
+            font=self.res.dir() + '/font/anime-ace/animeace.ttf',
+            bottom=147,
+            size=12,
+            color='#000000',
+            left=381,
+            max_width=120,
+        ))
+
+        await ctx.send(file=discord.File(img_buff, filename="love.png"))
+
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def dinvite(self, ctx):
+        """Memes."""
+        text = ctx.message.clean_content[ctx.view.index + 1:]
+        if not text:
+            text = "join general"
+
+        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/discord_invite.png', dict(
+            text=text,
+            font=self.res.dir() + '/font/whitney/whitney_semibold-webfont.ttf',
+            bottom=0,
+            size=16,
+            color='#ffffff',
+            left=0
+        ))
+
+        await ctx.send(file=discord.File(img_buff, filename="dinvite.png"))
