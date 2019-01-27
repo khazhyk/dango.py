@@ -174,13 +174,13 @@ class FileConfiguration(Configuration):
 
     def load(self):
         try:
-            with open(self._filename) as f:
+            with open(self._filename, encoding="utf8") as f:
                 self._data = self._yaml.load(f.read())
         except FileNotFoundError:
             self._data = self._yaml.map()
 
     def save(self):
-        with open(self._filename, 'w') as f:
+        with open(self._filename, 'w', encoding="utf8") as f:
             data = copy.deepcopy(self._data)
             for key, val in self._data.items():
                 if isinstance(val, dict) and not val:

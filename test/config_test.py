@@ -10,6 +10,7 @@ import ruamel.yaml
 SAMPLE_CONFIG = """
 a:
   stuff: 1
+  unicode: ( ͡° ͜ʖ ͡°)
 """
 
 SAMPLE_COMMENTED_CONFIG="""
@@ -19,6 +20,7 @@ b:
 - one
 - two # Comment
 # commented: 123
+unicode: ( ͡° ͜ʖ ͡°)
 """[1:]
 
 
@@ -30,6 +32,13 @@ class ConfigTest(unittest.TestCase):
         stuff = a.register("stuff", default=2)
 
         self.assertEquals(stuff(), 1)
+
+    def test_unicode(self):
+        c = config.StringConfiguration(SAMPLE_CONFIG)
+        a = c.root.add_group("a")
+        stuff = a.register("unicode", default=2)
+
+        self.assertEquals(stuff(), "( ͡° ͜ʖ ͡°)")
 
     def test_default(self):
         c = config.StringConfiguration("")
@@ -90,12 +99,12 @@ class FileConfigurationTest(unittest.TestCase):
         os.remove(self.tmpfile)
 
     def test_roundtrip(self):
-        with open(self.tmpfile, 'w') as f:
+        with open(self.tmpfile, 'w', encoding="utf8") as f:
             f.write(SAMPLE_COMMENTED_CONFIG)
 
         fconf = config.FileConfiguration(self.tmpfile)
         fconf.load()
         fconf.save()
 
-        with open(self.tmpfile) as f:
+        with open(self.tmpfile, encoding="utf8") as f:
             self.assertEquals(SAMPLE_COMMENTED_CONFIG, f.read())
