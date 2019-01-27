@@ -13,6 +13,7 @@ class PmMentionMode(Enum):
     on = "on"
     off = "off"
     always = "always"
+    mostly = "mostly"
 
     def __str__(self):
         return self.value
@@ -26,8 +27,8 @@ def resolve_pmmentionmode(value):
 
 def _format_message(message):
     if message.attachments:
-        if 'url' in message.attachments[0]:
-            attachments = message.attachments[0]['url']
+        if message.attachments[0].url:
+            attachments = message.attachments[0].url
         else:
             log.warning("Message found without url in attachments! {}".format(
                 message.attachments))
