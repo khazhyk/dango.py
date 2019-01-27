@@ -125,7 +125,7 @@ class Fun:
     def __init__(self, bot, config, database):
         self.db = database
         self.image_galleries_dir = config.register("image_galleries_dir")
-        self.text_posts = config.register("text_posts", [])
+        self.text_posts = config.register("text_posts", {})
         self._init_image_galleries(bot, self.image_galleries_dir())
         self._init_text_posts(bot)
 
@@ -151,7 +151,6 @@ class Fun:
     def _init_text_posts(self, bot):
         """Load and register commands based on config text posts."""
         for name, item in self.text_posts().items():
-            print(name, item)
             if isinstance(item, str):
                 item = [item]
             cmd = TextCmd(name, item)
