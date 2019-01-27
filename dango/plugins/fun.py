@@ -50,9 +50,8 @@ class CommandAlias:
 
 class ImgDirCmd(discord.ext.commands.Command):
     def __init__(self, name, directory):
-        super().__init__(name, self.callback)
+        super().__init__(name, self._callback)
         self.directory = directory
-        self.callback = self._callback
 
     async def _callback(self, cog, ctx, idx: int=None):
         files = [f for f in os.listdir(self.directory)
@@ -66,14 +65,22 @@ class ImgDirCmd(discord.ext.commands.Command):
 
 class ImgFileCmd(discord.ext.commands.Command):
     def __init__(self, name, filename):
-        super().__init__(name, self.callback)
+        super().__init__(name, self._callback)
         self.filename = filename
         self.upload_name = "{}{}".format(
             self.name, os.path.splitext(filename)[1])
-        self.callback = self._callback
 
     async def _callback(self, cog, ctx, idx: int=None):
         await ctx.send(file=discord.File(self.filename, filename=self.upload_name))
+
+
+class TextCmd(discord.ext.commands.Command):
+    def __init__(self, name, texts):
+        super().__init__(name, self._callback)
+        self.texts = texts
+
+    async def _callback(self, cog, ctx):
+        await ctx.send(random.sample(self.texts, 1)[0])
 
 
 async def fetch_image(url):
@@ -118,7 +125,9 @@ class Fun:
     def __init__(self, bot, config, database):
         self.db = database
         self.image_galleries_dir = config.register("image_galleries_dir")
+        self.text_posts = config.register("text_posts", [])
         self._init_image_galleries(bot, self.image_galleries_dir())
+        self._init_text_posts(bot)
 
 
     @group()
@@ -135,6 +144,17 @@ class Fun:
                 if not _allowed_ext(item):
                     continue
                 cmd = ImgFileCmd(os.path.splitext(item)[0], fullpath)
+            cmd.instance = self
+            self.meme.add_command(cmd)
+            bot.add_command(cmd)
+
+    def _init_text_posts(self, bot):
+        """Load and register commands based on config text posts."""
+        for name, item in self.text_posts().items():
+            print(name, item)
+            if isinstance(item, str):
+                item = [item]
+            cmd = TextCmd(name, item)
             cmd.instance = self
             self.meme.add_command(cmd)
             bot.add_command(cmd)

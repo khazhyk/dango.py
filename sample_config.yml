@@ -14,4 +14,32 @@ redis:
   maxsize: 20
 osu:
   api_key: 1234
-plugins: plugins
+plugins:
+- dango.plugins.*
+fun:
+  image_galleries_dir: /home/botfiles/memes
+  text_posts:
+    report: This incident has been reported to the proper authorities. Thank you for
+      your time.
+    ding: fries are done
+    lenny: ( ͡° ͜ʖ ͡°)
+    sadlenny: ( ͡° ʖ̯ ͡°)
+    shrug: ¯\\\_(ツ)_/¯
+    shurg: ¯\\\__(ツ)/¯
+    srhug: ¯\\\(ツ)__/¯
+    disapprove: ಠ_ಠ
+    ayy: lmao
+    ppy:
+    - click the circles!
+    - to the beat!
+    - and buy the coins
+    - wank wank wank dicks dicks dicks
+    owo: |
+      owo             owo  whats this
+           owo  owo        whats        this
+                owo             whats        this
+           owo  owo        whats        this
+      owo             owo  whats this
+    playosu: <osu://play>
+    wew: "There was an error while running your command: Command raised an exception:\
+      \ NameError: name 'lad' is not defined"
