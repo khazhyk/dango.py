@@ -17,20 +17,6 @@ CARBONITEX_API_BOTDATA = "https://www.carbonitex.net/discord/data/botdata.php"
 DISCORD_BOTS_API = "https://bots.discord.pw/api"
 
 
-class async_cached_property:
-    def __init__(self, fn):
-        self.fn = fn
-        self.__doc__ = getattr(fn, "__doc__")
-
-    async def __get__(self, instance, owner):
-        if instance is None:
-            return self
-
-        value = await self.fn(instance)
-        setattr(instance, self.fn.__name__, value)
-        return value
-
-
 @dcog(pass_bot=True)
 class Vanity:
     """Cog for updating carbonitex.net bot information."""
@@ -41,14 +27,18 @@ class Vanity:
         self.carbon_api_key = config.register("carbon_api_key", default="")
         self.discord_bots_api_key = config.register("discord_bots_api_key", default="")
 
-    @async_cached_property
-    async def _find_owner(self):
+        self._owner = None
+
+    async def find_owner(self):
+        if self._owner:
+            return self._owner
         me = self.bot.get_user(OWNER_ID)
 
         if not me:
             me = await self.bot.get_user_info(OWNER_ID)
 
-        return (me.name, me.id) if me else None
+        self._owner = (me.name, me.id) if me else (None, None)
+        return self._owner
 
     def features(self):
         "<br/>".join([
@@ -59,7 +49,7 @@ class Vanity:
     async def _update_carbon(self):
         if not self.carbon_api_key():
             return
-        me_name, me_id = await self._find_owner
+        me_name, me_id = await self.find_owner
 
         server_count = len(self.bot.guilds)
 
