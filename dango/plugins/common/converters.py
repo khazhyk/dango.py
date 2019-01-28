@@ -113,7 +113,7 @@ class UserMemberConverter(Converter):
 
         lax_id_match = lax_id_regex.match(argument)
         if lax_id_match:
-            result = await self.get_by_id(ctx, lax_id_match.group(1))
+            result = await self.get_by_id(ctx, int(lax_id_match.group(1)))
             if result:
                 return result
 
