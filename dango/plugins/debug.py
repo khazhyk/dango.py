@@ -37,8 +37,8 @@ class Debug:
         log.info('-------')
 
     async def on_command(self, ctx):
-        log.debug("Command triggered: command=%s author=%s msg=%s",
-                  ctx.command.qualified_name, ctx.author, ctx.message.content)
+        log.debug("Command triggered: command=%s author=%s ctx=%s",
+                  ctx.command.qualified_name, ctx.author, ctx)
 
     @command(pass_context=True, no_pm=True)
     async def perminfo(self, ctx, chn: converters.ChannelConverter=None, usr: discord.Member=None):
