@@ -107,32 +107,32 @@ class Tracking:
         self.batch_name_task.cancel()
 
     async def batch_presence(self):
-        while True:
-            try:
-                await self.do_batch_presence_update()
+        try:    
+            while True:
+                try:
+                    await self.do_batch_presence_update()
+                except Exception:
+                    log.exception("Exception during presence update task!")
                 await asyncio.sleep(1)
-            except asyncio.CancelledError:
-                log.info("batch_presence task canceled...")
-                await self.do_batch_presence_update()
-                if self.batch_presence_updates:
-                    log.error("Dropping %d presences!", len(self.batch_presence_updates) / 2)
-                return
-            except Exception:
-                log.exception("Exception during presence update task!")
-
+        except asyncio.CancelledError:
+            log.info("batch_presence task canceled...")
+            await self.do_batch_presence_update()
+            if self.batch_presence_updates:
+                log.error("Dropping %d presences!", len(self.batch_presence_updates) / 2)
+    
     async def batch_name(self):
-        while True:
-            try:
-                await self.do_batch_names_update()
+        try:
+            while True:
+                try:
+                    await self.do_batch_names_update()
+                except Exception:
+                    log.exception("Exception during name update task!")
                 await asyncio.sleep(1)
-            except asyncio.CancelledError:
-                log.info("batch_name task canceled...")
-                await self.do_batch_names_update()
-                if self.batch_name_updates:
-                    log.error("Dropping %d name updates!", len(self.batch_name_updates))
-                return
-            except Exception:
-                log.exception("Exception during name update task!")
+        except asyncio.CancelledError:
+            log.info("batch_name task canceled...")
+            await self.do_batch_names_update()
+            if self.batch_name_updates:
+                log.error("Dropping %d name updates!", len(self.batch_name_updates))
 
     # Name tracking
 
