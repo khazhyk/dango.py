@@ -110,6 +110,7 @@ class Tracking:
         while True:
             try:
                 await self.do_batch_presence_update()
+                await asyncio.sleep(1)
             except asyncio.CancelledError:
                 log.info("batch_presence task canceled...")
                 await self.do_batch_presence_update()
@@ -118,12 +119,12 @@ class Tracking:
                 return
             except Exception:
                 log.exception("Exception during presence update task!")
-            await asyncio.sleep(1)
 
     async def batch_name(self):
         while True:
             try:
                 await self.do_batch_names_update()
+                await asyncio.sleep(1)
             except asyncio.CancelledError:
                 log.info("batch_name task canceled...")
                 await self.do_batch_names_update()
@@ -132,7 +133,6 @@ class Tracking:
                 return
             except Exception:
                 log.exception("Exception during name update task!")
-            await asyncio.sleep(1)
 
     # Name tracking
 
