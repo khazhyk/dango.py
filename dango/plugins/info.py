@@ -170,11 +170,12 @@ class Info:
     @command()
     @commands.guild_only()
     async def channelinfo(self, ctx, *, channel: converters.ChannelConverter=None):
-        """Get info about a text channel."""
+        """Get info about a channel."""
         channel = channel or ctx.message.channel
         i = InfoBuilder()
         i.add_field("Channel", "{0.name} ({0.id})".format(channel))
         i.add_field("Server", "{0.guild.name} ({0.guild.id})".format(channel))
+        i.add_field("Type", "{}".format(type(channel).__name__))
         i.add_field("Created", format_time(channel.created_at))
         await ctx.send(i.code_block())
 
