@@ -5,7 +5,9 @@ import functools
 import logging
 import io
 import os
+import traceback
 import tempfile
+import threading
 import sys
 
 import aiohttp
@@ -196,6 +198,18 @@ class Debug:
         embed.set_author(name="Jump!", url=ctx.message.jump_url,
                          icon_url=ctx.bot.user.avatar_url)
         await ctx.send(embed=embed)
+
+    @command()
+    @checks.is_owner()
+    async def threadinfo(self, ctx):
+        buf = io.StringIO()
+        for th in threading.enumerate():
+            buf.write(str(th) + "\n")
+            traceback.print_stack(sys._current_frames()[th.ident], file=buf)
+            buf.write("\n")
+
+        await ctx.send("{}".format(buf.getvalue()))
+            
 
     @command()
     @checks.is_owner()
