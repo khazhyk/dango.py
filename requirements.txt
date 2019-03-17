@@ -1,5 +1,5 @@
-git+https://github.com/khazhyk/discord.py@rewrite
-#git+https://github.com/Rapptz/discord.py@rewrite
+git+https://github.com/khazhyk/discord.py@rewrite#egg=discord.py[voice]
+#git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py[voice]
 aiohttp
 watchdog
 psutil
@@ -38,5 +38,8 @@ mcstatus
 
 # overwatch
 git+https://github.com/khazhyk/pachimari
+
+# voice
+youtube_dl
 
 pip
