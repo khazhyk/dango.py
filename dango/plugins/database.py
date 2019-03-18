@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 import asyncpg
-from dango import dcog
+from dango import dcog, Cog
 
 from .common.utils import AsyncContextWrapper
 from .common import utils
@@ -20,7 +20,7 @@ def multi_insert_str(lst):
 
 
 @dcog()
-class Database:
+class Database(Cog):
 
     def __init__(self, config):
         self.dsn = config.register("dsn")
@@ -42,7 +42,7 @@ class Database:
     def acquire(self):
         return AsyncContextWrapper(self._acquire())
 
-    def __unload(self):
+    def cog_unload(self):
         self._connect_task.cancel()
         if self._ready.is_set():
             utils.create_task(self._engine.close())

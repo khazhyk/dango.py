@@ -1,8 +1,8 @@
-from dango import dcog
+from dango import dcog, Cog
 
 
 @dcog()
-class Res:
+class Res(Cog):
     """Resources."""
 
     def __init__(self, config):

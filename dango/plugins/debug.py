@@ -11,7 +11,7 @@ import threading
 import sys
 
 import aiohttp
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext.commands import command, errors
 import objgraph
@@ -25,19 +25,21 @@ log = logging.getLogger(__name__)
 
 
 @dcog(pass_bot=True)
-class Debug:
+class Debug(Cog):
     """Various debugging commands."""
 
     def __init__(self, bot, config):
         self.bot = bot
         self.footgun = config.register("footgun", True)
 
+    @Cog.listener()
     async def on_ready(self):
         log.info("Logged in as")
         log.info(self.bot.user.name)
         log.info(self.bot.user.id)
         log.info('-------')
 
+    @Cog.listener()
     async def on_command(self, ctx):
         log.debug("Command triggered: command=%s author=%s ctx=%s",
                   ctx.command.qualified_name, ctx.author, ctx)

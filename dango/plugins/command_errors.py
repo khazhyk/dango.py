@@ -1,6 +1,6 @@
 import logging
 import traceback
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext.commands import errors
 
@@ -32,7 +32,7 @@ ERROR_MAP = utils.TypeMap({
 
 
 @dcog()
-class CommandErrors:
+class CommandErrors(Cog):
     """Central cog for generic error messages.
 
     This handles error messages for generic error types e.g. BadArgument
@@ -42,6 +42,7 @@ class CommandErrors:
         self.verbose_errors = config.register("verbose_errors", False)
         pass
 
+    @Cog.listener()
     async def on_command_error(self, ctx, exp):
         main_exp = exp
 

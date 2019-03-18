@@ -1,9 +1,9 @@
-from dango import dcog
+from dango import dcog, Cog
 from discord.ext.commands import command
 
 
 @dcog(depends=["B"])
-class C:
+class C(Cog):
     def __init__(self, config, b):
         self.b = b
 
@@ -13,7 +13,7 @@ class C:
 
 
 @dcog()
-class A:
+class A(Cog):
     def __init__(self, config):
         pass
 
@@ -23,7 +23,7 @@ class A:
 
 
 @dcog(depends=["A"])
-class B:
+class B(Cog):
     def __init__(self, config, a):
         self.a = a
 

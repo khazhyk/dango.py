@@ -1,5 +1,5 @@
 import logging
-from dango import dcog
+from dango import dcog, Cog
 from discord.ext.commands import command
 from discord.ext.commands import errors
 
@@ -7,11 +7,12 @@ log = logging.getLogger(__name__)
 
 
 @dcog(depends=["Database"])
-class Blame:
+class Blame(Cog):
 
     def __init__(self, config, database):
         self.database = database
 
+    @Cog.listener()
     async def on_dango_message_sent(self, msg, ctx):
         async with self.database.acquire() as conn:
             server_id = ctx.guild and ctx.guild.id

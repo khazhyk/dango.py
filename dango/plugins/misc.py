@@ -7,7 +7,7 @@ import re
 
 import aiohttp
 import dango
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import clean_content
@@ -81,7 +81,7 @@ def idc_emoji(val):
     return FakeEmoji(match.group("name"), match.group("id"), bool(match.group("animated")))
 
 @dcog()
-class Emoji:
+class Emoji(Cog):
     def __init__(self, config):
         pass
 
@@ -221,7 +221,7 @@ def joinand(arr):
 
 
 @dcog()
-class Misc:
+class Misc(Cog):
 
     def __init__(self, config):
         self.eightballqs = {}

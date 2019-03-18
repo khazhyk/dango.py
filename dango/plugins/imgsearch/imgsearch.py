@@ -1,5 +1,5 @@
 from dango import config
-from dango import dcog
+from dango import dcog, Cog
 from discord.ext.commands import command
 from discord.ext.commands.errors import CommandError
 
@@ -24,7 +24,7 @@ async def _find_uploaded_image(channel, skip=0):
 
 
 @dcog()
-class ImageSearch:
+class ImageSearch(Cog):
 
     saucenao_api_key = config.ConfigEntry("saucenao_api_key")
 

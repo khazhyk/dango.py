@@ -9,7 +9,7 @@ from discord.ext import commands
 
 from .common import checks
 
-class REPL:
+class REPL(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self._last_result = None

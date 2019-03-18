@@ -8,7 +8,7 @@ import logging
 
 import aiohttp
 import discord
-from dango import dcog
+from dango import dcog, Cog
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ DISCORD_BOTS_API = "https://bots.discord.pw/api"
 
 
 @dcog(pass_bot=True)
-class Vanity:
+class Vanity(Cog):
     """Cog for updating carbonitex.net bot information."""
 
     def __init__(self, bot, config):
@@ -94,11 +94,14 @@ class Vanity:
         await self._update_carbon()
         await self._update_dbots()
 
+    @Cog.listener()
     async def on_guild_join(self, server):
         await self.update()
 
+    @Cog.listener()
     async def on_guild_leave(self, server):
         await self.update()
 
+    @Cog.listener()
     async def on_ready(self):
         await self.update()

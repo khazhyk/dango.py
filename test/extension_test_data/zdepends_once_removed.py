@@ -3,12 +3,12 @@
 We have to make sure we aren't double-removing/double-adding.
 """
 
-from dango import dcog
+from dango import dcog, Cog
 from discord.ext.commands import command
 from .common import utils
 
 @dcog(depends=["UsesUsesCommon"])
-class UsesUsesUsesCommon:
+class UsesUsesUsesCommon(Cog):
     def __init__(self, config, uc):
         self.uc = uc
         self.b =  utils.dummy()

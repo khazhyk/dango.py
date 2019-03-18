@@ -1,8 +1,8 @@
-from dango import dcog
+from dango import dcog, Cog
 from discord.ext.commands import command
 
 @dcog()
-class SubModule:
+class SubModule(Cog):
     def __init__(self, config):
         pass
 

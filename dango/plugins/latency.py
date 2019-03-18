@@ -3,17 +3,18 @@ import collections
 import statistics
 from datetime import datetime
 
-from dango import dcog
+from dango import dcog, Cog
 from discord.ext.commands import command
 
 
 @dcog()
-class Latency:
+class Latency(Cog):
 
     def __init__(self, config):
         pass
         self.message_latencies = collections.deque(maxlen=500)
 
+    @Cog.listener()
     async def on_message(self, message):
         now = datetime.utcnow()
         self.message_latencies.append((now, now - message.created_at))

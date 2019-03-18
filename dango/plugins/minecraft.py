@@ -4,7 +4,7 @@ import collections
 import os
 import socket
 
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import errors
@@ -157,7 +157,7 @@ def lookup_and_status(server):
 
 
 @dcog(["Res"])
-class Minecraft:
+class Minecraft(Cog):
     def __init__(self, config, res):
         self.res = res
 

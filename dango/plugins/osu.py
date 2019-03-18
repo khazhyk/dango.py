@@ -6,7 +6,7 @@ import time
 import re
 
 import aiohttp
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import converter
@@ -75,7 +75,7 @@ class OsuRichPresence:
 
 
 @dcog(depends=["AttributeStore"])
-class Osu:
+class Osu(Cog):
     """osu! API commands."""
 
     def __init__(self, config, attr):
@@ -88,7 +88,7 @@ class Osu:
 
         self._beatmap_cache = LRU(256)
 
-    def __unload(self):
+    def cog_unload(self):
         self.osuapi.close()
 
     async def _set_osu_username(self, user, username):
@@ -108,6 +108,7 @@ class Osu:
 
         return res[0]
 
+    @Cog.listener()
     async def on_member_update(self, before, member):
         if member.activity and member.activity.name == "osu!" and isinstance(member.activity, discord.Activity):
             rp = OsuRichPresence(member.activity)

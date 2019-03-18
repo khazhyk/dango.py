@@ -1,3 +1,3 @@
 # flake8: noqa pylint: disable=unused-import
 
-from .core import dcog
+from .core import dcog, Cog

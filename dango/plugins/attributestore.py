@@ -1,6 +1,6 @@
 import json
 
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext.commands import command
 from lru import LRU
@@ -15,7 +15,7 @@ def _redis_key(item_type, item_id):
 
 
 @dcog(depends=['Database', 'Redis'])
-class AttributeStore:
+class AttributeStore(Cog):
     """Basically a persistent json mapping.
 
     3 levels of storage:

@@ -3,7 +3,7 @@ import sys
 import unittest
 
 from dango import core
-from dango import dcog
+from dango import dcog, Cog
 
 from common import setup_logging
 
@@ -11,19 +11,19 @@ loop = asyncio.get_event_loop()
 
 
 @dcog()
-class A:
+class A(Cog):
     def __init__(self, config):
         pass
 
 
 @dcog(depends=["A"])
-class B:
+class B(Cog):
     def __init__(self, config, a):
         self.a = a
 
 
 @dcog(depends=["B"])
-class C:
+class C(Cog):
     def __init__(self, config, b):
         self.b = b
 

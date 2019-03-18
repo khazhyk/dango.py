@@ -10,13 +10,14 @@ log = logging.getLogger(__name__)
 
 
 @dcog(pass_bot=True)
-class Status:
+class Status(Cog):
 
     def __init__(self, bot, config):
         self.bot = bot
 
         utils.create_task(self.update_presence())
 
+    @Cog.listener()
     async def on_ready(self):
         await self.update_presence()
 

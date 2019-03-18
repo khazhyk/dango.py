@@ -22,7 +22,7 @@ import time
 
 import aiohttp
 import yarl
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext.commands import command, check, errors, group
 from PIL import Image, ImageFont, ImageDraw, ImageOps, ImageFilter, ImageChops
@@ -51,7 +51,7 @@ class CommandAlias:
 
 class ImgDirCmd(discord.ext.commands.Command):
     def __init__(self, name, directory):
-        super().__init__(name, self._callback)
+        super().__init__(self._callback, name=name)
         self.directory = directory
 
     async def _callback(self, cog, ctx, idx: int=None):
@@ -66,7 +66,7 @@ class ImgDirCmd(discord.ext.commands.Command):
 
 class ImgFileCmd(discord.ext.commands.Command):
     def __init__(self, name, filename):
-        super().__init__(name, self._callback)
+        super().__init__(self._callback, name=name)
         self.filename = filename
         self.upload_name = "{}{}".format(
             self.name, os.path.splitext(filename)[1])
@@ -77,7 +77,7 @@ class ImgFileCmd(discord.ext.commands.Command):
 
 class TextCmd(discord.ext.commands.Command):
     def __init__(self, name, texts):
-        super().__init__(name, self._callback)
+        super().__init__(self._callback, name=name)
         self.texts = texts
 
     async def _callback(self, cog, ctx):
@@ -121,7 +121,7 @@ async def fetch_image(url):
 
 
 @dcog(["Database"], pass_bot=True)
-class Fun:
+class Fun(Cog):
 
     def __init__(self, bot, config, database):
         self.db = database
@@ -145,7 +145,7 @@ class Fun:
                 if not _allowed_ext(item):
                     continue
                 cmd = ImgFileCmd(os.path.splitext(item)[0], fullpath)
-            cmd.instance = self
+            cmd.cog = self
             self.meme.add_command(cmd)
             bot.add_command(cmd)
 
@@ -155,7 +155,7 @@ class Fun:
             if isinstance(item, str):
                 item = [item]
             cmd = TextCmd(name, item)
-            cmd.instance = self
+            cmd.cog = self
             self.meme.add_command(cmd)
             bot.add_command(cmd)
 
@@ -163,7 +163,7 @@ def get_lum(r,g,b,a=1):
     return (0.299*r + 0.587*g + 0.114*b) * a
 
 @dcog(["Res"])
-class ImgFun:
+class ImgFun(Cog):
 
     def __init__(self, cfg, res):
         self.res = res

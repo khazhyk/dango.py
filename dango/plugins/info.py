@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from datetime import timedelta
 
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext import commands
 from discord.ext.commands import command
@@ -38,7 +38,7 @@ def _is_hard_to_mention(name):
 
 
 @dcog()
-class Find:
+class Find(Cog):
     """Listing members."""
 
     def __init__(self, config):
@@ -161,7 +161,7 @@ def activity_string(activity):
     return ret
 
 @dcog()
-class Info:
+class Info(Cog):
     """Info about things."""
 
     def __init__(self, config):

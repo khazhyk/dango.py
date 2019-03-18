@@ -7,7 +7,7 @@ import os
 import gzip
 import shutil
 
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext import commands
 
@@ -89,7 +89,7 @@ class RotatingGzipFile:
 
 
 @dcog(pass_bot=True)
-class Logging:
+class Logging(Cog):
 
     def __init__(self, bot, config):
         log_dir = config.register("log_dir").value
@@ -114,7 +114,7 @@ class Logging:
         ))
         self.bot.remove_listener(self.on_first_message, "on_message")
 
-    def __unload(self):
+    def cog_unload(self):
         self.statefile.emit((
             "last_message",
             self.last_message_id,
@@ -123,6 +123,7 @@ class Logging:
         self.statefile.close()
         self.logger.close()
 
+    @Cog.listener()
     async def on_raw_message_edit(self, raw):
         if self.bot._connection._get_message(raw.message_id):
             return
@@ -177,9 +178,11 @@ class Logging:
             message.edited_at
         ))
 
+    @Cog.listener()
     async def on_message_edit(self, before, message):
         self._record_message(message)
 
+    @Cog.listener()
     async def on_message(self, message):
         self.last_message_id = message.id
         self._record_message(message)

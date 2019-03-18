@@ -31,6 +31,9 @@ def dcog(depends=None, pass_bot=False):
         return cls
     return real_decorator
 
+class Cog(commands.Cog):
+    pass
+
 
 def _is_submodule(parent, child):
     return parent == child or child.startswith(parent + ".")

@@ -8,7 +8,7 @@ import os
 import time
 
 from aiohttp import web
-from dango import dcog
+from dango import dcog, Cog
 import discord
 import prometheus_client
 import psutil
@@ -100,7 +100,7 @@ def log_task(fut):
 
 
 @dcog(pass_bot=True)
-class HTTP:
+class HTTP(Cog):
     """Launch an aiohttp web server, allow registration etc."""
 
     def __init__(self, bot, config):
@@ -150,13 +150,13 @@ class HTTP:
         self._ready.clear()
         log.debug("Shutdown complete")
 
-    def __unload(self):
+    def cog_unload(self):
         """d.py cog cleanup fn."""
         utils.create_task(self.stop_app())
 
 
 @dcog(['HTTP'], pass_bot=True)
-class PrometheusMetrics:
+class PrometheusMetrics(Cog):
 
     def get_prom(self, name):
         try:
@@ -220,6 +220,7 @@ class PrometheusMetrics:
     def _member_count_factory(self, status):
         return lambda: self._member_counts[status]
 
+    @Cog.listener()
     async def on_ready(self):
         self._member_counts = {
             status: 0 for status in discord.Status
@@ -227,29 +228,36 @@ class PrometheusMetrics:
         for member in self.bot.get_all_members():
             self._member_counts[member.status] += 1
 
+    @Cog.listener()
     async def on_member_update(self, before, member):
         if before.status != member.status:
             self._member_counts[member.status] += 1
             self._member_counts[before.status] -= 1
 
+    @Cog.listener()
     async def on_member_join(self, member):
         self._member_counts[member.status] += 1
 
+    @Cog.listener()
     async def on_member_remove(self, member):
         self._member_counts[member.status] -= 1
 
+    @Cog.listener()
     async def on_guild_available(self, guild):
         for member in guild.members:
             self._member_counts[member.status] += 1
 
+    @Cog.listener()
     async def on_guild_unavailable(self, guild):
         for member in guild.members:
             self._member_counts[member.status] -= 1
 
+    @Cog.listener()
     async def on_guild_join(self, guild):
         for member in guild.members:
             self._member_counts[member.status] += 1
 
+    @Cog.listener()
     async def on_guild_remove(self, guild):
         for member in guild.members:
             self._member_counts[member.status] -= 1
@@ -268,6 +276,7 @@ class PrometheusMetrics:
             body=output,
             headers={'Content-Type': prometheus_client.CONTENT_TYPE_LATEST})
 
+    @Cog.listener()
     async def on_socket_response(self, data):
         opcode = data['op']
         self.opcodes.labels(opcode=_opcode_name(opcode)).inc()
@@ -275,16 +284,19 @@ class PrometheusMetrics:
         if opcode == 0:
             self.dispatch_events.labels(event=data.get('t')).inc()
 
+    @Cog.listener()
     async def on_command(self, ctx):
         self.command_triggers.labels(command=ctx.command.qualified_name).inc()
         self._in_flight_ctx[ctx] = time.time()
 
+    @Cog.listener()
     async def on_command_completion(self, ctx):
         self.command_completions.labels(command=ctx.command.qualified_name).inc()
         self.command_timing.labels(command=ctx.command.qualified_name).observe(
             time.time() - self._in_flight_ctx[ctx])
         del self._in_flight_ctx[ctx]
 
+    @Cog.listener()
     async def on_command_error(self, ctx, error):
         self.command_errors.labels(
             command=ctx.command and ctx.command.qualified_name,

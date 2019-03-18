@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 import aioredis
-from dango import dcog
+from dango import dcog, Cog
 
 from .common import utils
 
@@ -24,7 +24,7 @@ class ContextWrapper:
 
 
 @dcog()
-class Redis:
+class Redis(Cog):
 
     def __init__(self, config):
         self.host = config.register("host", default="localhost")
@@ -57,7 +57,7 @@ class Redis:
     def acquire(self):
         return ContextWrapper(self._acquire())
 
-    def __unload(self):
+    def cog_unload(self):
         self._connect_task.cancel()
         if self._ready.is_set():
             self._pool.close()

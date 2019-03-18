@@ -2,7 +2,7 @@ import logging
 import re
 
 import aiohttp
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext.commands import command, group, errors, Converter, UserConverter
 from pachimari import BattleTag, OverwatchProfile, Platform, PCRegion, CONRegion
@@ -52,7 +52,7 @@ async def find_tag(client, tag):
 
 
 @dcog(depends=["AttributeStore"])
-class Overwatch():
+class Overwatch(Cog):
 
     def __init__(self, config, attr):
         self.attr = attr

@@ -4,7 +4,7 @@ from datetime import timedelta
 import time
 import inspect
 
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import errors
@@ -102,7 +102,7 @@ def uptime():
 
 
 @dcog()
-class Meta:
+class Meta(Cog):
     """Information about the bot itself."""
 
     def __init__(self, config):

@@ -8,7 +8,7 @@ from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
 
-from dango import dcog
+from dango import dcog, Cog
 import discord
 from discord.ext import commands
 from discord.ext.commands import command
@@ -86,7 +86,7 @@ def datetime_from_redis(bytes_obj):
 
 
 @dcog(depends=['Database', 'Redis'], pass_bot=True)
-class Tracking:
+class Tracking(Cog):
 
     def __init__(self, bot, config, database, redis):
         self.bot = bot
@@ -102,7 +102,7 @@ class Tracking:
         self.batch_presence_task = utils.create_task(self.batch_presence())
         self.batch_name_task = utils.create_task(self.batch_name())
 
-    def __unload(self):
+    def cog_unload(self):
         self.batch_presence_task.cancel()
         self.batch_name_task.cancel()
 
@@ -477,18 +477,21 @@ class Tracking:
 
     # Event registration
 
+    @Cog.listener()
     async def on_guild_join(self, guild):
         for member in copy.copy(list(guild.members)):
             self.queue_batch_names_update(member)
             if member.status is not discord.Status.offline:
                 self.queue_batch_last_update(member)
 
+    @Cog.listener()
     async def on_member_update(self, before, member):
         # only update when we change online status.
         if before.status != member.status:
             self.queue_batch_last_update(member)
         self.queue_batch_names_update(member)
 
+    @Cog.listener()
     async def on_member_join(self, member):
         await asyncio.gather(
             self.update_last_update(member),
@@ -496,12 +499,15 @@ class Tracking:
             self.update_nick_change(member)
         )
 
+    @Cog.listener()
     async def on_message(self, message):
         await self.update_last_message(message.author)
 
+    @Cog.listener()
     async def on_typing(self, channel, user, when):
         await self.update_last_update(user)
 
+    @Cog.listener()
     async def on_raw_message_edit(self, raw_event):
         message_id, data = raw_event.message_id, raw_event.data
         if 'author' not in data:
@@ -539,12 +545,15 @@ class Tracking:
             return
         await self.update_last_message(author)
 
+    @Cog.listener()
     async def on_guild_channel_pins_update(self, channel, last_pin):
         self._recent_pins[str(channel.id)] = datetime.utcnow()
 
+    @Cog.listener()
     async def on_private_channel_pins_update(self, channel, last_pin):
         self._recent_pins[str(channel.id)] = datetime.utcnow()
 
+    @Cog.listener()
     async def on_raw_reaction_add(self, raw_event):
         if raw_event.guild_id:
             guild = self.bot.get_guild(raw_event.guild_id)

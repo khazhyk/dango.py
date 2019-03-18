@@ -1,4 +1,4 @@
-from dango import dcog
+from dango import dcog, Cog
 from enum import Enum
 import datetime
 import discord
@@ -79,7 +79,7 @@ def fit_into(parts: list, limit: int=2000):
     return groups
 
 @dcog(depends=["AttributeStore"], pass_bot=True)
-class Mentions:
+class Mentions(Cog):
     """Mentions directly to your inbox!."""
 
     def __init__(self, bot, config, attr):
@@ -126,6 +126,7 @@ class Mentions:
                          str(mention), mention.id, mode)
                 await self.attr.set_attributes(mention, pm_mentions_mode=PmMentionMode.off.value)
 
+    @Cog.listener()
     async def on_message(self, message):
         if isinstance(message.channel, discord.DMChannel) or not message.mentions or message.author.id == self.bot.user.id:
             return
