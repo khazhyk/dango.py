@@ -11,11 +11,14 @@ from discord.ext.commands import command
 from discord.ext.commands import errors
 import humanize
 import tabulate
+import logging
 
 from .common import converters
 from .common import utils
 from .common.utils import InfoBuilder
 from .common.paginator import GroupLinesPaginator
+
+log = logging.getLogger(__name__)
 
 async def _send_find_results(ctx, matches):
     if len(matches) == 0:
@@ -149,16 +152,37 @@ def format_time(time):
     return "{} ({} UTC)".format(
         humanize.naturaltime(time + (datetime.now() - datetime.utcnow())), time)
 
+def format_timedelta(td):
+    ts = td.total_seconds()
+    return "{:02d}:{:06.3f}".format(
+        int(ts//60),
+        ts % 60)
 
 def activity_string(activity):
     if isinstance(activity, (discord.Game, discord.Streaming)):
         return str(activity)
-    ret = activity.name
-    if activity.details:
-        ret += " ({})".format(activity.details)
-    if activity.state:
-        ret += " - {}".format(activity.state)
-    return ret
+    elif isinstance(activity, discord.Activity):
+        ret = activity.name
+        if activity.details:
+            ret += " ({})".format(activity.details)
+        if activity.state:
+            ret += " - {}".format(activity.state)
+        return ret
+    elif isinstance(activity, discord.Spotify):
+        elapsed = datetime.utcnow() - activity.start
+        return "{}: {} by {} from {} [{}/{}]".format(
+            activity.name,
+            activity.title or "Unknown Song",
+            activity.artist or "Unknown Artist",
+            activity.album or "Unknown Album",
+            format_timedelta(elapsed),
+            format_timedelta(activity.duration)
+            )
+    else:
+        log.warning("Unhandled activity type: {} {}".format(
+            type(activity), activity))
+        return str(activity)
+
 
 @dcog()
 class Info(Cog):
