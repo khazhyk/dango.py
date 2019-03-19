@@ -211,7 +211,14 @@ class Minecraft(Cog):
                     connector=aiohttp.TCPConnector(enable_cleanup_closed=True)) as s:
                 async with s.get("https://api.mojang.com/users/profiles/minecraft/{}".format(minecraftusername)) as resp:
                     resp.raise_for_status()
-                    uuid = (await resp.json())['id']
+                    if resp.status == 204:
+                        uuid = None
+                    else:
+                        data = await resp.json()
+                        if 'error' in data:
+                            raise Exception(data['error'], data['errorMessage'])
+                        else:
+                            uuid = data['id']
             self._mc_uuid_cache[minecraftusername] = uuid
             return uuid
 
@@ -219,4 +226,6 @@ class Minecraft(Cog):
     async def mcavatar(self, ctx, minecraftusername: str):
         """Display a minecraft avatar."""
         uuid = await self._uuid_lookup(minecraftusername)
+        if not uuid:
+            raise errors.BadArgument("No such user {}".format(minecraftusername))
         await ctx.send("https://visage.surgeplay.com/full/512/{}.png".format(uuid))
