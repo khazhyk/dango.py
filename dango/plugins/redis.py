@@ -9,20 +9,6 @@ from .common import utils
 log = logging.getLogger(__name__)
 
 
-class ContextWrapper:
-    """Turns `with await` into `async with`."""
-
-    def __init__(self, coro):
-        self.coro = coro
-
-    async def __aenter__(self):
-        self.instance = await self.coro
-        return self.instance.__enter__()
-
-    async def __aexit__(self, *args, **kwargs):
-        return self.instance.__exit__(*args, **kwargs)
-
-
 @dcog()
 class Redis(Cog):
 
@@ -55,7 +41,7 @@ class Redis(Cog):
         return await self._pool
 
     def acquire(self):
-        return ContextWrapper(self._acquire())
+        return utils.ContextWrapper(self._acquire())
 
     def cog_unload(self):
         self._connect_task.cancel()

@@ -43,6 +43,20 @@ class AsyncContextWrapper:
         return await self.wrapped.__aexit__(*args, **kwargs)
 
 
+class ContextWrapper:
+    """Turns `with await` into `async with`."""
+
+    def __init__(self, coro):
+        self.coro = coro
+
+    async def __aenter__(self):
+        self.instance = await self.coro
+        return self.instance.__enter__()
+
+    async def __aexit__(self, *args, **kwargs):
+        return self.instance.__exit__(*args, **kwargs)
+
+
 async def run_subprocess(cmd, loop=None):
     try:
         proc = await asyncio.create_subprocess_shell(
