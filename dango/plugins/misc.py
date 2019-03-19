@@ -396,11 +396,6 @@ class Misc(Cog):
             hex(cpt), unicodedata.name(chr(cpt), "unknown"), chr(cpt),
             "http://www.fileformat.info/info/unicode/char/" + hex(cpt)[2:]) for cpt in chars))
 
-    @command()
-    async def mcavatar(self, ctx, minecraftusername: str):
-        """Display a minecraft avatar."""
-        await ctx.send("https://visage.surgeplay.com/full/512/{}.png".format(minecraftusername))
-
     @staticmethod
     def make_pil_color_preview(*colors: int):
         from PIL import Image, ImageDraw

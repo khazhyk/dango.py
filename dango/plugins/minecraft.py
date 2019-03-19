@@ -4,11 +4,13 @@ import collections
 import os
 import socket
 
+import aiohttp
 from dango import dcog, Cog
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import errors
 import mcstatus
+from lru import LRU
 
 MC_COLOR_CODE = "§"
 MCColor = collections.namedtuple(
@@ -160,6 +162,7 @@ def lookup_and_status(server):
 class Minecraft(Cog):
     def __init__(self, config, res):
         self.res = res
+        self._mc_uuid_cache = LRU(256)
 
     def mcstatus_message(self, status):
         status.description = MCDescription.from_dict(status.description)
@@ -199,3 +202,21 @@ class Minecraft(Cog):
             status = await ctx.bot.loop.run_in_executor(None, lookup_and_status, server)
 
         await ctx.send(**self.mcstatus_message(status))
+
+    async def _uuid_lookup(self, minecraftusername):
+        try:
+            return self._mc_uuid_cache[minecraftusername]
+        except KeyError:
+            async with aiohttp.ClientSession(
+                    connector=aiohttp.TCPConnector(enable_cleanup_closed=True)) as s:
+                async with s.get("https://api.mojang.com/users/profiles/minecraft/{}".format(minecraftusername)) as resp:
+                    resp.raise_for_status()
+                    uuid = (await resp.json())['id']
+            self._mc_uuid_cache[minecraftusername] = uuid
+            return uuid
+
+    @command()
+    async def mcavatar(self, ctx, minecraftusername: str):
+        """Display a minecraft avatar."""
+        uuid = await self._uuid_lookup(minecraftusername)
+        await ctx.send("https://visage.surgeplay.com/full/512/{}.png".format(uuid))
