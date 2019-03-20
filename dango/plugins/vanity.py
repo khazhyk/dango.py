@@ -35,7 +35,7 @@ class Vanity(Cog):
         me = self.bot.get_user(OWNER_ID)
 
         if not me:
-            me = await self.bot.get_user_info(OWNER_ID)
+            me = await self.bot.fetch_user(OWNER_ID)
 
         self._owner = (me.name, me.id) if me else (None, None)
         return self._owner
