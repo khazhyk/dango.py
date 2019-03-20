@@ -7,6 +7,7 @@ import types
 import threading
 import sys
 import importlib
+from discord.ext.commands import errors
 from watchdog import events
 from watchdog import observers
 
@@ -259,7 +260,10 @@ class ExtensionDependencyRegister:
                         break
 
         log.info("Finally unloading %s", name)
-        self.bot.unload_extension(name)
+        try:
+            self.bot.unload_extension(name)
+        except errors.ExtensionNotLoaded:
+            log.warn("Extension %s wasn't loaded", name)
         return unloaded_extensions
 
     def reload_extension(self, name):

@@ -142,7 +142,10 @@ class Debug(Cog):
         """Reloads an extension.
         """
         try:
-            ctx.bot.unload_extension(extension)
+            try:
+                ctx.bot.unload_extension(extension)
+            except errors.ExtensionNotLoaded:
+                pass
             ctx.bot.load_extension(extension)
         except BaseException:
             await ctx.send("\N{THUMBS DOWN SIGN}")
