@@ -208,7 +208,7 @@ class DangoBotBase(commands.bot.BotBase):
         if setup:
             setup(self)
 
-        self._extensions[name] = lib
+        self._BotBase__extensions[name] = lib
 
     def unload_extension(self, name):
         """Override unload extension to cleanup cog dependencies."""
