@@ -460,7 +460,7 @@ class Misc(Cog):
     async def msgsource(self, ctx, *, msg_id: int):
         """Show source for a message."""
         try:
-            msg = await ctx.get_message(msg_id)
+            msg = await ctx.fetch_message(msg_id)
         except discord.NotFound:
             raise errors.BadArgument("Message not found")
         else:
