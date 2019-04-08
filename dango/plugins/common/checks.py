@@ -10,6 +10,15 @@ def bot_needs(perms):
         return True
     return commands.check(_)
 
+def author_needs(perms):
+    def _(ctx):
+        author = ctx.message.author
+        for perm in perms:
+            if not getattr(ctx.channel.permissions_for(author), perm):
+                raise errors.CheckFailure("You need the %s permission" % perm)
+        return True
+    return commands.check(_)
+
 def is_owner():
     def _(ctx):
         if ctx.author.id != 86607397321207808:

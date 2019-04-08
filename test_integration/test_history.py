@@ -4,6 +4,20 @@ import os
 import unittest
 import discord
 
+def setup_logging():
+    import sys
+    if hasattr(setup_logging, 'once'):
+        return
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter(
+        "[%(asctime)s][%(name)s][%(levelname)s] %(message)s")
+
+    stdouthandler = logging.StreamHandler(sys.stdout)
+    stdouthandler.setFormatter(formatter)
+    root.addHandler(stdouthandler)
+    setattr(setup_logging, 'once', None)
 
 def async_test(f):
     def wrapper(*args, **kwargs):
@@ -19,8 +33,10 @@ class HistoryIteratorTest(unittest.TestCase):
     @classmethod
     @async_test
     async def setUpClass(cls):
+        setup_logging()
         logging.getLogger("discord").setLevel(logging.ERROR)
         logging.getLogger("websockets").setLevel(logging.ERROR)
+        logging.getLogger("discord.http").setLevel(logging.DEBUG)
 
         bot = discord.Client(fetch_offline_members=False)
         await bot.login(os.environ['DISCORD_TOKEN'])
@@ -28,12 +44,32 @@ class HistoryIteratorTest(unittest.TestCase):
         cls.task = asyncio.ensure_future(bot.connect())
         await cls.bot.wait_until_ready()
         cls.channel = bot.get_channel(182580524743655424)
+        cls.guild = cls.channel.guild
 
     @classmethod
     @async_test
     async def tearDownClass(cls):
         await cls.bot.logout()
         await cls.task
+
+    @async_test
+    async def test_audit_log(self):
+        """audit log
+
+        ssh, audit_log doesn't actually work, but this test passes
+        because my server has less than 100 entries :)"""
+        lis = []
+        async for log_entry in self.guild.audit_logs():
+            lis.append(log_entry)
+
+        lis_reversed = []
+        async for log_entry in self.guild.audit_logs(limit=99999, oldest_first=True):
+            lis_reversed.append(log_entry)
+
+        assert len(lis) == len(lis_reversed)
+
+        for i, entry in enumerate(reversed(lis)):
+            assert entry.id == lis_reversed[i].id
 
     @async_test
     async def test_default(self):
@@ -61,8 +97,21 @@ class HistoryIteratorTest(unittest.TestCase):
         """after handling"""
         lis = []
         async for msg in self.channel.history(
-                limit=200, reverse=True, after=discord.Object(182580943804956674)):
+                limit=200, oldest_first=True, after=discord.Object(182580943804956674)):
             lis.append(msg)
+
+        for i in range(200):
+            assert(str(i) in lis[i].content)
+
+    @async_test
+    async def test_implicit_after(self):
+        """after handling"""
+        lis = []
+        async for msg in self.channel.history(
+                limit=200, oldest_first=True):
+            lis.append(msg)
+
+        assert(len(lis) == 200)
 
         for i in range(200):
             assert(str(i) in lis[i].content)
@@ -72,7 +121,7 @@ class HistoryIteratorTest(unittest.TestCase):
         """before after handling using oldest->newest"""
         lis = []
         async for msg in self.channel.history(
-                limit=200, reverse=True, after=discord.Object(182580943804956674),
+                limit=200, oldest_first=True, after=discord.Object(182580943804956674),
                 before=discord.Object(182581866031874049)):
             lis.append(msg)
 
@@ -86,7 +135,7 @@ class HistoryIteratorTest(unittest.TestCase):
         """before after handling using newest->oldest"""
         lis = []
         async for msg in self.channel.history(
-                limit=200, reverse=False, after=discord.Object(182580943804956674),
+                limit=200, oldest_first=False, after=discord.Object(182580943804956674),
                 before=discord.Object(182581866031874049)):
             lis.append(msg)
 
@@ -100,7 +149,7 @@ class HistoryIteratorTest(unittest.TestCase):
         """around handling no filter #nofilter"""
         lis = []
         async for msg in self.channel.history(
-                limit=101, reverse=False, around=discord.Object(182581484182437898)):
+                limit=101, oldest_first=False, around=discord.Object(182581484182437898)):
             lis.append(msg)
 
         assert(len(lis) == 101)
@@ -113,7 +162,7 @@ class HistoryIteratorTest(unittest.TestCase):
         """around handling reversed no filter #nofilter"""
         lis = []
         async for msg in self.channel.history(
-                limit=101, reverse=True, around=discord.Object(182581484182437898)):
+                limit=101, oldest_first=True, around=discord.Object(182581484182437898)):
             lis.append(msg)
 
         assert(len(lis) == 101)
@@ -126,7 +175,7 @@ class HistoryIteratorTest(unittest.TestCase):
         """around handling with filter #instagram."""
         lis = []
         async for msg in self.channel.history(
-                limit=101, reverse=False, around=discord.Object(182581484182437898),
+                limit=101, oldest_first=False, around=discord.Object(182581484182437898),
                 before=discord.Object(182581662973034496)):
             lis.append(msg)
 
@@ -137,7 +186,7 @@ class HistoryIteratorTest(unittest.TestCase):
 
         lis = []
         async for msg in self.channel.history(
-                limit=101, reverse=False, around=discord.Object(182581484182437898),
+                limit=101, oldest_first=False, around=discord.Object(182581484182437898),
                 after=discord.Object(182581324006031360)):
             lis.append(msg)
 
@@ -148,7 +197,7 @@ class HistoryIteratorTest(unittest.TestCase):
 
         lis = []
         async for msg in self.channel.history(
-                limit=101, reverse=False, around=discord.Object(182581484182437898),
+                limit=101, oldest_first=False, around=discord.Object(182581484182437898),
                 after=discord.Object(182581324006031360),
                 before=discord.Object(182581662973034496)):
             lis.append(msg)
