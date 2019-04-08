@@ -4,20 +4,6 @@ import os
 import unittest
 import discord
 
-def setup_logging():
-    import sys
-    if hasattr(setup_logging, 'once'):
-        return
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-
-    formatter = logging.Formatter(
-        "[%(asctime)s][%(name)s][%(levelname)s] %(message)s")
-
-    stdouthandler = logging.StreamHandler(sys.stdout)
-    stdouthandler.setFormatter(formatter)
-    root.addHandler(stdouthandler)
-    setattr(setup_logging, 'once', None)
 
 def async_test(f):
     def wrapper(*args, **kwargs):
@@ -36,7 +22,6 @@ class HistoryIteratorTest(unittest.TestCase):
         setup_logging()
         logging.getLogger("discord").setLevel(logging.ERROR)
         logging.getLogger("websockets").setLevel(logging.ERROR)
-        logging.getLogger("discord.http").setLevel(logging.DEBUG)
 
         bot = discord.Client(fetch_offline_members=False)
         await bot.login(os.environ['DISCORD_TOKEN'])
