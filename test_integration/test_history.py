@@ -19,7 +19,6 @@ class HistoryIteratorTest(unittest.TestCase):
     @classmethod
     @async_test
     async def setUpClass(cls):
-        setup_logging()
         logging.getLogger("discord").setLevel(logging.ERROR)
         logging.getLogger("websockets").setLevel(logging.ERROR)
 
