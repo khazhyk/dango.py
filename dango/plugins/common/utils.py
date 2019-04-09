@@ -1,4 +1,5 @@
 import asyncio
+import copy
 from datetime import datetime
 import logging
 import os
@@ -286,3 +287,21 @@ def loading_emoji(ctx):
 
 def jump_url(message):
   return "<https://discordapp.com/channels/{0.channel.guild.id}/{0.channel.id}/{0.id}>".format(message)
+
+class AliasCmd(discord.ext.commands.Command):
+    def __init__(self, name, alias, owner, bypass=False):
+        super().__init__(self._callback, name=name)
+        self.alias = alias
+        self.bypass = bypass
+        self.cog = owner
+
+    async def _callback(self, cog, ctx):
+        fake_msg = copy.copy(ctx.message)
+        fake_msg._update(ctx.message.channel, dict(
+            content=ctx.prefix + self.alias))
+        new_ctx = await ctx.bot.get_context(fake_msg)
+
+        if self.bypass:
+            await new_ctx.command.reinvoke(new_ctx, call_hooks=True)
+        elif await new_ctx.bot.can_run(new_ctx, call_once=True):
+            await new_ctx.bot.invoke(new_ctx)
