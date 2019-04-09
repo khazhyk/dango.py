@@ -478,6 +478,11 @@ class Tracking(Cog):
     # Event registration
 
     @Cog.listener()
+    async def on_ready(self):
+        for g in self.bot.guilds:
+            await self.on_guild_join(g)
+
+    @Cog.listener()
     async def on_guild_join(self, guild):
         for member in copy.copy(list(guild.members)):
             self.queue_batch_names_update(member)
