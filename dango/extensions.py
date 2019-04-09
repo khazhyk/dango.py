@@ -94,7 +94,7 @@ class WatchdogExtensionLoader:
 
     def close(self):
         if self._observer:
-            self._observer.close()
+            self._observer.unschedule_all()
         self._observer = None
 
     def watch_spec(self, plugin_spec):
