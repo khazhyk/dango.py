@@ -155,6 +155,7 @@ class Meta(Cog):
 
         servers = len(ctx.bot.guilds)
         members = sum(len(g.members) for g in ctx.bot.guilds)
+        users = len(ctx.bot.users)
         members_online = sum(1 for g in ctx.bot.guilds
                              for m in g.members
                              if m.status != discord.Status.offline)
@@ -163,16 +164,13 @@ class Meta(Cog):
         memory = self.proc.memory_info().rss / (1024 * 1024)
         cpu_time = self.proc.cpu_percent()
 
-        # messages = 10
-        # commands = 10
-
         embed.add_field(
             name="Members",
-            value="%d total\n%d online" % (members, members_online))
+            value="%d total\n%d unique\n%d online" % (members,users, members_online))
         embed.add_field(
             name="Channels",
             value="%d text\n%d voice" % (text_channels, voice_channels))
-        embed.add_field(name="Servers", value=servers)
+        embed.add_field(name="Connection", value="%d servers\n%s shards" % (servers, ctx.bot.shard_count))
         embed.add_field(name="Process", value="%.2fMiB RSS\n%s%% CPU\n%s Uptime" % (memory, cpu_time, uptime()))
         embed.set_footer(text="dangopy | discord.py v{}".format(discord_version))
         # embed.add_field(name="Messages", value="%d messages\n%d commands" % (messages, commands))
