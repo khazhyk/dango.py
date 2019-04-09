@@ -30,6 +30,7 @@ import textwrap
 
 from .common import converters
 from .common import checks
+from .common.utils import AliasCmd
 
 ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 
@@ -127,13 +128,20 @@ class Fun(Cog):
         self.db = database
         self.image_galleries_dir = config.register("image_galleries_dir")
         self.text_posts = config.register("text_posts", {})
+        self.bot = bot
+        self._custom_commands = []
         self._init_image_galleries(bot, self.image_galleries_dir())
         self._init_text_posts(bot)
+
 
 
     @group()
     async def meme(self, ctx):
         pass
+
+    def cog_unload(self):
+        for cmd in self._custom_commands:
+            self.bot.remove_command(str(cmd))
 
     def _init_image_galleries(self, bot, imgdir):
         """Load and register commands based on on-disk image gallery dir."""
@@ -147,7 +155,9 @@ class Fun(Cog):
                 cmd = ImgFileCmd(os.path.splitext(item)[0], fullpath)
             cmd.cog = self
             self.meme.add_command(cmd)
-            bot.add_command(cmd)
+            alias = AliasCmd(cmd.name, str(cmd), self)
+            bot.add_command(alias)
+            self._custom_commands.append(alias)
 
     def _init_text_posts(self, bot):
         """Load and register commands based on config text posts."""
@@ -157,7 +167,9 @@ class Fun(Cog):
             cmd = TextCmd(name, item)
             cmd.cog = self
             self.meme.add_command(cmd)
-            bot.add_command(cmd)
+            alias = AliasCmd(cmd.name, str(cmd), self)
+            bot.add_command(alias)
+            self._custom_commands.append(alias)
 
 def get_lum(r,g,b,a=1):
     return (0.299*r + 0.587*g + 0.114*b) * a
