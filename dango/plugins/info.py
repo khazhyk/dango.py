@@ -261,6 +261,7 @@ class Info(Cog):
                 nicknames = ", ".join((await tracking.nicks_for(user))[:3])
                 if nicknames:
                     i.add_field("Nicks", nicknames)
+        i.add_field("Shared Guilds", sum(g.get_member(user.id) is not None for g in ctx.bot.guilds))
         i.add_field("Created", format_time(user.created_at))
         if isinstance(user, discord.Member):
             i.add_field("Joined", format_time(user.joined_at))
