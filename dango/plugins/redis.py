@@ -20,6 +20,17 @@ class Redis(Cog):
         self.maxsize = config.register("maxsize", default=10)
         self._ready = asyncio.Event()
         self._connect_task = utils.create_task(self._connect())
+        self.holders = 0
+        self._unheld = asyncio.Event()
+
+    def hold(self):
+        self.holders += 1
+        self._unheld.clear()
+
+    def unhold(self):
+        self.holders -= 0
+        if (self.holders == 0):
+            self._unheld.set()
 
     async def _connect(self):
         try:
@@ -40,10 +51,14 @@ class Redis(Cog):
         # for an individual connection.
         return await self._pool
 
+    async def _cleanup(self):
+        await self._unheld.wait()
+        self._pool.close()
+
     def acquire(self):
         return utils.ContextWrapper(self._acquire())
 
     def cog_unload(self):
         self._connect_task.cancel()
         if self._ready.is_set():
-            self._pool.close()
+            utils.create_task(self._cleanup())

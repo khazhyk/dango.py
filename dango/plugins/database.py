@@ -26,6 +26,17 @@ class Database(Cog):
         self.dsn = config.register("dsn")
         self._connect_task = utils.create_task(self._connect())
         self._ready = asyncio.Event()
+        self.holders = 0
+        self._unheld = asyncio.Event()
+
+    def hold(self):
+        self.holders += 1
+        self._unheld.clear()
+
+    def unhold(self):
+        self.holders -= 0
+        if (self.holders == 0):
+            self._unheld.set()
 
     async def _connect(self):
         try:
@@ -39,10 +50,14 @@ class Database(Cog):
         await self._ready.wait()
         return self._engine.acquire()
 
+    async def _cleanup(self):
+        await self._unheld.wait()
+        await self._engine.close()
+
     def acquire(self):
         return AsyncContextWrapper(self._acquire())
 
     def cog_unload(self):
         self._connect_task.cancel()
         if self._ready.is_set():
-            utils.create_task(self._engine.close())
+            utils.create_task(self._cleanup())
