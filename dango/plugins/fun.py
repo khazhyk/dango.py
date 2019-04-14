@@ -87,6 +87,7 @@ class TextCmd(discord.ext.commands.Command):
 
 async def fetch_image(url):
     """Fetch the given image."""
+    url = str(url)
     # Workaround https://github.com/aio-libs/aiohttp/issues/3426            
     async with aiohttp.ClientSession(
             connector=aiohttp.TCPConnector(enable_cleanup_closed=True)) as sess:

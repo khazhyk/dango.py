@@ -4,11 +4,13 @@ import io
 import json
 import random
 import re
+import typing
 
 import aiohttp
 import dango
 from dango import dcog, Cog
 import discord
+from discord import PartialEmoji
 from discord.ext.commands import command
 from discord.ext.commands import clean_content
 from discord.ext.commands import errors
@@ -60,25 +62,16 @@ EIGHT_BALL_RESPS = {
     ]
 }
 
-FakeEmoji = collections.namedtuple('FakeEmoji', 'name id animated')
-FakeEmoji.url = discord.Emoji.url
-
-
 def better_int(val):
     return int(val, 0)
-
 
 def idc_emoji_or_just_string(val):
     match = re.match(r'<(?P<animated>a)?:(?P<name>[a-zA-Z0-9_]+):(?P<id>[0-9]+)>$', val)
     if match:
-        return FakeEmoji(match.group("name"), match.group("id"), bool(match.group("animated")))
-    return FakeEmoji(val.replace(':', ''), None, False)  # guess it's not animated
+        return PartialEmoji(name=match.group("name"), id=match.group("id"), animated=bool(match.group("animated")))
+    return PartialEmoji(name=val.replace(':', ''), id=None, animated=False)  # guess it's not animated
 
-def idc_emoji(val):
-    match = re.match(r'<(?P<animated>a)?:(?P<name>[a-zA-Z0-9_]+):(?P<id>[0-9]+)>$', val)
-    if not match:
-        return val
-    return FakeEmoji(match.group("name"), match.group("id"), bool(match.group("animated")))
+idc_emoji = typing.Union[PartialEmoji, str]
 
 @dcog()
 class Emoji(Cog):
@@ -171,8 +164,8 @@ class Emoji(Cog):
     @command()
     async def bigmoji(self, ctx, emoji: idc_emoji):
         """Link to the full sized image for an emoji."""
-        if isinstance(emoji, FakeEmoji):
-            await ctx.send(emoji.url)
+        if isinstance(emoji, PartialEmoji):
+            await ctx.send(str(emoji.url))
         else:
             await ctx.send(utils.emoji_url(emoji))
 

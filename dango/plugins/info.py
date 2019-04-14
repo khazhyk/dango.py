@@ -303,7 +303,7 @@ class Info(Cog):
         if user is None:
             user = ctx.message.author
 
-        await ctx.send(user.avatar_url_as(static_format='png'))
+        await ctx.send(str(user.avatar_url_as(static_format='png')))
 
     @command()
     async def defaultavatar(self, ctx, *, user: converters.UserMemberConverter=None):
@@ -314,4 +314,4 @@ class Info(Cog):
         if user is None:
             user = ctx.message.author
 
-        await ctx.send(user.default_avatar_url)
+        await ctx.send(str(user.default_avatar_url))
