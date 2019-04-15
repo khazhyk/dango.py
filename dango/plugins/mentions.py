@@ -40,23 +40,6 @@ def _format_message(message):
         content=utils.clean_newline(message.content),
         attachments=attachments)
 
-async def _get_context(message: discord.Message):
-    """Grab the last 4 messages before a message and format it properly."""
-    context = [message]
-
-    async for msg in message.channel.history(limit=4, before=message):
-        context.append(msg)
-
-    context_msg = [
-        _format_message(x)
-        for x in context]
-    context_msg.append("You were mentioned by {} ({}) on {} {}\nJump: {}\n".format(
-        message.author.mention, utils.clean_formatting(message.author.name), message.channel.guild.name, message.channel.mention,
-        utils.jump_url(message)))
-    context_msg = list(reversed(context_msg))
-
-    return context, context_msg
-
 def fit_into(parts: list, limit: int=2000):
     """
     Joins the parts into larger parts of at most len limit
@@ -90,6 +73,24 @@ class Mentions(Cog):
     async def _get_mode(self, user: discord.User):
         return PmMentionMode(await self.attr.get_attribute(user, "pm_mentions_mode", "off"))
 
+    async def _get_context(self, message: discord.Message):
+        """Grab the last 4 messages before a message and format it properly."""
+        context = [message]
+
+        async for msg in utils.CachedHistoryIterator(self.bot, message.channel, limit=4, before=message):
+            context.append(msg)
+
+        context_msg = [
+            _format_message(x)
+            for x in context]
+        context_msg.append("You were mentioned by {} ({}) on {} {}\nJump: {}\n".format(
+            message.author.mention, utils.clean_formatting(message.author.name), message.channel.guild.name, message.channel.mention,
+            utils.jump_url(message)))
+        context_msg = list(reversed(context_msg))
+
+        return context, context_msg
+
+
     async def _message_user(self, mention, message, context):
         # Can't pm ourselves.
         if mention.id == self.bot.user.id:
@@ -108,7 +109,7 @@ class Mentions(Cog):
             return
 
         if context[0] is None:
-            context[0], context[1] = await _get_context(message)
+            context[0], context[1] = await self._get_context(message)
 
         if mode is not PmMentionMode.always:
             for msg in context[0]:

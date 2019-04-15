@@ -3,14 +3,16 @@ from dango import dcog, Cog
 from discord.ext.commands import command
 from discord.ext.commands.errors import CommandError
 
+from dango.plugins.common import utils
+
 from . import saucenao
 
 
-async def _find_uploaded_image(channel, skip=0):
+async def _find_uploaded_image(ctx, skip=0):
     """
     Searches the logs for a message with some sort of image attachment
     """
-    async for message in channel.history(limit=100):
+    async for message in utils.CachedHistoryIterator(ctx.bot, ctx.channel, limit=100):
         for embed in message.embeds:
             if embed.thumbnail and embed.thumbnail.proxy_url:
                 if skip <= 0:
@@ -42,7 +44,7 @@ class ImageSearch(Cog):
 
         Will only look at the previous 100 messages at most."""
 
-        found_url = await _find_uploaded_image(ctx.channel, skip)
+        found_url = await _find_uploaded_image(ctx, skip)
 
         if found_url is None:
             raise CommandError("No images in the last 100 messages.")

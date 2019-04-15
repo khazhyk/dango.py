@@ -164,7 +164,7 @@ class LastImage(ParamDefault):
     Can be None."""
 
     async def default(self, ctx):
-        async for message in ctx.history(limit=100):
+        async for message in utils.CachedHistoryIterator(ctx.bot, ctx.channel, limit=100):
             for embed in message.embeds:
                 if embed.thumbnail and embed.thumbnail.proxy_url:
                     return embed.thumbnail.proxy_url
