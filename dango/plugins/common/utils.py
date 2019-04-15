@@ -149,7 +149,7 @@ def clean_triple_backtick(line):
         i += 1
 
     if line[-1] == '`':
-        line += '\u200b'
+        line += '\n'
 
     return clean_emojis(line)
 
