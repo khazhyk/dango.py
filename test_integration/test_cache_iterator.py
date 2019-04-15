@@ -42,7 +42,7 @@ class CachedHistoryIteratorTest(unittest.TestCase):
     async def test_split_cached(self):
         """most recent 100 cached, next 100 uncached"""
         lis = []
-        async for msg in CachedHistoryIterator(self.bot, self.channel, limit=200):
+        async for msg in CachedHistoryIterator(self.channel, limit=200):
             lis.append(msg)
 
         for x, i in enumerate(reversed(range(200))):
@@ -52,7 +52,7 @@ class CachedHistoryIteratorTest(unittest.TestCase):
     async def test_nomoreitems(self):
         """run out of messages"""
         lis = []
-        async for msg in CachedHistoryIterator(self.bot, self.channel, limit=20000):
+        async for msg in CachedHistoryIterator(self.channel, limit=20000):
             lis.append(msg)
 
         assert(len(lis) == 200)
@@ -63,7 +63,7 @@ class CachedHistoryIteratorTest(unittest.TestCase):
     async def test_all_cached(self):
         """most recent 16 cached"""
         lis = []
-        async for msg in CachedHistoryIterator(self.bot, self.channel, limit=16):
+        async for msg in CachedHistoryIterator(self.channel, limit=16):
             lis.append(msg)
 
         for x, i in enumerate(reversed(range(200-16, 200))):
@@ -73,7 +73,7 @@ class CachedHistoryIteratorTest(unittest.TestCase):
     async def test_before(self):
         """explicit before handling"""
         lis = []
-        async for msg in CachedHistoryIterator(self.bot, self.channel, 
+        async for msg in CachedHistoryIterator(self.channel,
                 limit=175, before=discord.Object(182581887242338305)):
             lis.append(msg)
 

@@ -67,7 +67,7 @@ class Debug(Cog):
     @command()
     async def reactinfo(self, ctx):
         resp = ""
-        async for msg in utils.CachedHistoryIterator(ctx.bot, ctx.channel, limit=10):
+        async for msg in utils.CachedHistoryIterator(ctx, limit=10):
             print(msg, msg.content)
             for r in msg.reactions:
                 if r.custom_emoji and r.emoji.guild:

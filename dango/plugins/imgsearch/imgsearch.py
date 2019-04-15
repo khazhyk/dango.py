@@ -12,7 +12,7 @@ async def _find_uploaded_image(ctx, skip=0):
     """
     Searches the logs for a message with some sort of image attachment
     """
-    async for message in utils.CachedHistoryIterator(ctx.bot, ctx.channel, limit=100):
+    async for message in utils.CachedHistoryIterator(ctx, limit=100):
         for embed in message.embeds:
             if embed.thumbnail and embed.thumbnail.proxy_url:
                 if skip <= 0:
