@@ -450,19 +450,37 @@ class Misc(Cog):
         ))
 
     @command(aliases=['msgsrc', 'msgtext'])
-    async def msgsource(self, ctx, *, msg_id: int):
-        """Show source for a message."""
-        try:
-            msg = await ctx.fetch_message(msg_id)
-        except discord.NotFound:
-            raise errors.BadArgument("Message not found")
+    async def msgsource(self, ctx, msg_id: int, channel_id: int=None):
+        """Show source for a message.
+
+        msg_id: id of the message
+        channel_id: channel in this Guild to look in. Defaults to current channel
+        """
+        if channel_id is not None:
+            channel = ctx.guild.get_channel(channel_id)
+            if not channel:
+                raise errors.BadArgument("Channel {} was not found!".format(channel_id))
         else:
-            await ctx.send("```{}```".format(utils.clean_triple_backtick(msg.content)))
+            channel = ctx
+
+        msg = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
+        if msg is None:
+            try:
+                msg = await channel.fetch_message(msg_id)
+            except discord.NotFound:
+                raise errors.BadArgument("Message not found")
+        await ctx.send("```{}```".format(utils.clean_triple_backtick(msg.content)))
 
     @command(aliases=['msgjson'])
-    async def msgraw(self, ctx, *, msg_id: int):
+    async def msgraw(self, ctx, msg_id: int, channel_id: int=None):
         """Show raw JSON for a message."""
-        raw = await ctx.bot.http.get_message(ctx.channel.id, msg_id)
+        if channel_id is not None:
+            channel = ctx.guild.get_channel(channel_id)
+            if not channel:
+                raise errors.BadArgument("Channel {} was not found!".format(channel_id))
+        else:
+            channel = ctx
+        raw = await ctx.bot.http.get_message(channel.id, msg_id)
 
         await ctx.send("```json\n{}```".format(
             utils.clean_triple_backtick(json.dumps(
