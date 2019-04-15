@@ -45,8 +45,17 @@ class CachedHistoryIteratorTest(unittest.TestCase):
         async for msg in CachedHistoryIterator(self.bot, self.channel, limit=200):
             lis.append(msg)
 
-        # import pdb; pdb.set_trace()
+        for x, i in enumerate(reversed(range(200))):
+            assert(str(i) in lis[x].content)
 
+    @async_test
+    async def test_nomoreitems(self):
+        """run out of messages"""
+        lis = []
+        async for msg in CachedHistoryIterator(self.bot, self.channel, limit=20000):
+            lis.append(msg)
+
+        assert(len(lis) == 200)
         for x, i in enumerate(reversed(range(200))):
             assert(str(i) in lis[x].content)
 
@@ -56,8 +65,6 @@ class CachedHistoryIteratorTest(unittest.TestCase):
         lis = []
         async for msg in CachedHistoryIterator(self.bot, self.channel, limit=16):
             lis.append(msg)
-
-        # import pdb; pdb.set_trace()
 
         for x, i in enumerate(reversed(range(200-16, 200))):
             assert(str(i) in lis[x].content)
