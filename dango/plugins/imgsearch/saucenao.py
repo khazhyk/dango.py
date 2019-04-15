@@ -1,3 +1,5 @@
+import asyncio
+
 import aiohttp
 
 
@@ -26,7 +28,7 @@ class SauceNAO:
         self.dbmask = 0
 
     def __del__(self):
-        self.session.close()
+        asyncio.ensure_future(self.session.close())
 
     def enable_source(self, *sources):
         """
