@@ -12,6 +12,54 @@ def async_test(f):
         loop.run_until_complete(coro)
     return wrapper
 
+class FetchMessageTest(unittest.TestCase):
+    """fetch_message."""
+
+    @classmethod
+    @async_test
+    async def setUpClass(cls):
+        logging.getLogger("discord").setLevel(logging.ERROR)
+        logging.getLogger("websockets").setLevel(logging.ERROR)
+
+        bot = discord.Client(fetch_offline_members=False)
+        await bot.login(os.environ['DISCORD_TOKEN'])
+        cls.bot = bot
+        cls.task = asyncio.ensure_future(bot.connect())
+        await cls.bot.wait_until_ready()
+        cls.channel = bot.get_channel(182580524743655424)
+        cls.guild = cls.channel.guild
+
+    @classmethod
+    @async_test
+    async def tearDownClass(cls):
+        await cls.bot.logout()
+        await cls.task
+
+    @async_test
+    async def test_get_message(self):
+        """single message endpoint"""
+        msg = await self.channel.fetch_message(182581936450043904, use_history=False)
+        self.assertEquals(msg.id, 182581936450043904)
+
+    @async_test
+    async def test_get_message_miss(self):
+        """single message endpoint"""
+        with self.assertRaises(discord.NotFound):
+            msg = await self.channel.fetch_message(182581936450043903, use_history=False)
+
+    @async_test
+    async def test_history(self):
+        """history endpoint"""
+        msg = await self.channel.fetch_message(182581936450043904, use_history=True)
+        self.assertEquals(msg.id, 182581936450043904)
+
+    @async_test
+    async def test_history_miss(self):
+        """history endpoint"""
+        with self.assertRaises(LookupError):
+            msg = await self.channel.fetch_message(182581936450043903, use_history=True)
+
+
 
 class HistoryIteratorTest(unittest.TestCase):
     """history iterator tests."""
