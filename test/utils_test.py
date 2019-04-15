@@ -111,13 +111,13 @@ class TestFormattingUtils(unittest.TestCase):
     def test_clean_triple_backtick(self):
         samples = [
             # Boundaries
-            ['``\u200b`\u200b', '```'],
+            ['``\u200b`\n', '```'],
             # In the middle of text
             [' ``\u200b` ', ' ``` '],
             # Left boundaries needs nothing
             ['``\u200b` ', '``` '],
             # even single ticks at the end
-            ['the command is `command`\u200b', 'the command is `command`'],
+            ['the command is `command`\n', 'the command is `command`'],
             [' ``\u200b``\u200b`` ', ' `````` '],
             [' ``\u200b``\u200b``\u200b` ', ' ``````` '],
         ]
