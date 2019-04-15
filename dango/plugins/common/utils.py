@@ -9,6 +9,7 @@ import sys
 
 import discord
 from discord.ext.commands import errors
+from discord.iterators import HistoryIterator
 
 
 log = logging.getLogger(__name__)
@@ -305,3 +306,47 @@ class AliasCmd(discord.ext.commands.Command):
             await new_ctx.command.reinvoke(new_ctx, call_hooks=True)
         elif await new_ctx.bot.can_run(new_ctx, call_once=True):
             await new_ctx.bot.invoke(new_ctx)
+
+class CachedHistoryIterator:
+    """HistoryIterator using the message cache.
+
+    This saves some time but has a few drawbacks!
+     - If we are out of sync with discord, we may have out of date or
+         missing messages (particularly if we READY'd at some point)
+    """
+    def __init__(self, bot, channel, before=None, limit=100):
+        self.bot = bot
+        self.channel = channel
+        self.before = before
+        self.limit = limit
+
+        self._local_msgs = list(self.fill_from_cache())
+        self._history_iterator = None
+
+    def fill_from_cache(self):
+        for msg in reversed(self.bot.cached_messages):
+            if (msg.channel.id == self.channel.id and self.limit > 0):
+                if not self.before or msg.id < self.before.id:
+                    self.limit -= 1
+                    self.before = discord.Object(id=msg.id)
+                    yield msg
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return self._local_msgs.pop(0)
+        except IndexError:
+            pass
+
+        if self.limit == 0:
+            raise StopAsyncIteration
+
+        if not self._history_iterator:
+            self._history_iterator = HistoryIterator(self.channel, self.limit, before=self.before)
+
+        try:
+            return await self._history_iterator.next()
+        except discord.errors.NoMoreItems:
+            raise StopAsyncIteration
