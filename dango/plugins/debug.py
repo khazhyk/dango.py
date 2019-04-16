@@ -5,6 +5,7 @@ import functools
 import logging
 import io
 import os
+import time
 import traceback
 import tempfile
 import threading
@@ -182,6 +183,33 @@ class Debug(Cog):
         fake_msg.author = who
         new_ctx = await ctx.bot.get_context(fake_msg)
         await ctx.bot.invoke(new_ctx)
+
+    @command(name="time")
+    @checks.is_owner()
+    async def time_(self, ctx, *, cmd):
+        fake_msg = copy.copy(ctx.message)
+        fake_msg._update(fake_msg.channel, dict(content=ctx.prefix + cmd))
+        new_ctx = await ctx.bot.get_context(fake_msg)
+
+        gathered_sends = []
+        async def _fake_send(content=None, *args, **kwargs):
+            gathered_sends.append([content, args, kwargs])
+
+        new_ctx.send = _fake_send
+
+        start_time = time.time()
+        await ctx.bot.invoke(new_ctx)
+        total_time = time.time() - start_time
+
+        if not gathered_sends:
+            await ctx.send("Last command took {}s".format(total_time))
+        else:
+            if not gathered_sends[-1][0]:
+                gathered_sends[-1][0] = "This command took {}s".format(total_time)
+            else:
+                gathered_sends[-1][0] += "\nThis command took {}s".format(total_time)
+        for send in gathered_sends:
+            await ctx.send(send[0], *send[1], **send[2])
 
     @command()
     @checks.is_owner()
