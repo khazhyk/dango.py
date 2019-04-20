@@ -313,13 +313,22 @@ class CachedHistoryIterator(HistoryIterator):
     def __init__(self, messageable, limit,
                  before=None, after=None, around=None, oldest_first=None):
         super().__init__(messageable, limit, before, after, around, oldest_first)
+        self.prefill = self.reverse is False and around is None
 
-        if oldest_first is False and around is None:
-            self.prefill_from_cache()
+    async def next(self):
+        if self.prefill:
+            await self.prefill_from_cache()
+            self.prefill = False
+        return await super().next()
 
-    def prefill_from_cache(self):
-        for msg in reversed(messageable._state._messages):
-            if msg.channel.id == self.messageable.id and self.limit > 0 and (not self.before or msg.id < self.before.id):
+    async def prefill_from_cache(self):
+        if not hasattr(self, 'channel'):
+            # do the required set up
+            channel = await self.messageable._get_channel()
+            self.channel = channel
+
+        for msg in reversed(self.channel._state._messages):
+            if msg.channel.id == self.channel.id and self.limit > 0 and (not self.before or msg.id < self.before.id):
                 self.limit -= 1
                 self.before = discord.Object(id=msg.id)
-                self.messages.put(msg)
+                await self.messages.put(msg)
