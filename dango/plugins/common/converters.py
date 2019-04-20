@@ -152,6 +152,36 @@ class AnyImage(Converter):
         return member.avatar_url_as(format="png")
 
 
+MESSAGE_ID_RE = re.compile(r'^(?:(?P<channel_id>[0-9]{15,21})[-/:])?(?P<message_id>[0-9]{15,21})$')
+MESSAGE_LINK_RE = re.compile(
+    r'^https?://(?:(ptb|canary)\.)?discordapp\.com/channels/'
+    r'(?:([0-9]{15,21})|(@me))'
+    r'/(?P<channel_id>[0-9]{15,21})/(?P<message_id>[0-9]{15,21})$')
+
+
+class MessageIdConverter(Converter):
+    """Match message_id, channel-message_id, or jump url to a discord.Message
+
+    Message must be in the current guild.
+    """
+
+    async def convert(self, ctx, argument):
+        match = MESSAGE_ID_RE.match(argument) or MESSAGE_LINK_RE.match(argument)
+        if not match:
+            raise errors.BadArgument("{} doesn't look like a message to me...".format(argument))
+
+        msg_id = int(match.group("message_id"))
+        channel_id = int(match.group("channel_id") or ctx.channel.id)
+        channel = ctx.guild.get_channel(channel_id)
+        if not channel:
+            raise errors.BadArgument("Channel {} not found".format(channel_id))
+
+        if not ctx.author.permissions_in(channel).read_messages:
+            raise errors.CheckFailure("You don't have permission to view this channel")
+
+        return (channel, msg_id)
+
+
 class AuthorAvatar(ParamDefault):
 
     async def default(self, ctx):

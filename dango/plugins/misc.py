@@ -450,18 +450,13 @@ class Misc(Cog):
         ))
 
     @command(aliases=['msgsrc', 'msgtext'])
-    async def msgsource(self, ctx, msg_id: int, channel_id: int=None):
+    async def msgsource(self, ctx, msg: converters.MessageIdConverter):
         """Show source for a message.
 
-        msg_id: id of the message
-        channel_id: channel in this Guild to look in. Defaults to current channel
+        message can be given in jump url format, as message id,
+        or as channel-message
         """
-        if channel_id is not None:
-            channel = ctx.guild.get_channel(channel_id)
-            if not channel:
-                raise errors.BadArgument("Channel {} was not found!".format(channel_id))
-        else:
-            channel = ctx.channel
+        channel, msg_id = msg
 
         msg = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
         if msg is None:
@@ -474,14 +469,12 @@ class Misc(Cog):
         await ctx.send("```{}```".format(utils.clean_triple_backtick(msg.content)))
 
     @command(aliases=['msgjson'])
-    async def msgraw(self, ctx, msg_id: int, channel_id: int=None):
-        """Show raw JSON for a message."""
-        if channel_id is not None:
-            channel = ctx.guild.get_channel(channel_id)
-            if not channel:
-                raise errors.BadArgument("Channel {} was not found!".format(channel_id))
-        else:
-            channel = ctx.channel
+    async def msgraw(self, ctx, msg: converters.MessageIdConverter):
+        """Show raw JSON for a message.
+
+        message can be given in jump url format, as message id,
+        or as channel-message"""
+        channel, msg_id = msg
         raw = await ctx.bot.http.get_message(channel.id, msg_id)
 
         await ctx.send("```json\n{}```".format(
