@@ -335,8 +335,8 @@ class CachedHistoryIterator(HistoryIterator):
                 self.before = discord.Object(id=msg.id)
                 await self.messages.put(msg)
 
-
 CONTROL_CHARS = re.compile('[%s]' % re.escape(''.join(chr(i) for i in range(sys.maxunicode) if unicodedata.category(chr(i)).startswith('C'))))
+
 def escape_invis(decode_error):
     decode_error.end = decode_error.start + 1
     if CONTROL_CHARS.match(decode_error.object[decode_error.start:decode_error.end]):
@@ -344,3 +344,7 @@ def escape_invis(decode_error):
     return decode_error.object[decode_error.start:decode_error.end].encode('utf-8'), decode_error.end
 
 codecs.register_error('escape-invis', escape_invis)
+
+def escape_invis_chars(input):
+    """Escape invisible/control characters."""
+    return input.encode('ascii', 'escape-invis').decode('utf-8')
