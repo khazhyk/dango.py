@@ -1,11 +1,13 @@
 import asyncio
 import copy
+import codecs
 from datetime import datetime
 import logging
 import os
 import re
 import subprocess
 import sys
+import unicodedata
 
 import discord
 from discord.ext.commands import errors
@@ -332,3 +334,13 @@ class CachedHistoryIterator(HistoryIterator):
                 self.limit -= 1
                 self.before = discord.Object(id=msg.id)
                 await self.messages.put(msg)
+
+
+CONTROL_CHARS = re.compile('[%s]' % re.escape(''.join(chr(i) for i in range(sys.maxunicode) if unicodedata.category(chr(i)).startswith('C'))))
+def escape_invis(decode_error):
+    decode_error.end = decode_error.start + 1
+    if CONTROL_CHARS.match(decode_error.object[decode_error.start:decode_error.end]):
+        return codecs.backslashreplace_errors(decode_error)
+    return decode_error.object[decode_error.start:decode_error.end].encode('utf-8'), decode_error.end
+
+codecs.register_error('escape-invis', escape_invis)

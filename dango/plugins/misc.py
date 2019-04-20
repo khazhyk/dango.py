@@ -466,7 +466,7 @@ class Misc(Cog):
                 raise errors.BadArgument("Message not found")
         elif msg.channel.id != channel.id:
             raise errors.BadArgument("Message not found")
-        await ctx.send("```{}```".format(utils.clean_triple_backtick(msg.content)))
+        await ctx.send("```{}```".format(utils.clean_triple_backtick(msg.content.encode('ascii', 'escape-invis').decode('utf-8'))))
 
     @command(aliases=['msgjson'])
     async def msgraw(self, ctx, msg: converters.MessageIdConverter):
@@ -479,7 +479,7 @@ class Misc(Cog):
 
         await ctx.send("```json\n{}```".format(
             utils.clean_triple_backtick(json.dumps(
-                raw, indent=2, ensure_ascii=False, sort_keys=True))))
+                raw, indent=2, ensure_ascii=False, sort_keys=True).encode('ascii', 'escape-invis').decode('utf-8'))))
 
     @command()
     async def nostalgia(self, ctx, channel: discord.TextChannel=None, date: utils.convert_date=None):
