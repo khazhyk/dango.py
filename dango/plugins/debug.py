@@ -71,7 +71,7 @@ class Debug(Cog):
         async for msg in utils.CachedHistoryIterator(ctx, limit=10):
             print(msg, msg.content)
             for r in msg.reactions:
-                if r.custom_emoji and r.emoji.guild:
+                if r.custom_emoji and getattr(r.emoji, 'guild', None):
                     resp += '%s ' % str(r.emoji.guild)
                 resp += "{}: {} {}\n".format(r.emoji, r.count, r.me)
 
