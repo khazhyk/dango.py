@@ -461,7 +461,7 @@ class Misc(Cog):
             if not channel:
                 raise errors.BadArgument("Channel {} was not found!".format(channel_id))
         else:
-            channel = ctx
+            channel = ctx.channel
 
         msg = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
         if msg is None:
@@ -469,6 +469,8 @@ class Misc(Cog):
                 msg = await channel.fetch_message(msg_id)
             except discord.NotFound:
                 raise errors.BadArgument("Message not found")
+        elif msg.channel.id != channel.id:
+            raise errors.BadArgument("Message not found")
         await ctx.send("```{}```".format(utils.clean_triple_backtick(msg.content)))
 
     @command(aliases=['msgjson'])
@@ -479,7 +481,7 @@ class Misc(Cog):
             if not channel:
                 raise errors.BadArgument("Channel {} was not found!".format(channel_id))
         else:
-            channel = ctx
+            channel = ctx.channel
         raw = await ctx.bot.http.get_message(channel.id, msg_id)
 
         await ctx.send("```json\n{}```".format(
