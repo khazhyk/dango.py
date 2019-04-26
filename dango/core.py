@@ -58,6 +58,7 @@ class DangoContext(commands.Context):
         """Override for send to add message filtering."""
         # TODO - this maybe shouldn't be in dango
         if content:
+            content = str(content)
             content = re.sub("@everyone", "@\u200beveryone", content, flags=re.IGNORECASE)
             content = re.sub("@here", "@\u200bhere", content, flags=re.IGNORECASE)
 
