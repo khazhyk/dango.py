@@ -4,7 +4,7 @@ import re
 import typing
 
 import discord
-from discord.ext.commands import Converter, ParamDefault, converter, errors
+from discord.ext.commands import Converter, CustomDefault, converter, errors
 
 from . import paginator
 from . import utils
@@ -147,9 +147,12 @@ class AnyImage(Converter):
     async def convert(self, ctx, argument):
         if argument.startswith("http://") or argument.startswith("https://"):
             return argument
-        member = await UserMemberConverter().convert(ctx, argument)
 
-        return member.avatar_url_as(format="png")
+        member = await UserMemberConverter().convert(ctx, argument)
+        if member:
+            return member.avatar_url_as(format="png")
+
+        raise errors.BadArgument("{argument} isn't a member or url.".format(argument=argument))
 
 
 MESSAGE_ID_RE = re.compile(r'^(?:(?P<channel_id>[0-9]{15,21})[-/:])?(?P<message_id>[0-9]{15,21})$')
@@ -182,18 +185,18 @@ class MessageIdConverter(Converter):
         return (channel, msg_id)
 
 
-class AuthorAvatar(ParamDefault):
+class AuthorAvatar(CustomDefault):
 
-    async def default(self, ctx):
+    async def default(self, ctx, param):
         return ctx.author.avatar_url_as(format="png")
 
 
-class LastImage(ParamDefault):
+class LastImage(CustomDefault):
     """Default param which finds the last image in chat.
 
     Can be None."""
 
-    async def default(self, ctx):
+    async def default(self, ctx, param):
         async for message in utils.CachedHistoryIterator(ctx, limit=100):
             for embed in message.embeds:
                 if embed.thumbnail and embed.thumbnail.proxy_url:
@@ -201,3 +204,4 @@ class LastImage(ParamDefault):
             for attachment in message.attachments:
                 if attachment.proxy_url:
                     return attachment.proxy_url
+        raise errors.MissingRequiredArgument(param)

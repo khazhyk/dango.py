@@ -402,9 +402,6 @@ class ImgFun(Cog):
     @checks.bot_needs(["attach_files"])
     async def needsmorejpeg(self, ctx, url=converters.LastImage):
         with ctx.typing():
-            if url is None:
-                raise errors.CommandError("No images found.")
-
             content = await fetch_image(url)
             jpeg_buff = await ctx.bot.loop.run_in_executor(None, self.make_more_jpeg, content)
             await ctx.send(file=discord.File(jpeg_buff, filename="more_jpeg.jpg"))
