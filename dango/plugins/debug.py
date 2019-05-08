@@ -243,7 +243,6 @@ class Debug(Cog):
             buf.write("\n")
 
         await ctx.send("{}".format(buf.getvalue()))
-            
 
     @command()
     @checks.is_owner()
