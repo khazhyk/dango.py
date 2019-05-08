@@ -169,26 +169,6 @@ class Emoji(Cog):
         else:
             await ctx.send(utils.emoji_url(emoji))
 
-    @command(aliases=['google', 'lmgtfy'])
-    async def g(self, ctx, *, query):
-        await ctx.send("{}{}".format(
-            random.choice(["https://google.com/search?q=", "https://lmgtfy.com/?q="],
-                p=[0.99, 0.01]),
-            urllib.parse.quote_plus(query)))
-
-    @command()
-    async def countdown(self, ctx, seconds: int=3):
-        """3... 2... 1... Go!"""
-        if seconds > 10:
-            raise errors.BadArgument("No more than 10 seconds, thanks")
-        if seconds < 0:
-            raise errors.BadArgument("No negative numbers, thanks")
-        while seconds:
-            await ctx.send("%d..." % seconds)
-            await asyncio.sleep(1)
-            seconds -= 1
-        await ctx.send("Go!")
-
 
 def number_emoji(num):
     if 0 <= num <= 9:
@@ -497,3 +477,23 @@ class Misc(Cog):
 
         async for m in channel.history(after=date, limit=1):
             await ctx.send(utils.jump_url(m))
+
+    @command(aliases=['google', 'lmgtfy'])
+    async def g(self, ctx, *, query):
+        await ctx.send("{}{}".format(
+            random.choice(["https://google.com/search?q=", "https://lmgtfy.com/?q="],
+                p=[0.99, 0.01]),
+            urllib.parse.quote_plus(query)))
+
+    @command()
+    async def countdown(self, ctx, seconds: int=3):
+        """3... 2... 1... Go!"""
+        if seconds > 10:
+            raise errors.BadArgument("No more than 10 seconds, thanks")
+        if seconds < 0:
+            raise errors.BadArgument("No negative numbers, thanks")
+        while seconds:
+            await ctx.send("%d..." % seconds)
+            await asyncio.sleep(1)
+            seconds -= 1
+        await ctx.send("Go!")
