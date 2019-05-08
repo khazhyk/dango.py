@@ -1,17 +1,21 @@
+import aiohttp
 import asyncio
 import copy
 import codecs
 from datetime import datetime
 import logging
+import io
 import os
 import re
 import subprocess
 import sys
 import unicodedata
+import yarl
 
 import discord
 from discord.ext.commands import errors
 from discord.iterators import HistoryIterator
+from PIL import Image
 
 
 log = logging.getLogger(__name__)
@@ -348,3 +352,40 @@ codecs.register_error('escape-invis', escape_invis)
 def escape_invis_chars(input):
     """Escape invisible/control characters."""
     return input.encode('ascii', 'escape-invis').decode('utf-8')
+
+
+async def fetch_image(url):
+    """Fetch the given image."""
+    url = str(url)
+    # Workaround https://github.com/aio-libs/aiohttp/issues/3426            
+    async with aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(enable_cleanup_closed=True)) as sess:
+        # proxy_url must be passed exactly - encoded=True
+        # https://github.com/aio-libs/aiohttp/issues/3424#issuecomment-443760653
+        async with sess.get(yarl.URL(url, encoded=True)) as resp:
+            resp.raise_for_status()
+            content_length = int(resp.headers.get('Content-Length', 50<<20))
+            if content_length > 50<<20:
+                raise errors.BadArgument("File too big")
+
+            blocks = []
+            readlen = 0
+            tested_image = False
+            # Read up to X bytes, raise otherwise
+            while True:
+                block = await resp.content.readany()
+                if not block:
+                    break
+                blocks.append(block)
+                readlen += len(block)
+                if readlen >= 10<<10 and not tested_image:
+                    try:
+                        Image.open(io.BytesIO(b''.join(blocks)))
+                    except OSError:
+                        raise errors.BadArgument("This doesn't look like an image to me")
+                    else:
+                        tested_image = True
+                if readlen > content_length:
+                    raise errors.BadArgument("File too big")
+            source_bytes = b''.join(blocks)
+    return source_bytes
