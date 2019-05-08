@@ -14,11 +14,11 @@ lax_id_regex = re.compile(r'([0-9]{15,21})$')
 mention_regex = re.compile(r'<@!?([0-9]+)>$')
 
 
-async def disambiguate(ctx, matches):
+async def disambiguate(ctx, matches, sort, timeout=30):
     if len(matches) == 1:
         return matches[0]
 
-    matches = sorted(matches, key=lambda x: x.discriminator)
+    matches = sorted(matches, key=sort)
 
     pager = paginator.GroupLinesPaginator(ctx, [
         "%d: %s" % (idx + 1, match) for
@@ -28,7 +28,7 @@ async def disambiguate(ctx, matches):
     pager_task = utils.create_task(pager.send())
 
     try:
-        msg = await ctx.bot.wait_for('message', timeout=10,
+        msg = await ctx.bot.wait_for('message', timeout=timeout,
                 check=lambda m: m.author.id == ctx.author.id and
                                 m.channel.id == ctx.channel.id)
     except asyncio.TimeoutError:
@@ -48,6 +48,68 @@ async def disambiguate(ctx, matches):
         pager_task.cancel()
         if pager.msg:
             utils.create_task(pager.msg.delete())
+
+
+class SearchEmojiConverter(Converter):
+    """Search for matching emoji."""
+
+    async def get_by_id(self, ctx, emoji_id):
+        """Exact emoji_id lookup."""
+        if ctx.guild:
+            result = discord.utils.get(ctx.guild.emojis, id=emoji_id)
+        if not result:
+            result = discord.utils.get(ctx.bot.emojis, id=emoji_id)
+        return result
+
+    async def get_by_name(self, ctx, emoji_name):
+        """Lookup by name.
+
+        Returns list of possible matches.
+
+        Does a bot-wide case-insensitive match.
+        """
+
+        emoji_name = emoji_name.lower()
+        def pred(emoji):
+            return emoji.name.lower() == emoji_name
+        return [e for e in ctx.bot.emojis if pred(e)]
+
+    async def find_match(self, ctx, argument):
+        """Get a match...
+
+        If we have a number, try lookup by id.
+        Fallback to lookup by name.
+
+        Disambiguate in case we have multiple name results.
+        """
+        lax_id_match = lax_id_regex.match(argument)
+        if lax_id_match:
+            result = await self.get_by_id(ctx, int(lax_id_match.group(1)))
+            if result:
+                return result
+
+        results = await self.get_by_name(ctx, argument)
+        if results:
+            return await disambiguate(ctx, results, sort=lambda x: (x.name, x.id), timeout=60)
+
+    async def convert(self, ctx, argument):
+        match = await self.find_match(ctx, argument)
+
+        if match:
+            return match
+
+        try:
+            return await converter.EmojiConverter().convert(ctx, argument)
+        except errors.BadArgument:
+            pass
+
+        try:
+            return await converter.PartialEmojiConverter().convert(ctx, argument)
+        except errors.BadArgument:
+            pass
+
+        raise errors.BadArgument(
+            'Emoji "{}" not found'.format(argument))
 
 
 class UserMemberConverter(Converter):
@@ -120,7 +182,7 @@ class UserMemberConverter(Converter):
 
         results = await self.get_by_name(ctx, argument)
         if results:
-            return await disambiguate(ctx, results)
+            return await disambiguate(ctx, results, sort=lambda x: x.discriminator)
 
     async def convert(self, ctx, argument):
         match = await self.find_match(ctx, argument)
