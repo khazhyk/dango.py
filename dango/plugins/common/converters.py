@@ -108,6 +108,10 @@ class SearchEmojiConverter(Converter):
         except errors.BadArgument:
             pass
 
+        lax_id_match = lax_id_regex.match(argument)
+        if lax_id_match:
+            return discord.PartialEmoji(name="unknown", id=int(lax_id_match.group(1)), animated=False)
+
         raise errors.BadArgument(
             'Emoji "{}" not found'.format(argument))
 
