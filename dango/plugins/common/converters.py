@@ -229,9 +229,9 @@ MESSAGE_LINK_RE = re.compile(
 
 
 class MessageIdConverter(Converter):
-    """Match message_id, channel-message_id, or jump url to a discord.Message
+    """Match message_id, channel-message_id, or jump url to a discord.Channel, message_id pair
 
-    Message must be in the current guild.
+    Author must be able to view the target channel.
     """
 
     async def convert(self, ctx, argument):
@@ -243,12 +243,37 @@ class MessageIdConverter(Converter):
         channel_id = int(match.group("channel_id") or ctx.channel.id)
         channel = ctx.guild.get_channel(channel_id)
         if not channel:
+            channel = ctx.bot.get_channel(channel_id)
+
+        if not channel:
             raise errors.BadArgument("Channel {} not found".format(channel_id))
 
-        if not ctx.author.permissions_in(channel).read_messages:
+        author = channel.guild.get_member(ctx.author.id)
+
+        if not channel.guild.me.permissions_in(channel).read_messages:
+            raise errors.CheckFailure("I don't have permission to view this channel")
+        if not author or not channel.permissions_for(author).read_messages:
             raise errors.CheckFailure("You don't have permission to view this channel")
 
         return (channel, msg_id)
+
+
+class MessageConverter(Converter):
+    """Match message_id, channel-message_id, or jump url to a discord.Message"""
+    async def convert(self, ctx, argument):
+        channel, msg_id = await MessageIdConverter().convert(ctx, argument)
+
+        msg = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
+        if msg is None:
+            try:
+                msg = await channel.fetch_message(msg_id)
+            except discord.NotFound:
+                raise errors.BadArgument("Message not found")
+            except discord.Forbidden:
+                raise errors.CheckFailure("I don't have permission to view this channel")
+        elif msg.channel.id != channel.id:
+            raise errors.BadArgument("Message not found")
+        return msg
 
 
 class AuthorAvatar(CustomDefault):

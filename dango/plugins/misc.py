@@ -88,6 +88,18 @@ def joinand(arr):
         ", ".join(arr[:-1]), arr[-1])
 
 
+def message_embed(msg):
+    embed = discord.Embed(timestamp=msg.created_at)
+    if msg.author.nick:
+        author_name = "{} • {}".format(msg.author.display_name, msg.author)
+    else:
+        author_name = msg.author
+    embed.set_author(name=author_name, icon_url=msg.author.avatar_url)
+    embed.set_footer(text="#{} in {}".format(msg.channel, msg.guild))
+    embed.color = hash(str(msg.author.id)) % (1 << 24)
+    return embed
+
+
 @dcog()
 class Misc(Cog):
 
@@ -324,24 +336,36 @@ class Misc(Cog):
             for c in text
         ))
 
+    @command(aliases=["msgquote"])
+    async def quote(self, ctx, msg: converters.MessageConverter):
+        """Quote a message.
+
+        message can be given in jump url format, as message id,
+        or as channel-message
+        """
+        embed = message_embed(msg)
+        description = msg.content
+        if msg.attachments:
+            description += "\n" + "".join(
+                "\n[{0.filename}]({0.url})".format(a) for a in msg.attachments
+                )
+        description += "\n\n[Jump to message]({})".format(msg.jump_url)
+        if msg.embeds:
+            description += " • Message has an embed"
+        embed.description = description
+        await ctx.send(embed=embed)
+
     @command(aliases=['msgsrc', 'msgtext'])
-    async def msgsource(self, ctx, msg: converters.MessageIdConverter):
+    async def msgsource(self, ctx, msg: converters.MessageConverter):
         """Show source for a message.
 
         message can be given in jump url format, as message id,
         or as channel-message
         """
-        channel, msg_id = msg
-
-        msg = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
-        if msg is None:
-            try:
-                msg = await channel.fetch_message(msg_id)
-            except discord.NotFound:
-                raise errors.BadArgument("Message not found")
-        elif msg.channel.id != channel.id:
-            raise errors.BadArgument("Message not found")
-        await ctx.send("```{}```".format(utils.clean_triple_backtick(utils.escape_invis_chars(msg.content))))
+        embed = message_embed(msg)
+        embed.description = "```{}```".format(
+            utils.clean_triple_backtick(utils.escape_invis_chars(msg.content)))
+        await ctx.send(embed=embed)
 
     @command(aliases=['msgjson'])
     async def msgraw(self, ctx, msg: converters.MessageIdConverter):
