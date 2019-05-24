@@ -251,9 +251,9 @@ class MessageIdConverter(Converter):
         author = channel.guild.get_member(ctx.author.id)
 
         if not channel.guild.me.permissions_in(channel).read_messages:
-            raise errors.CheckFailure("I don't have permission to view this channel")
+            raise errors.CheckFailure("I don't have permission to view channel {0.mention}".format(channel))
         if not author or not channel.permissions_for(author).read_messages:
-            raise errors.CheckFailure("You don't have permission to view this channel")
+            raise errors.CheckFailure("You don't have permission to view channel {0.mention}".format(channel))
 
         return (channel, msg_id)
 
@@ -268,9 +268,9 @@ class MessageConverter(Converter):
             try:
                 msg = await channel.fetch_message(msg_id)
             except discord.NotFound:
-                raise errors.BadArgument("Message not found")
+                raise errors.BadArgument("Message {0} not found in channel {1.mention}".format(msg_id, channel))
             except discord.Forbidden:
-                raise errors.CheckFailure("I don't have permission to view this channel")
+                raise errors.CheckFailure("I don't have permission to view channel {0.mention}".format(channel))
         elif msg.channel.id != channel.id:
             raise errors.BadArgument("Message not found")
         return msg

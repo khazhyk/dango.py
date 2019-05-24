@@ -374,7 +374,10 @@ class Misc(Cog):
         message can be given in jump url format, as message id,
         or as channel-message"""
         channel, msg_id = msg
-        raw = await ctx.bot.http.get_message(channel.id, msg_id)
+        try:
+            raw = await ctx.bot.http.get_message(channel.id, msg_id)
+        except discord.NotFound:
+            raise errors.BadArgument("Message {0} not found in channel {1.mention}".format(msg_id, channel))
 
         await ctx.send("```json\n{}```".format(
             utils.clean_triple_backtick(utils.escape_invis_chars(json.dumps(
