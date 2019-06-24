@@ -19,6 +19,7 @@ from numpy import random
 import random as pyrandom
 import unicodedata
 import urllib.parse
+import yarl
 
 from .common import utils
 from .common import converters
@@ -406,6 +407,10 @@ class Misc(Cog):
             random.choice(["https://google.com/search?q=", "https://lmgtfy.com/?q="],
                 p=[0.99, 0.01]),
             urllib.parse.quote_plus(query)))
+
+    @command(aliases=['udict'])
+    async def ud(self, ctx, *, query):
+        await ctx.send(yarl.URL("https://www.urbandictionary.com/define.php?term={}".format(query)))
 
     @command()
     async def countdown(self, ctx, seconds: int=3):
