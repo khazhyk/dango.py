@@ -274,8 +274,8 @@ class Info(Cog):
         if isinstance(user, discord.Member):
             i.add_field("Roles", ", ".join(
                 [r.name for r in sorted(user.roles, key=lambda r: -r.position)]))
-        if isinstance(user, discord.Member) and user.activity:
-            i.add_field("Playing", activity_string(user.activity))
+        if isinstance(user, discord.Member) and user.activities:
+            i.add_field("Playing", "\n".join(activity_string(a) for a in user.activities))
 
         await ctx.send(i.code_block())
 
