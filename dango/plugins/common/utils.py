@@ -207,6 +207,12 @@ def create_task(thing):
     return task
 
 
+def value_format(k, v, col_len):
+    v = str(v).split("\n")
+
+    return "{}: {}".format(k.rjust(col_len), v[0]) + "".join(
+        "\n{}  {}".format(" " * col_len, subv) for subv in v[1:])
+
 class InfoBuilder:
     def __init__(self, fields=None, description=""):
         self.description = description
@@ -220,8 +226,7 @@ class InfoBuilder:
 
         return "```prolog\n\u200b{}```".format(
             clean_invite_embed(clean_triple_backtick(clean_mentions(
-                "\n".join("{}: {}".format(
-                    k.rjust(col_len), v) for k, v in self.fields)))))
+                "\n".join(value_format(k, v, col_len) for k, v in self.fields)))))
 
     def embed(self):
         e = discord.Embed()
