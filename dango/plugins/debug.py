@@ -178,7 +178,7 @@ class Debug(Cog):
         fake_msg = copy.copy(ctx.message)
 
         # msg._update handles clearing cached properties
-        fake_msg._update(ctx.message.channel, dict(
+        fake_msg._update(dict(
             content=ctx.prefix + cmd))
         fake_msg.author = who
         new_ctx = await ctx.bot.get_context(fake_msg)
@@ -188,7 +188,7 @@ class Debug(Cog):
     @checks.is_owner()
     async def time_(self, ctx, *, cmd):
         fake_msg = copy.copy(ctx.message)
-        fake_msg._update(fake_msg.channel, dict(content=ctx.prefix + cmd))
+        fake_msg._update(dict(content=ctx.prefix + cmd))
         new_ctx = await ctx.bot.get_context(fake_msg)
 
         gathered_sends = []
