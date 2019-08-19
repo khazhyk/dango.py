@@ -27,6 +27,7 @@ from .common.utils import resolve_color
 from .common.paginator import ListPaginator
 
 FULLWIDTH_OFFSET = 65248
+FLAG_OFFSET = 127397
 ZALGO_CHARS = [chr(x) for x in range(768, 879)]
 
 EIGHT_BALL_RESPS = {
@@ -213,6 +214,16 @@ class Misc(Cog):
         await ctx.send("".join(map(
             lambda c: chr(ord(c) + FULLWIDTH_OFFSET) if (ord(c) >= 0x21 and ord(c) <= 0x7E) else c,
             msg)).replace(" ", chr(0x3000)))
+
+    @command(aliases=["🇫 🇱 🇦 🇬 🇮 🇫 🇾", "fl"])
+    async def flagify(self, ctx, *, msg="flagify"):
+        """🇫 🇱 🇦 🇬 🇮 🇫 🇾."""
+        await ctx.send("".join(
+            map(
+                lambda c: number_emoji(int(c)) if (ord(c) >= 0x30 and ord(c) <= 0x39) else c,
+                "".join(map(
+                    lambda c: chr(ord(c) + FLAG_OFFSET) + " " if (ord(c) >= 0x41 and ord(c) <= 0x5a) else c,
+                    msg.upper().replace(" ", "  "))))))
 
     @command(pass_context=True, aliases=["\N{CLAPPING HANDS SIGN}"])
     async def clap(self, ctx, *, msg: clean_content()):
