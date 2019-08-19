@@ -222,7 +222,7 @@ class Misc(Cog):
             map(
                 lambda c: number_emoji(int(c)) if (ord(c) >= 0x30 and ord(c) <= 0x39) else c,
                 "".join(map(
-                    lambda c: chr(ord(c) + FLAG_OFFSET) + " " if (ord(c) >= 0x41 and ord(c) <= 0x5a) else c,
+                    lambda c: chr(ord(c) + FLAG_OFFSET) + ("\u200b" if len(msg) >= 28 else " ") if (ord(c) >= 0x41 and ord(c) <= 0x5a) else c,
                     msg.upper().replace(" ", "  "))))))
 
     @command(pass_context=True, aliases=["\N{CLAPPING HANDS SIGN}"])
