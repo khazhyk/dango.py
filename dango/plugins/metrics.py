@@ -155,6 +155,23 @@ class HTTP(Cog):
         utils.create_task(self.stop_app())
 
 
+class HttpClientRequestHook:
+
+    def __init__(self, orig, prom):
+        self.orig = orig
+        self.prom = prom
+
+    async def __call__(self, route, **kwargs):
+        try:
+            response = await self.orig(route, **kwargs)
+        except discord.HTTPException as e:
+            self.prom.bot_http_requests.labels(method=route.method, path=route.path, status=e.status).inc()
+            raise
+        else:
+            self.prom.bot_http_requests.labels(method=route.method, path=route.path, status=200).inc()
+            return response
+
+
 @dcog(['HTTP'], pass_bot=True)
 class PrometheusMetrics(Cog):
 
@@ -177,6 +194,10 @@ class PrometheusMetrics(Cog):
         if function:
             getattr(self, name).set_function(function)
 
+    def cog_unload(self):
+        # Unhook HTTP
+        self.bot.http.request = self.bot.http.request.orig
+
     def __init__(self, bot, config, http):
         self.declare_metric(
             "opcodes", prometheus_client.Counter, 'Opcodes', ['opcode'])
@@ -188,6 +209,8 @@ class PrometheusMetrics(Cog):
             "command_completions", prometheus_client.Counter, 'Command Completions', ['command'])
         self.declare_metric(
             "command_errors", prometheus_client.Counter, 'Command Errors', ['command', 'error'])
+        self.declare_metric(
+            "bot_http_requests", prometheus_client.Counter, 'Bot HTTP Requests', ['method', 'path', 'status'])  # TODO - maybe bucket?
         self.declare_metric(
             "command_timing", prometheus_client.Histogram, 'Command Timing', ['command'],
             buckets=[0.001, 0.003, 0.006, 0.016, 0.039, 0.098, 0.244, 0.61, 1.526, 3.815, 9.537, 23.842, 59.605, 149.012, 372.529, 931.323, 2328.306])
@@ -214,6 +237,7 @@ class PrometheusMetrics(Cog):
 
         self._in_flight_ctx = {}
         self.bot = bot
+        self.bot.http.request = HttpClientRequestHook(self.bot.http.request, self)
 
         http.add_handler("GET", "/metrics", self.handle_metrics)
 
