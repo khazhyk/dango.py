@@ -185,14 +185,21 @@ class Tracking(Cog):
         async with self.database.acquire() as conn:
             params = []
             query = (
-                "SELECT name FROM namechanges "
+                "SELECT name, idx FROM namechanges "
                 "WHERE id = $1 "
             )
             params.append(str(member.id))  # TODO - convert schema to BigInt
             if since:
                 query += "AND date >= $2 "
                 params.append((datetime.utcnow() - since))
-            query += "ORDER BY idx DESC"
+            query += "ORDER BY idx DESC "
+            if since:
+                query = (
+                    "(SELECT name, idx from namechanges "
+                    "WHERE id = $1 AND date < $2 "
+                    "ORDER BY idx DESC limit 1) UNION (%s) "
+                    "ORDER BY idx DESC" % query
+                )
 
             rows = await conn.fetch(query, *params)
 
@@ -207,15 +214,22 @@ class Tracking(Cog):
         async with self.database.acquire() as conn:
             params = []
             query = (
-                "SELECT name FROM nickchanges "
-                "WHERE id = $1 AND server_id = $2"
+                "SELECT name, idx FROM nickchanges "
+                "WHERE id = $1 AND server_id = $2 "
             )
             # TODO - convert schema to BigInt
             params.extend((str(member.id), str(member.guild.id)))
             if since:
                 query += "AND date >= $3 "
                 params.append((datetime.utcnow() - since))
-            query += "ORDER BY idx DESC"
+            query += "ORDER BY idx DESC "
+            if since:
+                query = (
+                    "(SELECT name, idx from nickchanges "
+                    "WHERE id = $1 and server_id = $2 AND date < $3 "
+                    "ORDER BY idx DESC limit 1) UNION (%s) "
+                    "ORDER BY idx DESC" % query
+                )
 
             rows = await conn.fetch(query, *params)
 
