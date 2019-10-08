@@ -23,68 +23,64 @@ from sjcl import SJCL
 
 
 def encrypt(text):
-	key = base64.urlsafe_b64encode(os.urandom(32))
-	# Encrypting text
-	encrypted_data = SJCL().encrypt(compress(text.encode('utf-8')), key, mode='gcm')
-	return encrypted_data, key
+    key = base64.urlsafe_b64encode(os.urandom(32))
+    # Encrypting text
+    encrypted_data = SJCL().encrypt(compress(text.encode('utf-8')), key, mode='gcm')
+    return encrypted_data, key
 
-def compress(s: bytes):
-	co = zlib.compressobj(wbits=-zlib.MAX_WBITS)
-	b = co.compress(s) + co.flush()
+def compress(src: bytes):
+    co = zlib.compressobj(wbits=-zlib.MAX_WBITS)
+    buf = co.compress(src) + co.flush()
 
-	return base64.b64encode(''.join(map(chr, b)).encode('utf-8'))
+    return base64.b64encode(''.join(map(chr, buf)).encode('utf-8'))
 
 def make_payload(text):
-	# Formatting request
-	request = dict(
-		expire='never',
-		formatter='plaintext',
-		burnafterreading='0',
-		opendiscussion='0',
-	)
+    # Formatting request
+    request = dict(
+        expire='never',
+        formatter='plaintext',
+        burnafterreading='0',
+        opendiscussion='0',
+    )
 
-	cipher, key = encrypt(text)
-	# TODO: should be implemented in upstream
-	for k in ['salt', 'iv', 'ct']: cipher[k] = cipher[k].decode()
+    cipher, key = encrypt(text)
+    # SJCL uses bytes, we want a string
+    for k in ['salt', 'iv', 'ct']:
+        cipher[k] = cipher[k].decode()
 
-	request['data'] = json.dumps(cipher, ensure_ascii=False, indent=None, default=lambda x: x.decode('utf-8'))
-	return request, key
+    request['data'] = json.dumps(cipher, ensure_ascii=False,
+                                 indent=None, default=lambda x: x.decode('utf-8'))
+    return request, key
 
-lock = asyncio.Lock()
+UPLOAD_LOCK = asyncio.Lock()
 
-class PrivateBinException(Exception): pass
+class PrivateBinException(Exception):
+    """Ran out of tries uploading to privatebin."""
 
 async def upload(text, loop=None):
-	loop = loop or asyncio.get_event_loop()
+    loop = loop or asyncio.get_event_loop()
 
-	async with lock:
-		result = None
-		payload, key = await loop.run_in_executor(None, make_payload, text)
-		python_version = '.'.join(map(str, sys.version_info[:3]))
-		async with aiohttp.ClientSession(headers={
-			'User-Agent': 'privatebin.py/0.0.2 aiohttp/%s python/%s' % (aiohttp.__version__, python_version),
-			'X-Requested-With': 'JSONHttpRequest'
-		}) as session:
-			for tries in range(2):
-				async with session.post('https://privatebin.net/', data=payload) as resp:
-					resp_json = await resp.json()
-					if resp_json['status'] == 0:
-						result = url(resp_json['id'], key)
-						break
-					elif resp_json['status'] == 1:  # rate limited
-						await asyncio.sleep(10)
+    async with UPLOAD_LOCK:
+        result = None
+        payload, key = await loop.run_in_executor(None, make_payload, text)
+        python_version = '.'.join(map(str, sys.version_info[:3]))
+        async with aiohttp.ClientSession(headers={
+                'User-Agent': 'privatebin.py/0.0.2 aiohttp/%s python/%s' %
+                              (aiohttp.__version__, python_version),
+                'X-Requested-With': 'JSONHttpRequest'
+        }) as session:
+            for tries in range(2):
+                async with session.post('https://privatebin.net/', data=payload) as resp:
+                    resp_json = await resp.json()
+                    if resp_json['status'] == 0:
+                        result = url(resp_json['id'], key)
+                        break
+                    if resp_json['status'] == 1:  # rate limited
+                        await asyncio.sleep(10)
 
-	if result is None:
-		raise PrivateBinException('Failed to upload to privatebin')
-	else:
-		return result
+    if result is None:
+        raise PrivateBinException('Failed to upload to privatebin')
+    return result
 
 def url(paste_id, key):
-	return 'https://privatebin.net/?%s#%s' % (paste_id, key.decode('utf-8'))
-
-if __name__ == '__main__':
-	import contextlib
-	loop = asyncio.get_event_loop()
-
-	with contextlib.closing(asyncio.get_event_loop()) as loop:
-		print(loop.run_until_complete(upload('hello \N{dango}')))
+    return 'https://privatebin.net/?%s#%s' % (paste_id, key.decode('utf-8'))
