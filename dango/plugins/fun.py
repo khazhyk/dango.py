@@ -168,9 +168,10 @@ class ImgFun(Cog):
         avy2data = [[(x,y),avy2data[x,y]] for x in range(maxres) for y in range(maxres)]
         avy2data.sort(key = lambda c : get_lum(*c[1]))
 
+        sequence = [0] + [1/(1+(2.5**-i)) for i in range(-5,6,1)] + [1]
+
         frames = []
-        for mult in range(-10,11,1):
-            m = 1 - (1/(1+(1.7**-mult)))
+        for m in sequence:
 
             base = Image.new('RGBA', (maxres,maxres))
             basedata = base.load()
