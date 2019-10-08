@@ -25,7 +25,7 @@ from sjcl import SJCL
 def encrypt(text):
     key = base64.urlsafe_b64encode(os.urandom(32))
     # Encrypting text
-    encrypted_data = SJCL().encrypt(compress(text.encode('utf-8')), key, mode='gcm')
+    encrypted_data = SJCL().encrypt(compress(text.encode('utf-8')), key, mode='gcm', count=100000, dkLen=32)
     return encrypted_data, key
 
 def compress(src: bytes):
@@ -34,22 +34,31 @@ def compress(src: bytes):
 
     return base64.b64encode(''.join(map(chr, buf)).encode('utf-8'))
 
+"""
+{"adata":[["7bgUbn07YgdqgBGwZ4yNBA==","v3ZCVYrvK6Q=",100000,256,128,"aes","gcm","rawdeflate"],"plaintext",0,0],
+"meta":{"expire":"1week"},"v":2,"ct":"yJWr3EveuZZywMGgHVxI+NoXjhOjykblWK1AObCdiA4AEA=="}
+"""
 def make_payload(text):
     # Formatting request
-    request = dict(
-        expire='never',
-        formatter='plaintext',
-        burnafterreading='0',
-        opendiscussion='0',
-    )
+    request = {
+        "adata": [None, "plaintext", 0, 0],
+        "meta": {"expire": "never"},
+    }
 
     cipher, key = encrypt(text)
     # SJCL uses bytes, we want a string
-    for k in ['salt', 'iv', 'ct']:
+    for k in ["salt", "iv", "ct"]:
         cipher[k] = cipher[k].decode()
 
-    request['data'] = json.dumps(cipher, ensure_ascii=False,
-                                 indent=None, default=lambda x: x.decode('utf-8'))
+    request["adata"] = [
+        [
+            cipher["iv"], cipher["salt"], cipher["iter"], cipher["ks"],
+            cipher["ts"], cipher["cipher"], cipher["mode"], "zlib"],
+        "plaintext", 0, 0
+    ]
+    request["v"] = "2"
+    request["ct"] = cipher["ct"]
+
     return request, key
 
 UPLOAD_LOCK = asyncio.Lock()
