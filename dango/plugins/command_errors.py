@@ -61,7 +61,8 @@ class CommandErrors(Cog):
             if isinstance(exp, discord.errors.HTTPException) and exp.response.status in range(500, 600):
                 msg = "Discord broke, try again."
             elif self.verbose_errors.value:
-                msg = "```{}```".format("".join(traceback.format_exception(*tbtpl(main_exp))))
+                msg = "```{}```".format(utils.clean_triple_backtick(
+                        "".join(traceback.format_exception(*tbtpl(main_exp)))))
             else:
                 msg = "An unknown error occured."
 
