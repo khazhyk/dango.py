@@ -163,6 +163,7 @@ class ImgFun(Cog):
         for avy in avys:
             avy = Image.open(avy).resize((maxres,maxres), resample=Image.BICUBIC)
             avydata = avy.load()
+            avydata = [[(x,y),avydata[x,y]] for y in range(maxres) for x in range(maxres)]
             avydata.sort(key = lambda c : get_lum(*c[1]))
 
             imgs.append(avydata)
