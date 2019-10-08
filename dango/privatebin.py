@@ -55,7 +55,7 @@ def make_payload(text):
 UPLOAD_LOCK = asyncio.Lock()
 
 class PrivateBinException(Exception):
-    """Ran out of tries uploading to privatebin."""
+    """Ran out of tries uploading to privatebin, or got unrecoverable error."""
 
 async def upload(text, loop=None):
     loop = loop or asyncio.get_event_loop()
@@ -71,6 +71,8 @@ async def upload(text, loop=None):
         }) as session:
             for tries in range(2):
                 async with session.post('https://privatebin.net/', data=payload) as resp:
+                    if resp.status >= 400:
+                        raise PrivateBinException(resp, await resp.text())
                     resp_json = await resp.json()
                     if resp_json['status'] == 0:
                         result = url(resp_json['id'], key)
