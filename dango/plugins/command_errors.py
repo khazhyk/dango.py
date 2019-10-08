@@ -44,26 +44,30 @@ class CommandErrors(Cog):
 
     @Cog.listener()
     async def on_command_error(self, ctx, exp):
-        main_exp = exp
+        try:
+            main_exp = exp
 
-        if isinstance(exp, IGNORED):
-            return
+            if isinstance(exp, IGNORED):
+                return
 
-        if isinstance(exp, errors.CommandInvokeError):
-            exp = exp.original
+            if isinstance(exp, errors.CommandInvokeError):
+                exp = exp.original
 
-        msg = ERROR_MAP.lookup(type(exp))
-        if msg:
-            await ctx.send(msg.format(exp=exp, ctx=ctx))
-            return
+            msg = ERROR_MAP.lookup(type(exp))
+            if msg:
+                await ctx.send(msg.format(exp=exp, ctx=ctx))
+                return
 
-        if isinstance(exp, discord.errors.HTTPException) and exp.response.status == 500:
-            msg = "Discord broke, try again."
-        elif self.verbose_errors.value:
-            msg = "```{}```".format("".join(traceback.format_exception(*tbtpl(main_exp))))
-        else:
-            msg = "An unknown error occured."
+            if isinstance(exp, discord.errors.HTTPException) and exp.response.status == 500:
+                msg = "Discord broke, try again."
+            elif self.verbose_errors.value:
+                msg = "```{}```".format("".join(traceback.format_exception(*tbtpl(main_exp))))
+            else:
+                msg = "An unknown error occured."
 
-        await ctx.send(msg)
-        log.error("Unhandled error dispatching '%s' in '%s'", ctx.command.qualified_name,
-                  ctx.message.content, exc_info=tbtpl(main_exp))
+            log.error("Unhandled error dispatching '%s' in '%s'", ctx.command.qualified_name,
+                          ctx.message.content, exc_info=tbtpl(main_exp))
+                await ctx.send(msg)
+        except:
+            log.exception("Unhandled error in on_command_error")
+            await ctx.send("An unknown error occured while trying to report an error.")
