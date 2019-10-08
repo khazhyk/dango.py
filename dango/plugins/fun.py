@@ -184,8 +184,10 @@ class ImgFun(Cog):
 
         frames = frames + frames[::-1]
 
+        durations = [280] + [70] * 11 + [280]
+
         b = io.BytesIO()
-        frames[0].save(b, 'gif', save_all=True, append_images=frames[1:], loop=0, duration=60)
+        frames[0].save(b, 'gif', save_all=True, append_images=frames[1:], loop=0, duration=durations)
         b.seek(0)
         return b
 
