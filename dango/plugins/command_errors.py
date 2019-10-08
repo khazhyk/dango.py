@@ -58,7 +58,7 @@ class CommandErrors(Cog):
                 await ctx.send(msg.format(exp=exp, ctx=ctx))
                 return
 
-            if isinstance(exp, discord.errors.HTTPException) and exp.response.status == 500:
+            if isinstance(exp, discord.errors.HTTPException) and exp.response.status in range(500, 600):
                 msg = "Discord broke, try again."
             elif self.verbose_errors.value:
                 msg = "```{}```".format("".join(traceback.format_exception(*tbtpl(main_exp))))
