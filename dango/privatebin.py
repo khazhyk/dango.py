@@ -57,24 +57,22 @@ class PrivateBinException(Exception): pass
 async def upload(text, loop=None):
 	loop = loop or asyncio.get_event_loop()
 
-	await lock.acquire()
-	result = None
-	payload, key = await loop.run_in_executor(None, make_payload, text)
-	python_version = '.'.join(map(str, sys.version_info[:3]))
-	async with aiohttp.ClientSession(headers={
-		'User-Agent': 'privatebin.py/0.0.2 aiohttp/%s python/%s' % (aiohttp.__version__, python_version),
-		'X-Requested-With': 'JSONHttpRequest'
-	}) as session:
-		for tries in range(2):
-			async with session.post('https://privatebin.net/', data=payload) as resp:
-				resp_json = await resp.json()
-				if resp_json['status'] == 0:
-					result = url(resp_json['id'], key)
-					break
-				elif resp_json['status'] == 1:  # rate limited
-					await asyncio.sleep(10)
-
-	lock.release()
+	async with lock:
+		result = None
+		payload, key = await loop.run_in_executor(None, make_payload, text)
+		python_version = '.'.join(map(str, sys.version_info[:3]))
+		async with aiohttp.ClientSession(headers={
+			'User-Agent': 'privatebin.py/0.0.2 aiohttp/%s python/%s' % (aiohttp.__version__, python_version),
+			'X-Requested-With': 'JSONHttpRequest'
+		}) as session:
+			for tries in range(2):
+				async with session.post('https://privatebin.net/', data=payload) as resp:
+					resp_json = await resp.json()
+					if resp_json['status'] == 0:
+						result = url(resp_json['id'], key)
+						break
+					elif resp_json['status'] == 1:  # rate limited
+						await asyncio.sleep(10)
 
 	if result is None:
 		raise PrivateBinException('Failed to upload to privatebin')
