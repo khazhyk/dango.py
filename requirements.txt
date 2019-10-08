@@ -28,7 +28,7 @@ hiredis
 asyncpg
 
 # fun
-Pillow
+Pillow>=6.2.0
 
 # metrics
 prometheus_client
