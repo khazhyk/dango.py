@@ -188,6 +188,10 @@ class ImgFun(Cog):
                         x1, y1 = d[0]
                         x2, y2 = im[i][0]
                         x, y = round(x1 + (x2 - x1)*m), round(y1 + (y2 - y1) * m)
+
+                    if x < 0 or x >= maxres or y < 0 or y >= maxres:
+                        continue
+                        
                     basedata[x, y] = base_palette[i][1]
                 frames.append(base)
 
