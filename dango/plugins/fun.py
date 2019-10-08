@@ -154,38 +154,47 @@ class ImgFun(Cog):
         await ctx.send(file=discord.File(io.BytesIO(img_buff), filename="img.jpg"))
 
     @staticmethod
-    def _gifmap(avy1, avy2):
+    def _gifmap(avys):
         """stolen from cute."""
         maxres = 200
-        avy1 = Image.open(avy1).resize((maxres,maxres), resample=Image.BICUBIC)
-        avy2 = Image.open(avy2).resize((maxres,maxres), resample=Image.BICUBIC)
 
-        avy1data = avy1.load()
-        avy1data = [[(x,y),avy1data[x,y]] for x in range(maxres) for y in range(maxres)]
-        avy1data.sort(key = lambda c : get_lum(*c[1]))
+        imgs = []
 
-        avy2data = avy2.load()
-        avy2data = [[(x,y),avy2data[x,y]] for x in range(maxres) for y in range(maxres)]
-        avy2data.sort(key = lambda c : get_lum(*c[1]))
+        for avy in avys:
+            avy = Image.open(avy).resize((maxres,maxres), resample=Image.BICUBIC)
+            avydata = avy.load()
+            avydata.sort(key = lambda c : get_lum(*c[1]))
+
+            imgs.append(avydata)
 
         sequence = [0] + [1/(1+(2.5**-i)) for i in range(-5,6,1)] + [1]
 
+        if len(avys) > 2:
+            imgs.append(imgs[0])
+
+        base_palette = imgs[0]
         frames = []
-        for m in sequence:
+        for j, im in enumerate(imgs[1:]):
+            for m in sequence:
+                base = Image.new('RGBA', (maxres,maxres))
+                basedata = base.load()
+                for i, d in enumerate(imgs[j]):
+                    if m == 0:
+                        x, y = d[0]
+                    elif m == 1:
+                        x, y = im[i][0]
+                    else:
+                        x1, y1 = d[0]
+                        x2, y2 = im[i][0]
+                        x, y = round(x1 + (x2 - x1)*m), round(y1 + (y2 - y1) * m)
+                    basedata[x, y] = base_palette[i][1]
+                frames.append(base)
 
-            base = Image.new('RGBA', (maxres,maxres))
-            basedata = base.load()
-            for i, d in enumerate(avy1data):
-                x1, y1 = d[0]
-                x2, y2 = avy2data[i][0]
-                x, y = round(x1 + (x2 - x1)*m), round(y1 + (y2 - y1) * m)
-                basedata[x, y] = avy2data[i][1]
-            frames.append(base)
-
-        frames = frames + frames[::-1]
+        if len(avys) == 2:
+            frames = frames + frames[::-1]
 
         durations = [280] + [70] * 11 + [280]
-        durations *= 2
+        durations *= len(avys)
 
         b = io.BytesIO()
         frames[0].save(b, 'gif', save_all=True, append_images=frames[1:], loop=0, duration=durations)
@@ -194,17 +203,17 @@ class ImgFun(Cog):
 
     @command()
     @checks.bot_needs(["attach_files"])
-    async def colormap3(self, ctx, source: discord.Member, dest: discord.Member = None):
+    async def colormap3(self, ctx, source: discord.Member, *dest: discord.Member):
         """Hello my name is Koishi."""
-        dest = dest or ctx.author
+        if len(dest) == 0:
+            dest = [ctx.author]
 
         start = time.time()
         async with ctx.typing():
-            source_bytes = await fetch_image(source.avatar_url_as(format="png"))
-            dest_bytes = await fetch_image(dest.avatar_url_as(format="png"))
-
+            avys = await asyncio.gather(*[fetch_image(t.avatar_url_as(format="png")) for t in [source] + list(dest)])
+            avys = [io.BytesIO(a) for a in avys]
             img_buff = await ctx.bot.loop.run_in_executor(None,
-                    self._gifmap, io.BytesIO(dest_bytes), io.BytesIO(source_bytes)
+                    self._gifmap, avys
                 )
         elapsed = time.time() - start
         await ctx.send("took %02fs" % elapsed,
