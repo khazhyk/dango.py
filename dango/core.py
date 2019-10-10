@@ -119,6 +119,11 @@ class DangoBotBase(commands.bot.BotBase):
     def get_context(self, message):
         return super().get_context(message, cls=DangoContext)
 
+    async def process_commands(self, message):
+        """Overridden because the default process_commands ignores bots."""
+        ctx = await self.get_context(message)
+        await self.invoke(ctx)
+
     def add_cog(self, cls):
         """Tries to load a cog.
 
