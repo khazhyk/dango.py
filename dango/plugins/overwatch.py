@@ -18,13 +18,13 @@ def battle_tag(value):
 
 class user_or_name(Converter):
 
-    def convert(self):
-        value = self.argument
+    async def convert(self, ctx, argument):
+        value = argument
         match = re.match(r'<@!?([0-9]+)>', value)
         if match is None:
             return battle_tag(value)
         else:
-            return UserConverter(self.ctx, self.argument).convert()
+            return await UserConverter().convert(ctx, argument)
 
 
 def get_regions(platform):
@@ -109,21 +109,22 @@ class Overwatch(Cog):
         If platform and region are not specified, I will search. If the incorrect one is chosen, please specify the platform and region.
         """
         if ctx.invoked_with == "owc":
-            return await self.competitive.invoke(ctx)
+            return await self.competitive.callback(self, ctx, tag)
 
         if not tag:
             tag = ctx.message.author
 
         prof = await self._get_overwatch_profile(ctx, tag)
 
-        if not prof.quick_play:
-            raise errors.BadArgument(
-                "Player has no quick play stats available.")
+        content = """\n{0.tag.tag_private} Level {0.level}""".format(prof)
 
-        content = """
-{0.tag.tag_private} Level {0.level} - {0.quick_play.all_heroes.game.games_won} Wins
+        if prof.private:
+            content += "\nProfile is private."
+
+        if prof.quick_play:
+            content += """ - {0.quick_play.all_heroes.game.games_won} Wins
 {1.game.time_played} played. {1.combat.eliminations} eliminations, {1.combat.deaths} deaths.
-Average: {1.average.damage_done} damage, {1.average.eliminations} elims, {1.average.final_blows} final blows, {1.average.deaths} deaths, {1.average.healing_done} healing
+Average: {1.average.all_damage_done} damage, {1.average.eliminations} elims, {1.average.final_blows} final blows, {1.average.deaths} deaths, {1.average.healing_done} healing
 """.format(prof, prof.quick_play.all_heroes)
 
         await ctx.send("```prolog{}```".format(content))
@@ -134,20 +135,21 @@ Average: {1.average.damage_done} damage, {1.average.eliminations} elims, {1.aver
             tag = ctx.message.author
         prof = await self._get_overwatch_profile(ctx, tag)
 
-        if not prof.competitive_play:
-            raise errors.BadArgument(
-                "Player has no competitive stats available.")
+        content = "\n{0.tag.tag_private} Level {0.level}".format(prof)
 
-        if prof.competitive_play.all_heroes.game.games_won and \
-                prof.competitive_play.all_heroes.game.games_played:
-            win_percent = 100 * (prof.competitive_play.all_heroes.game.games_won /
-                                 prof.competitive_play.all_heroes.game.games_played)
-        else:
-            win_percent = 0
-        content = """
-{0.tag.tag_private} Level {0.level} Rank {0.rank} - {1.game.games_won} Wins / {1.game.games_played} Games ({2:.02f}%)
+        if prof.private:
+            content += "\nProfile is private."
+
+        if prof.competitive_play:
+            if prof.competitive_play.all_heroes.game.games_won and \
+                    prof.competitive_play.all_heroes.game.games_played:
+                win_percent = 100 * (prof.competitive_play.all_heroes.game.games_won /
+                                     prof.competitive_play.all_heroes.game.games_played)
+            else:
+                win_percent = 0
+            content += """ Rank {0.rank} - {1.game.games_won} Wins / {1.game.games_played} Games ({2:.02f}%)
 {1.game.time_played} played. {1.combat.eliminations} eliminations, {1.combat.deaths} deaths.
-Average: {1.average.damage_done} damage, {1.average.eliminations} elims, {1.average.final_blows} final blows, {1.average.deaths} deaths, {1.average.healing_done} healing
+Average: {1.average.all_damage_done} damage, {1.average.eliminations} elims, {1.average.final_blows} final blows, {1.average.deaths} deaths, {1.average.healing_done} healing
 """.format(prof, prof.competitive_play.all_heroes, win_percent)
 
         await ctx.send("```prolog{}```".format(content))
