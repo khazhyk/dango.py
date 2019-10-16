@@ -3,54 +3,24 @@
 
 """
 privatebin.py: uploads text to privatebin
-using code from <https://github.com/r4sas/PBinCLI/blob/master/pbincli/actions.py>,
-© 2017–2018 R4SAS <r4sas@i2pmail.org>
-using code from <https://github.com/khazhyk/dango.py/blob/master/dango/zerobin.py>,
 © 2017 khazhyk
-modified by https://github.com/bmintz
-© 2018 bmintz
+© 2019 Io Mintz https://github.com/iomintz
 """
 
 import asyncio
-import base64
-import json
 import os
 import sys
-import zlib
 
 import aiohttp
-from sjcl import SJCL
+from pbincli.format import Paste
 
-
-def encrypt(text):
-    key = base64.urlsafe_b64encode(os.urandom(32))
-    # Encrypting text
-    encrypted_data = SJCL().encrypt(compress(text.encode('utf-8')), key, mode='gcm')
-    return encrypted_data, key
-
-def compress(src: bytes):
-    co = zlib.compressobj(wbits=-zlib.MAX_WBITS)
-    buf = co.compress(src) + co.flush()
-
-    return base64.b64encode(''.join(map(chr, buf)).encode('utf-8'))
 
 def make_payload(text):
-    # Formatting request
-    request = dict(
-        expire='never',
-        formatter='plaintext',
-        burnafterreading='0',
-        opendiscussion='0',
-    )
-
-    cipher, key = encrypt(text)
-    # SJCL uses bytes, we want a string
-    for k in ['salt', 'iv', 'ct']:
-        cipher[k] = cipher[k].decode()
-
-    request['data'] = json.dumps(cipher, ensure_ascii=False,
-                                 indent=None, default=lambda x: x.decode('utf-8'))
-    return request, key
+    paste = Paste()
+    paste.setVersion(2)
+    paste.setText(text)
+    paste.encrypt(formatter='plaintext', burnafterreading=0, discussion=0, expiration='never')
+    return paste.getJSON(), paste.getHash()
 
 UPLOAD_LOCK = asyncio.Lock()
 
@@ -85,4 +55,11 @@ async def upload(text, loop=None):
     return result
 
 def url(paste_id, key):
-    return 'https://privatebin.net/?%s#%s' % (paste_id, key.decode('utf-8'))
+    return 'https://privatebin.net/?{}#{}'.format(paste_id, key)
+
+
+async def main():
+	print(await upload(sys.stdin.read()))
+
+if __name__ == '__main__':
+    asyncio.get_event_loop().run_until_complete(main())
