@@ -15,9 +15,8 @@ numpy
 objgraph
 gprof2dot
 
-# zerobin
-sjcl
-pycryptodome
+# privatebin
+git+https://github.com/r4sas/PBinCLI#egg=PBinCLI
 
 # redis
 aioredis
