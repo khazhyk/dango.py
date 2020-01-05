@@ -309,7 +309,7 @@ class AliasCmd(discord.ext.commands.Command):
 
     async def _callback(self, cog, ctx):
         fake_msg = copy.copy(ctx.message)
-        fake_msg._update(ctx.message.channel, dict(
+        fake_msg._update(dict(
             content=ctx.prefix + self.alias))
         new_ctx = await ctx.bot.get_context(fake_msg)
 
