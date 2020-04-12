@@ -586,6 +586,7 @@ class Tracking(Cog):
         if not author:
             log.warning("Got raw_reaction_add for non-existant author %s, %s, %s, %s",
                         raw_event.emoji, raw_event.message_id, raw_event.channel_id, raw_event.user_id)
+            return
         await self.update_last_update(author)
 
     # Name related commands
