@@ -4,6 +4,7 @@ import copy
 import itertools
 import logging
 import struct
+import re
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -17,6 +18,8 @@ import lru
 import tabulate
 
 from dango.plugins.database import multi_insert_str
+
+from typing import List, NamedTuple, Union, Iterable
 
 from .common import checks
 from .common import converters
@@ -33,12 +36,10 @@ def grouper(it, n):
     return zip(*([iter(it)]*n))
 
 
-class LastSeenTuple(collections.namedtuple(
-        'LastSeenTuple', ('last_seen', 'last_spoke', 'server_last_spoke'))):
-    __slots__ = ()
-
-    def __new__(cls, last_seen, last_spoke, server_last_spoke=None):
-        return super().__new__(cls, last_seen, last_spoke, server_last_spoke)
+class LastSeenTuple(NamedTuple):
+    last_seen: datetime = datetime.fromtimestamp(0, timezone.utc)
+    last_spoke: datetime = datetime.fromtimestamp(0, timezone.utc)
+    server_last_spoke: datetime = datetime.fromtimestamp(0, timezone.utc)
 
 
 def name_key(member):
@@ -60,29 +61,26 @@ def name_to_redis(name_or):
         return REDIS_NICK_NONE
     return name_or.encode('utf8')
 
+# Entries with expiries
+class SeenUpdate(NamedTuple):
+    member_id: int
+    date: datetime
 
-def last_seen_key(member):
-    return "spoo:last_seen:{0.id}".format(member)
+MAX_SEEN_INSERTS = (PG_ARG_MAX // 2) - 1
 
+class SpokeUpdate(NamedTuple):
+    member_id: int
+    server_id: int
+    date: datetime
 
-def last_spoke_key(member):
-    return "spoo:last_spoke:{0.id}".format(member)
-
-
-def member_last_spoke_key(member):
-    return "spoo:last_spoke:{0.id}:{0.guild.id}".format(member)
-
-
-def datetime_to_redis(datetime_obj):
-    """Pass in datetime in UTC, gives timestamp in UTC"""
-    return struct.pack('q', int(datetime_obj.replace(tzinfo=timezone.utc).timestamp() * 1000))
+MAX_SPOKE_INSERTS = (PG_ARG_MAX // 3) - 1
 
 
 def datetime_from_redis(bytes_obj):
     """Pass in timestamp in UTC, gives datetime in UTC"""
     if bytes_obj is None:
-        return datetime.utcfromtimestamp(0)
-    return datetime.utcfromtimestamp(struct.unpack('q', bytes_obj)[0] / 1000)
+        return datetime.fromtimestamp(0, timezone.utc)
+    return datetime.fromtimestamp(struct.unpack('q', bytes_obj)[0] / 1000, timezone.utc)
 
 
 @dcog(depends=['Database', 'Redis'], pass_bot=True)
@@ -97,10 +95,13 @@ class Tracking(Cog):
 
         self._recent_pins = lru.LRU(128)
 
-        self.batch_presence_updates = []
+        self.batch_last_spoke_updates = []
+        self._batch_last_spoke_curr_updates = []
+        self.batch_last_seen_updates = []
+        self._batch_last_seen_curr_updates = []
+
         self.batch_name_updates = []
         self._batch_name_curr_updates = []
-        self._batch_presence_curr_updates = []
         self.batch_presence_task = utils.create_task(self.batch_presence())
         self.batch_name_task = utils.create_task(self.batch_name())
 
@@ -121,8 +122,10 @@ class Tracking(Cog):
         except asyncio.CancelledError:
             log.info("batch_presence task canceled...")
             await self.do_batch_presence_update()
-            if self.batch_presence_updates:
-                log.error("Dropping %d presences!", len(self.batch_presence_updates) / 2)
+            if self.batch_last_spoke_updates:
+                log.error("Dropping %d presences!", len(self.batch_last_spoke_updates) / 2)
+            if self.batch_last_seen_updates:
+                log.error("Dropping %d presences!", len(self.batch_last_seen_updates) / 2)
     
     async def batch_name(self):
         try:
@@ -434,64 +437,171 @@ class Tracking(Cog):
                 *user_keys, *name_keys))
 
     # Presence tracking
+    async def last_seen(self, member: Union[discord.User, discord.Member]) -> LastSeenTuple:
+        """Lookup last_seen data."""
+        async with self.database.acquire() as conn:
+            last_seen = await conn.fetchval(
+                "SELECT date from last_seen WHERE id = $1 LIMIT 1", member.id)
+            last_spoke  = await conn.fetchval(
+                "SELECT date from last_spoke WHERE id = $1 and server_id = 0 LIMIT 1", member.id)
+            if hasattr(member, 'guild'):
+                server_last_spoke  = await conn.fetchval(
+                "SELECT date from last_spoke WHERE id = $1 and server_id = $2 LIMIT 1",
+                member.id, member.guild.id)
+            else:
+                server_last_spoke = datetime.fromtimestamp(0, timezone.utc)
 
-    async def last_seen(self, member):
-        keys = [
-            last_seen_key(member),
-            last_spoke_key(member)
+        return LastSeenTuple(
+            last_seen or datetime.fromtimestamp(0, timezone.utc),
+            last_spoke or datetime.fromtimestamp(0, timezone.utc),
+            server_last_spoke or datetime.fromtimestamp(0, timezone.utc))
+
+    async def bulk_last_seen(self, members: List[discord.Member]) -> List[LastSeenTuple]:
+        """All members must be in the same guild.
+
+        Returns in same order as `members`
+        """
+        ids = [m.id for m in members]
+        guild_id = members[0].guild.id
+
+        async with self.database.acquire() as conn:
+            last_seens = {
+                member_id: date for member_id, date in await conn.fetch(
+                "SELECT id, date from last_seen WHERE id = ANY($1)",
+                ids)
+            }
+            last_spokes = {
+                member_id: date for member_id, date in await conn.fetch(
+                "SELECT id, date from last_spoke WHERE id = ANY($1) AND server_id = 0",
+                ids)
+            }
+            server_last_spokes = {
+                member_id: date for member_id, date in await conn.fetch(
+                "SELECT id, date from last_spoke WHERE id = ANY($1) AND server_id = $2",
+                ids, guild_id)
+            }
+
+        return [
+            LastSeenTuple(
+                last_seens.get(m.id, datetime.fromtimestamp(0, timezone.utc)),
+                last_spokes.get(m.id, datetime.fromtimestamp(0, timezone.utc)),
+                server_last_spokes.get(m.id, datetime.fromtimestamp(0, timezone.utc)))
+            for m in members
         ]
-        if hasattr(member, 'guild'):
-            keys.append(member_last_spoke_key(member))
-
-        async with self.redis.acquire() as conn:
-            results = map(datetime_from_redis, await conn.mget(*keys))
-
-        return LastSeenTuple(*results)
-
-    async def bulk_last_seen(self, members):
-        """Takes members."""
-        keys = ((last_seen_key(member), last_spoke_key(member), member_last_spoke_key(member))
-                for member in members)
-
-        async with self.redis.acquire() as conn:
-            results = map(datetime_from_redis, await conn.mget(*itertools.chain(*keys)))
-
-        collect = []
-        for last_seen, last_spoke, member_last_spoke in grouper(results, 3):
-            collect.append(LastSeenTuple(last_seen, last_spoke, member_last_spoke))
-        return collect
 
     async def update_last_update(self, member):
-        async with self.redis.acquire() as conn:
-            await conn.set(
-                last_seen_key(member), datetime_to_redis(datetime.utcnow()))
+        self.queue_batch_last_update(member)
 
     async def update_last_message(self, member):
-        update_time = datetime_to_redis(datetime.utcnow())
-        pairs = [
-            last_seen_key(member), update_time,
-            last_spoke_key(member), update_time
-        ]
-        if hasattr(member, 'guild'):
-            pairs.extend((member_last_spoke_key(member), update_time))
-        async with self.redis.acquire() as conn:
-            await conn.mset(*pairs)
+        self.queue_batch_last_spoke_update(member)
+        self.queue_batch_last_update(member)
 
-    def queue_batch_last_update(self, member):
-        self.batch_presence_updates.extend((
-            last_seen_key(member),
-            datetime_to_redis(datetime.utcnow())))
+    def queue_batch_last_spoke_update(self, member, at_time:datetime = None):
+        """Someone spoke!"""
+        at_time = at_time or datetime.now(timezone.utc)
+        self.batch_last_spoke_updates.append(
+            SpokeUpdate(member.id, 0, at_time))
+        if hasattr(member, "guild"):
+            self.batch_last_spoke_updates.append(
+              SpokeUpdate(member.id, member.guild.id, at_time))
+
+    def queue_batch_last_update(self, member, at_time: datetime = None):
+        """Someone had an event while online!"""
+        at_time = at_time or datetime.now(timezone.utc)
+        self.batch_last_seen_updates.append(
+            SeenUpdate(member.id, at_time))
 
     async def do_batch_presence_update(self):
-        updates = self.batch_presence_updates
-        self.batch_presence_updates = []
-        if not updates:
-            return
+        self._batch_last_seen_curr_updates = self.batch_last_seen_updates
+        self._batch_last_spoke_curr_updates = self.batch_last_spoke_updates
+        self.batch_last_seen_updates = []
+        self.batch_last_spoke_updates = []
+
+        # Split due to arg limit
+        while self._batch_last_seen_curr_updates or self._batch_last_spoke_curr_updates:
+            curr_last_seen = self._batch_last_seen_curr_updates[:MAX_SEEN_INSERTS]
+            self._batch_last_seen_curr_updates = self._batch_last_seen_curr_updates[MAX_SEEN_INSERTS:]
+
+            curr_spoke_updates = self._batch_last_spoke_curr_updates[:MAX_SPOKE_INSERTS]
+            self._batch_last_spoke_curr_updates = self._batch_last_spoke_curr_updates[MAX_SPOKE_INSERTS:]
+
+            def dedupe_seen(last_seens):
+                seen = {}
+                for ls in last_seens:
+                    try:
+                        seen[ls.member_id] = max(seen[ls.member_id], ls, key=lambda x:x.date)
+                    except KeyError:
+                        seen[ls.member_id] = ls
+                return list(seen.values())
+
+            def dedupe_spoke(last_spokes):
+                seen = {}
+                for ls in last_spokes:
+                    try:
+                        seen[ls.member_id, ls.server_id] = max(seen[ls.member_id, ls.server_id], ls, key=lambda x:x.date)
+                    except KeyError:
+                        seen[ls.member_id, ls.server_id] = ls
+                return list(seen.values())
+
+            await self.batch_insert_presence_updates(
+                dedupe_seen(curr_last_seen), dedupe_spoke(curr_spoke_updates))
+
+
+    async def batch_insert_presence_updates(self, seen_updates: List[SeenUpdate], spoke_updates: List[SpokeUpdate]):
+        """Push presence updates to postgres."""
+        assert len(seen_updates) < (PG_ARG_MAX // 2)
+        assert len(spoke_updates) < (PG_ARG_MAX // 3)
+        # do multi_insert_str since it's 2x faster than executemany
+        async with self.database.acquire() as conn:
+            if seen_updates:
+                await conn.execute(
+                    "INSERT INTO last_seen (id, date) "
+                    "VALUES %s ON CONFLICT (id) DO UPDATE SET date = EXCLUDED.date WHERE EXCLUDED.date > last_seen.date" % (
+                        multi_insert_str(seen_updates)
+                    ),
+                    *itertools.chain(*seen_updates)
+                )
+            if spoke_updates:
+                await conn.execute(
+                    "INSERT INTO last_spoke (id, server_id, date) "
+                    "VALUES %s ON CONFLICT (id, server_id) DO UPDATE SET date = EXCLUDED.date WHERE EXCLUDED.date > last_spoke.date" % (
+                        multi_insert_str(spoke_updates)
+                    ),
+                    *itertools.chain(*spoke_updates)
+                )
+
+    async def queue_migrate_redis(self):
         async with self.redis.acquire() as conn:
-            while updates:
-                self._batch_presence_curr_updates = updates
-                await conn.mset(*updates[:50000])
-                updates = updates[50000:]
+            cur = b'0'
+            while cur:
+                cur, keys = await conn.scan(cur, match=b"spoo:last_seen:*", count=5000)
+                values = await conn.mget(*keys)
+
+                for key, value in zip(keys, values):
+                    user_id = re.match(rb"spoo:last_seen:(\d+)", key).group(1)
+
+                    self.queue_batch_last_update(
+                        discord.Object(id=int(user_id)),
+                        at_time=datetime_from_redis(value))
+
+            cur = b'0'
+            while cur:
+                cur, keys = await conn.scan(cur, match=b"spoo:last_spoke:*", count=5000)
+                values = await conn.mget(*keys)
+
+                for key, value in zip(keys, values):
+                    user_id, guild_id = re.match(rb"spoo:last_spoke:(\d+)(?::(\d+))?", key).groups()
+
+                    if guild_id:
+                        fake_user = discord.Object(id=int(user_id))
+                        fake_user.guild = discord.Object(id=int(guild_id))
+                        self.queue_batch_last_spoke_update(
+                            fake_user, at_time=datetime_from_redis(value))
+                    else:
+                        self.queue_batch_last_spoke_update(
+                            discord.Object(id=int(user_id)),
+                            at_time=datetime_from_redis(value))
+
 
     # Event registration
 
@@ -651,14 +761,24 @@ class Tracking(Cog):
                 len(self.batch_name_updates),
                 len(self._batch_name_curr_updates),
                 str(self.batch_name_task._state),
-                len(self.batch_presence_updates),
-                len(self._batch_presence_curr_updates),
+                len(self.batch_last_spoke_updates),
+                len(self._batch_last_spoke_curr_updates),
+                len(self.batch_last_seen_updates),
+                len(self._batch_last_seen_curr_updates),
                 str(self.batch_presence_task._state),
             ),
         )
         lines = tabulate.tabulate(
             rows, headers=[
                 "PNU", "CNU", "NTS",
-                "PPU", "CPU", "PTS",
+                "PSpU", "CSpU", "PSeU", "CSeU", "PTS",
             ], tablefmt="simple")
         await ctx.send("```prolog\n{}```".format(lines))
+
+    @command()
+    @checks.is_owner()
+    async def migrate_presence_db(self, ctx):
+        with ctx.typing():
+            await self.queue_migrate_redis()
+            await self.updatestatus.invoke(ctx)
+

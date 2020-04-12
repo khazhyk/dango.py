@@ -3,7 +3,7 @@ import codecs
 import re
 from datetime import datetime
 from datetime import timedelta
-
+from datetime import timezone
 from dango import dcog, Cog
 import discord
 from discord.ext import commands
@@ -112,7 +112,7 @@ class Find(Cog):
     @commands.guild_only()
     async def findold(self, ctx, *, days: int):
         """Shows members that haven't logged in/been seen by the bot in the last `days` days."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         msg = ""
         tracking = ctx.bot.get_cog("Tracking")
@@ -122,10 +122,10 @@ class Find(Cog):
 
         cutoff = now - timedelta(days=days)
 
-        if cutoff < ctx.message.guild.me.joined_at:
+        if cutoff < ctx.message.guild.me.joined_at.replace(tzinfo=timezone.utc):
             msg += ("WARNING: The bot has only been in this server since {}, "
                     "you specified a cutoff of {}\n").format(
-                ctx.message.guild.me.joined_at, cutoff)
+                ctx.message.guild.me.joined_at.replace(tzinfo=timezone.utc), cutoff)
             msg += ("This means that I don't have enough data to reliably say "
                     "who has been online in that time span.\n")
 
@@ -144,13 +144,20 @@ class Find(Cog):
 
 # Discord epoch
 UNKNOWN_CUTOFF = datetime.utcfromtimestamp(1420070400.000)
+UNKNOWN_CUTOFF_TZ = UNKNOWN_CUTOFF.replace(tzinfo=timezone.utc)
 
 
 def format_time(time):
     if time is None or time < UNKNOWN_CUTOFF:
         return "Unknown"
-    return "{} ({} UTC)".format(
+    return "{} ({}+00:00)".format(
         humanize.naturaltime(time + (datetime.now() - datetime.utcnow())), time)
+
+def format_time_tz(time):
+    if time is None or time < UNKNOWN_CUTOFF_TZ:
+        return "Unknown"
+    return "{} ({})".format(
+        humanize.naturaltime(time.astimezone(tz=None).replace(tzinfo=None)), time)
 
 def format_timedelta(td):
     ts = td.total_seconds()
@@ -267,10 +274,10 @@ class Info(Cog):
             i.add_field("Joined", format_time(user.joined_at))
         if tracking is not None:
             last_seen = await tracking.last_seen(user)
-            i.add_field("Last Seen", format_time(last_seen.last_seen))
-            i.add_field("Last Spoke", format_time(last_seen.last_spoke))
+            i.add_field("Last Seen", format_time_tz(last_seen.last_seen))
+            i.add_field("Last Spoke", format_time_tz(last_seen.last_spoke))
             if isinstance(user, discord.Member):
-                i.add_field("Spoke Here", format_time(last_seen.server_last_spoke))
+                i.add_field("Spoke Here", format_time_tz(last_seen.server_last_spoke))
         if isinstance(user, discord.Member):
             i.add_field("Roles", ", ".join(
                 [r.name for r in sorted(user.roles, key=lambda r: -r.position)]))
