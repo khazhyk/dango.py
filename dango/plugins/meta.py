@@ -12,6 +12,7 @@ from discord.ext.commands import group
 import psutil
 
 from .common import checks
+from .common import converters
 from .common import utils
 
 try:
@@ -229,12 +230,10 @@ class Meta(Cog):
         await ctx.message.add_reaction('\u2705')
 
     @clean.command(pass_context=True, name="msg")
-    async def msg(self, ctx, message_id: str):
+    async def msg(self, ctx, msg: converters.MessageConverter):
         """Delete a specific message created by the bot.
 
         Use developer mode to be able to copy a message id in context menu."""
-        msg = await ctx.get_message(message_id)
-
         if not msg:
             raise errors.BadArgument("Could not find a message by that id!")
 
@@ -242,4 +241,4 @@ class Meta(Cog):
             raise errors.BadArgument("I didn't make that message!")
 
         await msg.delete()
-        await ctx.send("Message {} deleted.".format(message_id), delete_after=5)
+        await ctx.send("Message {} deleted.".format(msg.id), delete_after=5)

@@ -136,7 +136,7 @@ class Misc(Cog):
             except asyncio.TimeoutError:
                 break
 
-        msg = await ctx.get_message(msg.id)
+        msg = await ctx.fetch_message(msg.id)
 
         max_val = 0
         results = []
