@@ -553,22 +553,26 @@ class Tracking(Cog):
         assert len(spoke_updates) < (PG_ARG_MAX // 3)
         # do multi_insert_str since it's 2x faster than executemany
         async with self.database.acquire() as conn:
-            if seen_updates:
-                await conn.execute(
-                    "INSERT INTO last_seen (id, date) "
-                    "VALUES %s ON CONFLICT (id) DO UPDATE SET date = EXCLUDED.date WHERE EXCLUDED.date > last_seen.date" % (
-                        multi_insert_str(seen_updates)
-                    ),
-                    *itertools.chain(*seen_updates)
-                )
-            if spoke_updates:
-                await conn.execute(
-                    "INSERT INTO last_spoke (id, server_id, date) "
-                    "VALUES %s ON CONFLICT (id, server_id) DO UPDATE SET date = EXCLUDED.date WHERE EXCLUDED.date > last_spoke.date" % (
-                        multi_insert_str(spoke_updates)
-                    ),
-                    *itertools.chain(*spoke_updates)
-                )
+            async with conn.transaction():
+                # avoid deadlocks
+                await conn.execute("LOCK TABLE last_seen IN EXCLUSIVE MODE")
+                await conn.execute("LOCK TABLE last_spoke IN EXCLUSIVE MODE")
+                if seen_updates:
+                    await conn.execute(
+                        "INSERT INTO last_seen (id, date) "
+                        "VALUES %s ON CONFLICT (id) DO UPDATE SET date = EXCLUDED.date WHERE EXCLUDED.date > last_seen.date" % (
+                            multi_insert_str(seen_updates)
+                        ),
+                        *itertools.chain(*seen_updates)
+                    )
+                if spoke_updates:
+                    await conn.execute(
+                        "INSERT INTO last_spoke (id, server_id, date) "
+                        "VALUES %s ON CONFLICT (id, server_id) DO UPDATE SET date = EXCLUDED.date WHERE EXCLUDED.date > last_spoke.date" % (
+                            multi_insert_str(spoke_updates)
+                        ),
+                        *itertools.chain(*spoke_updates)
+                    )
 
     async def queue_migrate_redis(self):
         async with self.redis.acquire() as conn:
