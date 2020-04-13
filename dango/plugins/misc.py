@@ -193,7 +193,7 @@ class Misc(Cog):
           players.append({
             "name": m.display_name,
             "g": pyrandom.choice([0,1,2]),
-            "pic": m.avatar_url,
+            "pic": str(m.avatar_url),
             "team": m.display_name,
             "perks": [pyrandom.choice(perks), pyrandom.choice(perks), pyrandom.choice(weapons)],
           })
