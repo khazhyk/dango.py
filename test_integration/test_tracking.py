@@ -111,7 +111,8 @@ class TestPresenceTracking(unittest.TestCase):
             """Pass in datetime in UTC, gives timestamp in UTC"""
             return struct.pack('q', int(datetime_obj.replace(tzinfo=timezone.utc).timestamp() * 1000))
 
-        members = [member() for _ in range(1000)]
+        common_user = user()
+        members = [member() for _ in range(1000)] + [member(user_override=common_user) for _ in range(100)]
 
         async with self.rds.acquire() as conn:
             await conn.mset(*itertools.chain(*(
