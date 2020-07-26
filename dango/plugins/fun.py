@@ -360,27 +360,18 @@ class ImgFun(Cog):
         ffmpeg -i '/g/My Drive/spoopybotfiles/res/img/crab_rave_base.gif' -i /c/Users/khazhy/Pictures/Untitled.png -i pallete.png -filter_complex "[0:v][1:v] overlay=25:25[x]; [x] [2:v]paletteuse" -pix_fmt yuv420p output.gif
         """
         base_video = self.res.dir() + "/img/crab_rave_200p.mkv"
-        base_palette = self.res.dir() + "/img/crab_rave_palette.png"
-        font = ImageFont.truetype(self.res.dir() + '/font/impact/IMPACT.ttf', encoding='unic', size=32)
+        font = ImageFont.truetype(self.res.dir() + '/font/avnir/AvenirLTStd-Book.otf', encoding='unic', size=28)
 
         # PIL can't get size of image, so ffprobe
         canvas_size = subprocess.check_output([
-            "ffprobe",
-            "-v" , "error",
-            "-select_streams", "v:0",
+            "ffprobe", "-v" , "error", "-select_streams", "v:0",
             "-show_entries", "stream=width,height",
             "-of", "default=nw=1:nk=1",
             base_video
             ], encoding="utf8")
         canvas_size = tuple(map(int, canvas_size.strip().split("\n")))
 
-        if "\n" not in text:
-            avg_width, _ = font.getsize(text)
-            px_per_char = max(avg_width / len(text), 1)
-            lines = textwrap.wrap(text, int(canvas_size[0]) / px_per_char)
-        else:
-            lines = text.split('\n')
-
+        lines = img_utils.raster_font_textwrap(text, canvas_size[0], font)
 
         # Draw and save to temporary file for ffmpeg to read
         text_image_file = os.path.join(working_dir, "text.png")
@@ -393,12 +384,12 @@ class ImgFun(Cog):
             text_x, text_y = font.getsize(line)
             # Iniital top_pad to vertial centre
             if top_pad is None:
-                top_pad = -(text_y * len(lines) * 1.1 / 2) + text_y/2
-            text_pos = (center_x - text_x/2, center_y - text_y/2 + top_pad)
+                top_pad = -(text_y * len(lines) * 1.1 / 2)
+            text_pos = (center_x - text_x/2, center_y + top_pad)
             top_pad += text_y * 1.1
             # We draw one by one because it lets me do custom centering
-            img_utils.draw_text_outline(
-                draw, text_pos, line, "white", "black", 2, font=font)
+            img_utils.draw_text_dropshadow(
+                draw, text_pos, line, "white", "#333", (1, 1), font=font)
         im.save(text_image_file)
 
         subprocess.check_call([
@@ -476,12 +467,7 @@ class ImgFun(Cog):
 
             lines_go_up = line.get('lines_go_up', False)
 
-            if "\n" not in text:
-                avg_width, _ = font.getsize(text)
-                px_per_char = max(avg_width / len(text), 1)
-                text = textwrap.wrap(text, int(line.get("max_width", img.width) / px_per_char))
-            else:
-                text = text.split('\n')
+            text = img_utils.raster_font_textwrap(text, int(line.get("max_width", img.width)), font)
 
             top_pad = 0
 
