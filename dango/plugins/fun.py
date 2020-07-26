@@ -30,6 +30,7 @@ import textwrap
 
 from .common import converters
 from .common import checks
+from .common import img_utils
 from .common.utils import AliasCmd, fetch_image
 
 ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
@@ -395,7 +396,6 @@ class ImgFun(Cog):
             text = line['text'].encode('utf8').decode('ascii', 'ignore')
             if not text:
                 continue
-            outline_width = line.get('outline_width', 0)
             font = ImageFont.truetype(
                 line['font'], encoding='unic', size=line['size'])
             left, bottom, color = line['left'], line['bottom'], line['color']
@@ -423,26 +423,13 @@ class ImgFun(Cog):
                 h = h_ - top_pad * (-1 if lines_go_up else 1)
                 top_pad += h_ * 1.2
 
-                if outline_width:
-                    outline = line['outline_color']
-                    draw.text(((img.width - w - left) / 2 + outline_width,
-                               img.height - h - bottom), subtext, outline, font=font)
-                    draw.text(((img.width - w - left) / 2 - outline_width,
-                               img.height - h - bottom), subtext, outline, font=font)
-                    draw.text(((img.width - w - left) / 2, img.height -
-                               h - bottom + outline_width), subtext, outline, font=font)
-                    draw.text(((img.width - w - left) / 2, img.height -
-                               h - bottom - outline_width), subtext, outline, font=font)
-                    draw.text(((img.width - w - left) / 2 + outline_width, img.height - h - bottom - outline_width),
-                              subtext, outline, font=font)
-                    draw.text(((img.width - w - left) / 2 - outline_width, img.height - h - bottom + outline_width),
-                              subtext, outline, font=font)
-                    draw.text(((img.width - w - left) / 2 + outline_width, img.height - h - bottom + outline_width),
-                              subtext, outline, font=font)
-                    draw.text(((img.width - w - left) / 2 - outline_width, img.height - h - bottom - outline_width),
-                              subtext, outline, font=font)
-                draw.text(((img.width - w - left) / 2, img.height -
-                           h - bottom), subtext, color, font=font)
+                from_left = (img.width - w - left) / 2
+                from_top = img.height - h - bottom
+
+                img_utils.draw_text_outline(draw,
+                    (from_left, from_top), subtext, color,
+                    line.get('outline_color'), line.get('outline_width', 0),
+                    font=font)
 
         buff = io.BytesIO()
         img.save(buff, format)
