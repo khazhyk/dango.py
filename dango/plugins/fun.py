@@ -18,6 +18,8 @@ import inspect
 import math
 import os
 import random
+import subprocess
+import tempfile
 import time
 
 import aiohttp
@@ -344,6 +346,76 @@ class ImgFun(Cog):
             content = await fetch_image(url)
             img_buff = await ctx.bot.loop.run_in_executor(None, self.make_triggered, content)
             await ctx.send(file=discord.File(img_buff, filename="TRIGGERED.gif"))
+
+    def make_crab_rave(self, text, working_dir):
+        """make crab crab_rave.
+
+        Create static text file in tempfile
+        Pass base, pallete, and text to ffmpeg
+        yay.
+
+        To generate pallete (for new baselines):
+        ffmpeg -i '/g/My Drive/spoopybotfiles/res/img/crab_rave_base.gif' -vf palettegen pallete.png
+        To generate output:
+        ffmpeg -i '/g/My Drive/spoopybotfiles/res/img/crab_rave_base.gif' -i /c/Users/khazhy/Pictures/Untitled.png -i pallete.png -filter_complex "[0:v][1:v] overlay=25:25[x]; [x] [2:v]paletteuse" -pix_fmt yuv420p output.gif
+        """
+        base_video = self.res.dir() + "/img/crab_rave_200p.mkv"
+        base_palette = self.res.dir() + "/img/crab_rave_palette.png"
+        font = ImageFont.truetype(self.res.dir() + '/font/impact/IMPACT.ttf', encoding='unic', size=32)
+
+        # PIL can't get size of image, so ffprobe
+        canvas_size = subprocess.check_output([
+            "ffprobe",
+            "-v" , "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height",
+            "-of", "default=nw=1:nk=1",
+            base_video
+            ], encoding="utf8")
+        canvas_size = tuple(map(int, canvas_size.strip().split("\n")))
+
+        if "\n" not in text:
+            avg_width, _ = font.getsize(text)
+            px_per_char = max(avg_width / len(text), 1)
+            lines = textwrap.wrap(text, int(canvas_size[0]) / px_per_char)
+        else:
+            lines = text.split('\n')
+
+
+        # Draw and save to temporary file for ffmpeg to read
+        text_image_file = os.path.join(working_dir, "text.png")
+        im = Image.new("RGBA", canvas_size)
+        draw = ImageDraw.Draw(im)
+
+        center_x, center_y = tuple(x/2 for x in canvas_size)
+        top_pad = None
+        for line in lines:
+            text_x, text_y = font.getsize(line)
+            # Iniital top_pad to vertial centre
+            if top_pad is None:
+                top_pad = -(text_y * len(lines) * 1.1 / 2) + text_y/2
+            text_pos = (center_x - text_x/2, center_y - text_y/2 + top_pad)
+            top_pad += text_y * 1.1
+            # We draw one by one because it lets me do custom centering
+            img_utils.draw_text_outline(
+                draw, text_pos, line, "white", "black", 2, font=font)
+        im.save(text_image_file)
+
+        subprocess.check_call([
+            "ffmpeg", "-i", base_video, "-i", text_image_file,
+            "-filter_complex", "[0:v][1:v] overlay=0:0",
+            "-pix_fmt", "yuv420p", os.path.join(working_dir, "out.mp4")
+            ])
+
+    @command(aliases=["cr"])
+    @checks.bot_needs(["attach_files"])
+    async def crab_rave(self, ctx, *, content="DISCORD IS DEAD"):
+        """DISCORD IS DEAD."""
+        with ctx.typing():
+            with tempfile.TemporaryDirectory(prefix="crab_rave_nonsense") as working_dir:
+                await ctx.bot.loop.run_in_executor(None, self.make_crab_rave, content, working_dir)
+                await ctx.send(file=discord.File(
+                    os.path.join(working_dir, "out.mp4"), filename="{}.mp4".format(content)))
 
     def make_dead(self, inset):
         inset_img = Image.open(io.BytesIO(inset))
