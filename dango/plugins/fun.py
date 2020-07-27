@@ -360,7 +360,10 @@ class ImgFun(Cog):
         ffmpeg -i '/g/My Drive/spoopybotfiles/res/img/crab_rave_base.gif' -i /c/Users/khazhy/Pictures/Untitled.png -i pallete.png -filter_complex "[0:v][1:v] overlay=25:25[x]; [x] [2:v]paletteuse" -pix_fmt yuv420p output.gif
         """
         base_video = self.res.dir() + "/img/crab_rave_200p.mkv"
-        font = ImageFont.truetype(self.res.dir() + '/font/avnir/AvenirLTStd-Book.otf', encoding='unic', size=28)
+        font_height = 28
+        font = ImageFont.truetype(self.res.dir() + '/font/avnir/AvenirLTStd-Book.otf',
+                                  encoding='unic',size=font_height)
+        line_height = font_height * 1.2
 
         # PIL can't get size of image, so ffprobe
         canvas_size = subprocess.check_output([
@@ -379,14 +382,12 @@ class ImgFun(Cog):
         draw = ImageDraw.Draw(im)
 
         center_x, center_y = tuple(x/2 for x in canvas_size)
-        top_pad = None
+        # Centre vertically
+        top_pad = -(line_height * len(lines) / 2) + (line_height - font_height)
         for line in lines:
             text_x, text_y = font.getsize(line)
-            # Iniital top_pad to vertial centre
-            if top_pad is None:
-                top_pad = -(text_y * len(lines) * 1.1 / 2)
             text_pos = (center_x - text_x/2, center_y + top_pad)
-            top_pad += text_y * 1.1
+            top_pad += line_height
             # We draw one by one because it lets me do custom centering
             img_utils.draw_text_dropshadow(
                 draw, text_pos, line, "white", "#333", (1, 1), font=font)
