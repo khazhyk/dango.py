@@ -13,6 +13,7 @@ Tag types:
    - Python custom image generation (everything else).
 """
 import asyncio
+import concurrent.futures as cf
 import io
 import inspect
 import math
@@ -26,7 +27,7 @@ import aiohttp
 import yarl
 from dango import dcog, Cog
 import discord
-from discord.ext.commands import command, check, errors, group
+from discord.ext.commands import command, check, errors, group, max_concurrency, BucketType
 from PIL import Image, ImageFont, ImageDraw, ImageOps, ImageFilter, ImageChops
 import textwrap
 
@@ -146,6 +147,7 @@ class ImgFun(Cog):
 
     def __init__(self, cfg, res):
         self.res = res
+        self.process_executor = cf.ProcessPoolExecutor()
 
     @command()
     async def corrupt(self, ctx, *, user: converters.UserMemberConverter=None):
@@ -347,7 +349,8 @@ class ImgFun(Cog):
             img_buff = await ctx.bot.loop.run_in_executor(None, self.make_triggered, content)
             await ctx.send(file=discord.File(img_buff, filename="TRIGGERED.gif"))
 
-    def make_crab_rave(self, text, working_dir):
+    @staticmethod
+    def make_crab_rave(res_dir, text, working_dir):
         """make crab crab_rave.
 
         Create static text file in tempfile
@@ -359,11 +362,7 @@ class ImgFun(Cog):
         To generate output:
         ffmpeg -i '/g/My Drive/spoopybotfiles/res/img/crab_rave_base.gif' -i /c/Users/khazhy/Pictures/Untitled.png -i pallete.png -filter_complex "[0:v][1:v] overlay=25:25[x]; [x] [2:v]paletteuse" -pix_fmt yuv420p output.gif
         """
-        base_video = self.res.dir() + "/img/crab_rave_200p.mkv"
-        font_height = 28
-        font = ImageFont.truetype(self.res.dir() + '/font/avnir/AvenirLTStd-Book.otf',
-                                  encoding='unic',size=font_height)
-        line_height = font_height * 1.2
+        base_video = res_dir + "/img/crab_rave_200p.mkv"
 
         # PIL can't get size of image, so ffprobe
         canvas_size = subprocess.check_output([
@@ -374,7 +373,20 @@ class ImgFun(Cog):
             ], encoding="utf8")
         canvas_size = tuple(map(int, canvas_size.strip().split("\n")))
 
+        # Simple brute force font size selection...
+        font_height = 28
+        line_height = font_height * 1.2
+        font = ImageFont.truetype(res_dir + '/font/avnir/AvenirLTStd-Book.otf',
+                                  encoding='unic',size=font_height)
         lines = img_utils.raster_font_textwrap(text, canvas_size[0], font)
+        estimated_height = line_height * len(lines)
+        while estimated_height > canvas_size[1] and font_height > 1:
+            font_height -= 1
+            line_height = font_height * 1.2
+            font = ImageFont.truetype(res_dir + '/font/avnir/AvenirLTStd-Book.otf',
+                                      encoding='unic',size=font_height)
+            lines = img_utils.raster_font_textwrap(text, canvas_size[0], font)
+            estimated_height = line_height * len(lines)
 
         # Draw and save to temporary file for ffmpeg to read
         text_image_file = os.path.join(working_dir, "text.png")
@@ -382,7 +394,7 @@ class ImgFun(Cog):
         draw = ImageDraw.Draw(im)
 
         center_x, center_y = tuple(x/2 for x in canvas_size)
-        # Centre vertically
+        # Initial top pad to center vertically
         top_pad = -(line_height * len(lines) / 2) + (line_height - font_height)
         for line in lines:
             text_x, text_y = font.getsize(line)
@@ -390,7 +402,7 @@ class ImgFun(Cog):
             top_pad += line_height
             # We draw one by one because it lets me do custom centering
             img_utils.draw_text_dropshadow(
-                draw, text_pos, line, "white", "#333", (1, 1), font=font)
+                draw, text_pos, line, "white", "#222", (1, 1), font=font)
         im.save(text_image_file)
 
         subprocess.check_call([
@@ -401,11 +413,12 @@ class ImgFun(Cog):
 
     @command(aliases=["cr"])
     @checks.bot_needs(["attach_files"])
+    @max_concurrency(2, per=BucketType.guild, wait=False)
     async def crab_rave(self, ctx, *, content="DISCORD IS DEAD"):
         """DISCORD IS DEAD."""
         with ctx.typing():
             with tempfile.TemporaryDirectory(prefix="crab_rave_nonsense") as working_dir:
-                await ctx.bot.loop.run_in_executor(None, self.make_crab_rave, content, working_dir)
+                await ctx.bot.loop.run_in_executor(self.process_executor, self.make_crab_rave, self.res.dir(), content, working_dir)
                 await ctx.send(file=discord.File(
                     os.path.join(working_dir, "out.mp4"), filename="{}.mp4".format(content)))
 
