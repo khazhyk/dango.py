@@ -4,6 +4,9 @@ python:
   - "3.6"
   - "3.7"
   - "3.8"
+env:
+  - RAPPTZ=true
+  - RAPPTZ=false
 services:
   - postgresql
   - redis-server
@@ -14,5 +17,13 @@ before_script:
   - psql spootest < scripts/nametracking.sql
   - psql spootest < scripts/last_seen.sql
   - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
-install: "pip install -r requirements.txt"
+install: 
+  - "pip install -r requirements.txt"
+  - "if $RAPPTZ; then
+       git clone https://github.com/khazhyk/discord.py;
+       pushd discord.py;
+       git pull --rebase https://github.com/Rapptz/discord.py master;
+       pip install --upgrade .[voice];
+       popd;
+     fi"
 script: pytest -vs
