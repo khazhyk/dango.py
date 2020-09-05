@@ -13,11 +13,11 @@ class TestTypeInheritanceMap(unittest.TestCase):
         m.put(discord.TextChannel, "something else")
         m.put(discord.Guild, "another thing")
 
-        self.assertEquals("something", m.lookup(discord.abc.User))
-        self.assertEquals("something", m.lookup(discord.User))
-        self.assertEquals("something", m.lookup(discord.Member))
-        self.assertEquals("something else", m.lookup(discord.TextChannel))
-        self.assertEquals(None, m.lookup(discord.DMChannel))
+        self.assertEqual("something", m.lookup(discord.abc.User))
+        self.assertEqual("something", m.lookup(discord.User))
+        self.assertEqual("something", m.lookup(discord.Member))
+        self.assertEqual("something else", m.lookup(discord.TextChannel))
+        self.assertEqual(None, m.lookup(discord.DMChannel))
 
     def test_constructed(self):
         m = utils.TypeMap({
@@ -26,11 +26,11 @@ class TestTypeInheritanceMap(unittest.TestCase):
             discord.Guild: "another thing"
         })
 
-        self.assertEquals("something", m.lookup(discord.abc.User))
-        self.assertEquals("something", m.lookup(discord.User))
-        self.assertEquals("something", m.lookup(discord.Member))
-        self.assertEquals("something else", m.lookup(discord.TextChannel))
-        self.assertEquals(None, m.lookup(discord.DMChannel))
+        self.assertEqual("something", m.lookup(discord.abc.User))
+        self.assertEqual("something", m.lookup(discord.User))
+        self.assertEqual("something", m.lookup(discord.Member))
+        self.assertEqual("something else", m.lookup(discord.TextChannel))
+        self.assertEqual(None, m.lookup(discord.DMChannel))
 
 
 class TestFormattingUtils(unittest.TestCase):
@@ -43,7 +43,7 @@ class TestFormattingUtils(unittest.TestCase):
         ]
 
         for sample in samples:
-            self.assertEquals(sample[1], utils.clean_formatting(sample[0]))
+            self.assertEqual(sample[1], utils.clean_formatting(sample[0]))
 
     def test_clean_mentions(self):
         samples = [
@@ -52,7 +52,7 @@ class TestFormattingUtils(unittest.TestCase):
         ]
 
         for sample in samples:
-            self.assertEquals(sample[1], utils.clean_mentions(sample[0]))
+            self.assertEqual(sample[1], utils.clean_mentions(sample[0]))
 
     def test_clean_emojis(self):
         samples = [
@@ -79,7 +79,7 @@ class TestFormattingUtils(unittest.TestCase):
         ]
 
         for sample in samples:
-            self.assertEquals(sample[1], utils.clean_emojis(sample[0]))
+            self.assertEqual(sample[1], utils.clean_emojis(sample[0]))
 
     def test_clean_single_backtick(self):
         samples = [
@@ -106,7 +106,7 @@ class TestFormattingUtils(unittest.TestCase):
         ]
 
         for sample in samples:
-            self.assertEquals(sample[0], utils.clean_single_backtick(sample[1]))
+            self.assertEqual(sample[0], utils.clean_single_backtick(sample[1]))
 
     def test_clean_triple_backtick(self):
         samples = [
@@ -123,7 +123,7 @@ class TestFormattingUtils(unittest.TestCase):
         ]
 
         for sample in samples:
-            self.assertEquals(sample[0], utils.clean_triple_backtick(sample[1]))
+            self.assertEqual(sample[0], utils.clean_triple_backtick(sample[1]))
 
     def test_clean_newline(self):
         samples = [
@@ -136,7 +136,7 @@ class TestFormattingUtils(unittest.TestCase):
         ]
 
         for sample in samples:
-            self.assertEquals(sample[0], utils.clean_newline(sample[1]))
+            self.assertEqual(sample[0], utils.clean_newline(sample[1]))
 
 
 if __name__ == "__main__":

@@ -31,28 +31,28 @@ class ConfigTest(unittest.TestCase):
         a = c.root.add_group("a")
         stuff = a.register("stuff", default=2)
 
-        self.assertEquals(stuff(), 1)
+        self.assertEqual(stuff(), 1)
 
     def test_unicode(self):
         c = config.StringConfiguration(SAMPLE_CONFIG)
         a = c.root.add_group("a")
         stuff = a.register("unicode", default=2)
 
-        self.assertEquals(stuff(), "( ͡° ͜ʖ ͡°)")
+        self.assertEqual(stuff(), "( ͡° ͜ʖ ͡°)")
 
     def test_default(self):
         c = config.StringConfiguration("")
         a = c.root.add_group("a")
         stuff = a.register("stuff", default=2)
 
-        self.assertEquals(stuff(), 2)
+        self.assertEqual(stuff(), 2)
 
     def test_default_dump(self):
         c = config.StringConfiguration("")
         a = c.root.add_group("a")
         a.register("stuff", default=2)
 
-        self.assertEquals("a:\n  stuff: 2  # Default value\n", c.dumps())
+        self.assertEqual("a:\n  stuff: 2  # Default value\n", c.dumps())
 
     def test_invalid_dump(self):
         c = config.StringConfiguration("")
@@ -60,18 +60,18 @@ class ConfigTest(unittest.TestCase):
         with self.assertRaises(config.InvalidConfig):
             a.register("stuff")
 
-        self.assertEquals("a:\n  stuff:  # Required value\n", c.dumps())
+        self.assertEqual("a:\n  stuff:  # Required value\n", c.dumps())
 
     def test_simple_change(self):
         c = config.StringConfiguration(SAMPLE_CONFIG)
         a = c.root.add_group("a")
         stuff = a.register("stuff", default=2)
 
-        self.assertEquals(stuff(), 1)
+        self.assertEqual(stuff(), 1)
 
         c._data['a']['stuff'] = 3
 
-        self.assertEquals(stuff(), 3)
+        self.assertEqual(stuff(), 3)
 
     def test_class(self):
         class A:
@@ -83,11 +83,11 @@ class ConfigTest(unittest.TestCase):
 
         a = A(a_group)
 
-        self.assertEquals(a.stuff(), 1)
+        self.assertEqual(a.stuff(), 1)
 
         c._data['a']['stuff'] = 3
 
-        self.assertEquals(a.stuff(), 3)
+        self.assertEqual(a.stuff(), 3)
 
 
 class FileConfigurationTest(unittest.TestCase):
@@ -107,4 +107,4 @@ class FileConfigurationTest(unittest.TestCase):
         fconf.save()
 
         with open(self.tmpfile, encoding="utf8") as f:
-            self.assertEquals(SAMPLE_COMMENTED_CONFIG, f.read())
+            self.assertEqual(SAMPLE_COMMENTED_CONFIG, f.read())

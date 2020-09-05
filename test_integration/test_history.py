@@ -39,7 +39,7 @@ class FetchMessageTest(unittest.TestCase):
     async def test_get_message(self):
         """single message endpoint"""
         msg = await self.channel.fetch_message(182581936450043904, use_history=False)
-        self.assertEquals(msg.id, 182581936450043904)
+        self.assertEqual(msg.id, 182581936450043904)
 
     @async_test
     async def test_get_message_miss(self):
@@ -51,7 +51,7 @@ class FetchMessageTest(unittest.TestCase):
     async def test_history(self):
         """history endpoint"""
         msg = await self.channel.fetch_message(182581936450043904, use_history=True)
-        self.assertEquals(msg.id, 182581936450043904)
+        self.assertEqual(msg.id, 182581936450043904)
 
     @async_test
     async def test_history_miss(self):
