@@ -38,27 +38,42 @@ class FetchMessageTest(unittest.TestCase):
     @async_test
     async def test_get_message(self):
         """single message endpoint"""
-        msg = await self.channel.fetch_message(182581936450043904, use_history=False)
+        msg = await self.channel.fetch_message(182581936450043904)
         self.assertEqual(msg.id, 182581936450043904)
 
     @async_test
     async def test_get_message_miss(self):
         """single message endpoint"""
         with self.assertRaises(discord.NotFound):
-            msg = await self.channel.fetch_message(182581936450043903, use_history=False)
+            msg = await self.channel.fetch_message(182581936450043903)
 
     @async_test
     async def test_history(self):
         """history endpoint"""
-        msg = await self.channel.fetch_message(182581936450043904, use_history=True)
+        msg = await self.channel.fetch_message_fast(182581936450043904)
         self.assertEqual(msg.id, 182581936450043904)
 
     @async_test
     async def test_history_miss(self):
         """history endpoint"""
-        with self.assertRaises(LookupError):
-            msg = await self.channel.fetch_message(182581936450043903, use_history=True)
+        self.assertEqual(await self.channel.fetch_message_fast(182581936450043903), None)
 
+    @async_test
+    async def test_history_channel_miss(self):
+        """history endpoint, simulated deleted channel race"""
+
+        fake_channel = discord.channel.TextChannel(state=self.guild._state, guild=self.guild, data=dict(
+                type=1,
+                name="fake_channel",
+                parent_id=None,
+                topic="",
+                position=1,
+                nsfw=False,
+                id=123123,
+            ))
+
+        with self.assertRaises(discord.NotFound):
+            msg = await fake_channel.fetch_message_fast(182581936450043904)
 
 
 class HistoryIteratorTest(unittest.TestCase):
