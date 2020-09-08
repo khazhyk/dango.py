@@ -136,7 +136,10 @@ class Misc(Cog):
             except asyncio.TimeoutError:
                 break
 
-        msg = await ctx.fetch_message(msg.id)
+        msg = await ctx.fetch_message_fast(msg.id)
+
+        if not msg:
+            raise errors.CommandError("Someone deleted the poll message...")
 
         max_val = 0
         results = []
