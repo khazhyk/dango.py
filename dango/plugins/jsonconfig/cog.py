@@ -56,6 +56,7 @@ import typing
 from discord.ext.commands import group, errors, Converter
 
 from dango.core import dcog, Cog
+from dango.plugins import grants
 
 
 """So here's a question:
@@ -223,6 +224,9 @@ class JsonConfigEdit(Cog):
         await ctx.send(f"```json\n{json.dumps(self.jsonconfig.show_json(path), indent=2)}```")
 
     @config.command()
+    # FIXME - even though we imported grants, reloading it doesn't work,
+    # we have to reload one, then the other.?!?!? idk, for another time
+    @grants.check()
     async def update(self, ctx, path, *, value: _Json):
         """Update a sub-section of the config.
 

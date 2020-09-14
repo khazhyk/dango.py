@@ -52,6 +52,7 @@ Also specify the default configuration for the permissions
 
 async def __init__(self):
     # Allow creating, editing, and deleting own tags by default
+    # Prefer to use the grants.check()
     grants.global_allow(["tag.create", "tag.edit", "tag.delete"])
     # Allow users with manage_messages to delete others' tags
     grants.permission_allow("manage_messages", ["tag.delete.other"])
@@ -244,6 +245,21 @@ check checks for.
 yeah, solid!
 
 """
+from discord.ext import commands
+from discord.ext.commands import errors
+
+def check():
+    async def _(ctx):
+        """Failsafe."""
+        grants_cog = ctx.bot.get_cog("Grants")
+        if not grants_cog:
+            raise errors.CheckFailure("This command requires the Grants cog to be loaded")
+        return True
+    return commands.check(_)
+    # FIXME we want to do *both* commands.check and our own custom shit
+
+def require(perm):
+    pass
 
 class CogDefaultGrants:
     """Represents default grants for a given cog.

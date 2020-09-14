@@ -53,6 +53,10 @@ class CommandErrors(Cog):
             if isinstance(exp, errors.CommandInvokeError):
                 exp = exp.original
 
+            if isinstance(exp, errors.CheckFailure):
+                log.debug("Check failure debugging for '%s' in '%s'", ctx.command.qualified_name,
+                          ctx.message.content, exc_info=tbtpl(main_exp))
+
             msg = ERROR_MAP.lookup(type(exp))
             if msg:
                 await ctx.send(msg.format(exp=exp, ctx=ctx))
