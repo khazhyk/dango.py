@@ -266,14 +266,11 @@ class MessageConverter(Converter):
         msg = discord.utils.get(ctx.bot.cached_messages, id=msg_id)
         if msg is None:
             try:
-                msg = await channel.fetch_message_fast(msg_id)
+                msg = await channel.fetch_message(msg_id)
             except discord.NotFound:
                 raise errors.BadArgument("Message {0} not found in channel {1.mention}".format(msg_id, channel))
             except discord.Forbidden:
                 raise errors.CheckFailure("I don't have permission to view channel {0.mention}".format(channel))
-            else:
-                if not msg:
-                    raise errors.BadArgument("Message {0} not found in channel {1.mention}".format(msg_id, channel))
         elif msg.channel.id != channel.id:
             raise errors.BadArgument("Message not found")
         return msg
