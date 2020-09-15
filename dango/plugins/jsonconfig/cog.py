@@ -49,6 +49,7 @@ ALSO: FIXME/TODO/etc.
 
 
 """
+import asyncio
 from dataclasses import dataclass
 import json
 import typing
@@ -105,13 +106,11 @@ class _Json(Converter):
 
 
 @dataclass
-class ConfigEntry:
+class ConfigRegEntry:
     # Called pre-update, to validate. *must raise on failure*
     validate: typing.Callable[[dict], None]
     # Called *after* the update was successful
     on_updated: typing.Callable[[dict], None]
-    # In-memory value, if present
-    cached_value: typing.Optional[dict] = None
 
 
 @dcog(depends=["Database"])
@@ -121,51 +120,107 @@ class JsonConfig(Cog):
     def __init__(self, config, db):
         del config
         self.db = db
+        self.db.hold()
 
-        self._registry: typing.Dict[ConfigEntry] = {}
+        self._registry: typing.Dict[ConfigRegEntry] = {}
+        self._guild_configs = {}
         super().__init__()
+
+    def cog_unload(self):
+        self.db.unhold()
+
+    async def _lookup_guild_config(self, guild_id: int):
+        """Lookup guild config, if it exists.
+        
+        We cache config results forever, presuming no two shards
+        operate on the same guild at the same time.
+        """
+        try:
+            return self._guild_configs[guild_id]
+        except KeyError:
+            pass
+        async with self.db.acquire() as conn:
+            res = await conn.fetchrow(
+                "SELECT * FROM jsonconfig WHERE guild_id = $1", guild_id
+            )
+            if res:
+                guild_config = json.loads(res["data"])
+            else:
+                guild_config = {}
+            self._guild_configs[guild_id] = guild_config
+            return guild_config
+
+    async def _update_guild_config(self, guild_id: int, data: dict):
+        """Upsert the guild config. Presumes it's valid."""
+        # This might be redundant??? Since it's a dict we might end up editing in place...
+        self._guild_configs[guild_id] = data
+        async with self.db.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO jsonconfig (guild_id, data) "
+                "VALUES ($1, $2) "
+                "ON CONFLICT (guild_id) DO UPDATE SET data = $2",
+                guild_id, json.dumps(data)
+            )
 
     def register(self, name, validate, update):
         """Register config options."""
-        self._registry[name] = ConfigEntry(validate, update)
+        self._registry[name] = ConfigRegEntry(validate, update)
 
     def unregister(self, name):
         """Unregister config options."""
         del self._registry[name]
 
-    def show_json(self, path):
-        config_entry, path = self.lookup_path(path)
+    async def lookup_path_entry(self, guild_id: int, path):
+        """Lookup config entry, dict, remaining path."""
+        guild_config = await self._lookup_guild_config(guild_id)
 
-        if not config_entry:
-            # Generate and show the "full" json
-            full_json = {}
-            for name in self._registry.keys():
-                full_json[name] = self.show_json(name)
-            return full_json
-        
-        curr_output = config_entry.cached_value
-        if path:
-            for crumb in path.split("."):
-                curr_output = curr_output[crumb]
-        return curr_output
-
-    def lookup_path(self, path):
-        """Returns config entry, and remaining path."""
-        if not path:
-            return None, ""
         split = path.split(".", maxsplit=1)
 
-        entry = self._registry[split[0]]
-        
-        if not entry.cached_value:
-            # TODO/FIXME - actually look something up
-            entry.cached_value = {}
+        entryname = split[0]
+
+        self._registry.__getitem__(entryname)
+        # We avoid assigning into the dict here in case we don't end up
+        # changing it, so we don't pollute empty dicts into the config
+        entryvalue = guild_config.get(entryname, {})
 
         if len(split) > 1:
-            return entry, split[1]
-        return entry, ""
+            return entryname, entryvalue, split[1]
+        return entryname, entryvalue, ""
+
+    async def update_path_entry(self, guild_id: int, entry_name: str, value: dict):
+        """Validate and store."""
+        self._registry[entry_name].validate(value)
+        guild_config = await self._lookup_guild_config(guild_id)
+        guild_config[entry_name] = value
+        await self._update_guild_config(guild_id, guild_config)
+        self._registry[entry_name].on_updated(value)
     
-    async def update(self, path, value):
+    async def get_json(self, guild_id, path):
+        """Get json given by path.
+        
+        TODO - do something for placeholder shit, like:
+        {
+            // Description if it exists?
+            "grants": {
+                // For reference only, not editable
+                default_guild_deny: ["tag.manage_others"],
+                // For reference only, not editable
+                default_guild_allow: ["tag.tag", "tag.tag.create", "tag.tag.edit"]
+                // Permissions not granted for everyone
+                "guild_deny": [],
+                // Permissions allowed for everyone
+                "guild_deny": []
+            }
+        }
+        """
+        guild_config = await self._lookup_guild_config(guild_id)
+        cursor = guild_config
+        if path:
+            for crumb in path.split("."):
+                cursor = cursor[crumb]
+        return cursor
+
+    async def update(self, guild_id: int, path, value):
         """Update the config to the given value.
         
         Arguments:
@@ -176,42 +231,33 @@ class JsonConfig(Cog):
             entry.
           value: The new value
         """
-        config_entry, path = self.lookup_path(path)
+        entry_name, old_config, path = await self.lookup_path_entry(guild_id, path)
 
-        if not path:
-            config_entry.validate(value)
-            # FIXME - actually update in database
-            config_entry.cached_value = value
-            config_entry.on_updated(config_entry.cached_value)
-            return
+        if path:
+            new_config = old_config.copy()
+            editable_cursor = new_config
+            crumbs = path.split(".")
+            for crumb in crumbs[:-1]:
+                try:
+                    editable_cursor = editable_cursor[crumb]
+                except KeyError:
+                    editable_cursor[crumb] = {}
+                    editable_cursor = editable_cursor[crumb]
+            editable_cursor[crumbs[-1]] = value
+        else:
+            new_config = value
 
-        # path case
-        crumbs = path.split(".")
-        new_value = config_entry.cached_value.copy()
-
-        editable_cursor = new_value
-        for crumb in crumbs[:-1]:
-            try:
-                editable_cursor = editable_cursor[crumb]
-            except KeyError:
-                editable_cursor[crumb] = {}
-                editable_cursor = editable_cursor[crumb]
-
-        editable_cursor[crumbs[-1]] = value
-
-        config_entry.validate(new_value)
-        config_entry.cached_value = new_value
-        config_entry.on_updated(config_entry.cached_value)
+        await self.update_path_entry(guild_id, entry_name, new_config)
 
 
 @dcog(depends=["Grants", "JsonConfig"])
 class JsonConfigEdit(Cog):
     """Commands for editing the config."""
 
-    def __init__(self, config, grants, jsonconfig):
+    def __init__(self, config, grants_cog, jsonconfig):
         del config
-        self.grants = grants
-        self.jsonconfig = jsonconfig
+        self._grants = grants_cog
+        self._jsonconfig = jsonconfig
         super().__init__()
 
     @group()
@@ -221,7 +267,7 @@ class JsonConfigEdit(Cog):
     @config.command()
     async def show(self, ctx, path=""):
         """Show the current config."""
-        await ctx.send(f"```json\n{json.dumps(self.jsonconfig.show_json(path), indent=2)}```")
+        await ctx.send(f"```json\n{json.dumps(await self._jsonconfig.get_json(ctx.guild.id, path), indent=2)}```")
 
     @config.command()
     # FIXME - even though we imported grants, reloading it doesn't work,
@@ -233,7 +279,7 @@ class JsonConfigEdit(Cog):
         path is required, you may not update the entire config at once.
         value must be valid json. (This means strings must be in quotes, etc.)
         """
-        await self.jsonconfig.update(path, value)
+        await self._jsonconfig.update(ctx.guild.id, path, value)
         
-        await ctx.send(f"```json\n{json.dumps({path:self.jsonconfig.show_json(path)}, indent=2)}```")
+        await ctx.send(f"```json\n{json.dumps({path:await self._jsonconfig.get_json(ctx.guild.id, path)}, indent=2)}```")
     
