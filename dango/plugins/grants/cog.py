@@ -1,5 +1,6 @@
 
 import logging
+import weakref
 
 import discord
 from discord.ext import commands
@@ -46,7 +47,8 @@ def check(node_name=None):
 class GrantsContext:
     def __init__(self, grants_cog, cog):
         self._grants = grants_cog
-        self.cog = cog
+        # We're stored in a WeakKeyDict on this cog, don't hold a circular strong ref
+        self.cog = weakref.ref(cog)
         self._cog_name = cog.__class__.__name__.lower()
         self.default_perms = {}
 
@@ -119,7 +121,7 @@ class Grants(Cog):
 
         self.bot = bot
         self.jsonconfig = jsonconfig
-        self._cog_contexts = {}
+        self._cog_contexts = weakref.WeakKeyDictionary()
         jsonconfig.register(CONFIG_NAME, self.validate_grants, self.on_grants_update)
         # Note, call_once=True effectivly means can_run() doesn't use this check.
         # For the help command, this means it won't filter based on this check.
@@ -135,12 +137,11 @@ class Grants(Cog):
         then:
         self.gctx.require("some.perm")
         """
-        cog_name = cog.__class__.__name__.lower()
         try:
-            return self._cog_contexts[cog_name]
+            return self._cog_contexts[cog]
         except KeyError:
-            self._cog_contexts[cog_name] = GrantsContext(self, cog)
-        return self._cog_contexts[cog_name]
+            self._cog_contexts[cog] = GrantsContext(self, cog)
+        return self._cog_contexts[cog]
 
 
     def cog_unload(self):
