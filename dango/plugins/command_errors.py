@@ -16,7 +16,6 @@ def tbtpl(exp):
 IGNORED = (
     errors.CommandNotFound,
     errors.DisabledCommand,
-    errors.NoPrivateMessage
 )
 
 ERROR_MAP = utils.TypeMap({
@@ -25,6 +24,7 @@ ERROR_MAP = utils.TypeMap({
     errors.MissingRequiredArgument:
         "Missing argument: {exp.param.name}. Run `` {ctx.prefix}help "
         "{ctx.command.qualified_name} `` for more info.",
+    errors.NoPrivateMessage: "This command only works in guilds.",
     errors.CommandError: "Error running command: {exp}",
     errors.CheckFailure: "Permissions error: {exp}",
     discord.errors.Forbidden: "I don't have permission: {exp.text}",
