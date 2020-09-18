@@ -238,6 +238,7 @@ class Grants(Cog):
                 remaining_nodes = required_nodes.difference(default_allowed_nodes)
                 if not remaining_nodes:
                     log.debug("All required nodes were explicitly permission-allowed")
+                    return
                 log.debug(f"After default_permission_allow[{perm}], {remaining_nodes} remain required")
                 required_nodes = remaining_nodes
         except KeyError:
@@ -251,6 +252,7 @@ class Grants(Cog):
                 remaining_nodes = required_nodes.difference(perm_config["permission_allow"][perm])
                 if not remaining_nodes:
                     log.debug("All required nodes were explicitly permission-allowed")
+                    return
                 log.debug(f"After permission_allow[{perm}], {remaining_nodes} remain required")
                 required_nodes = remaining_nodes
         except KeyError:
@@ -278,6 +280,7 @@ class Grants(Cog):
             remaining_nodes = required_nodes.difference(cog_config["guild_allow"])
             if not remaining_nodes:
                 log.debug("All required nodes were explicitly default-allowed")
+                return
             log.debug(f"After guild_allow, {remaining_nodes} remain required")
             required_nodes = remaining_nodes
         except KeyError:
@@ -288,7 +291,7 @@ class Grants(Cog):
             required_nodes.remove(implicit_node)
 
         if required_nodes:
-            raise errors.CheckFailure(f"Member {ctx.author} is denied {required_nodes}")
+            raise errors.CheckFailure(f"{required_nodes} is denied by default")
         
         return True
     
