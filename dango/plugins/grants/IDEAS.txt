@@ -1,4 +1,4 @@
-"""Grants permissioning system.
+Grants permissioning system.
 
 Default permission nodes:
 
@@ -243,5 +243,3 @@ the decorators add a special __dango_grants property, which the global
 check checks for.
 
 yeah, solid!
-
-"""
