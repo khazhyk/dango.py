@@ -186,14 +186,13 @@ class Grants(Cog):
         except KeyError:
             pass
         try:
-            remaining_nodes = required_nodes.difference(perm_config["user_allow"][author_id])
-            if not remaining_nodes:
+            required_nodes = required_nodes.difference(perm_config["user_allow"][author_id])
+            if not required_nodes:
                 # All nodes are explicitly allowed, we're done here
                 log.debug("All required nodes were explicitly user-allowed")
                 return
             # otherwise, we still need to check for the remaining nodes:
-            log.debug(f"After user_allow, {remaining_nodes} remain required")
-            required_nodes = remaining_nodes
+            log.debug(f"After user_allow, {required_nodes} remain required")
         except KeyError:
             pass
 
@@ -212,12 +211,11 @@ class Grants(Cog):
         try:
             roles_to_check = author_roles.intersection(perm_config["role_allow"].keys())
             for role_id in roles_to_check:
-                remaining_nodes = required_nodes.difference(perm_config["role_allow"][role_id])
-                if not remaining_nodes:
+                required_nodes = required_nodes.difference(perm_config["role_allow"][role_id])
+                if not required_nodes:
                     log.debug("All required nodes were explicitly role-allowed")
                     return
-                log.debug(f"After role_allow[{role_id}], {remaining_nodes} remain required")
-                required_nodes = remaining_nodes
+                log.debug(f"After role_allow[{role_id}], {required_nodes} remain required")
         except KeyError:
             pass
 
@@ -235,12 +233,11 @@ class Grants(Cog):
                     default_allowed_nodes.difference_update(perm_config["permission_reset"][perm])
                 except KeyError:
                     pass
-                remaining_nodes = required_nodes.difference(default_allowed_nodes)
-                if not remaining_nodes:
+                required_nodes = required_nodes.difference(default_allowed_nodes)
+                if not required_nodes:
                     log.debug("All required nodes were explicitly permission-allowed")
                     return
-                log.debug(f"After default_permission_allow[{perm}], {remaining_nodes} remain required")
-                required_nodes = remaining_nodes
+                log.debug(f"After default_permission_allow[{perm}], {required_nodes} remain required")
         except KeyError:
             pass
 
@@ -249,12 +246,11 @@ class Grants(Cog):
         try:
             perms_to_check = author_permissions.intersection(perm_config["permission_allow"].keys())
             for perm in perms_to_check:
-                remaining_nodes = required_nodes.difference(perm_config["permission_allow"][perm])
-                if not remaining_nodes:
+                required_nodes = required_nodes.difference(perm_config["permission_allow"][perm])
+                if not required_nodes:
                     log.debug("All required nodes were explicitly permission-allowed")
                     return
-                log.debug(f"After permission_allow[{perm}], {remaining_nodes} remain required")
-                required_nodes = remaining_nodes
+                log.debug(f"After permission_allow[{perm}], {required_nodes} remain required")
         except KeyError:
             pass
 
@@ -267,22 +263,20 @@ class Grants(Cog):
             pass
 
         try:
-            remaining_nodes = required_nodes.difference(perm_config["guild_allow"])
-            if not remaining_nodes:
+            required_nodes = required_nodes.difference(perm_config["guild_allow"])
+            if not required_nodes:
                 log.debug("All required nodes were explicitly default-allowed")
-            log.debug(f"After guild_allow, {remaining_nodes} remain required")
-            required_nodes = remaining_nodes
+            log.debug(f"After guild_allow, {required_nodes} remain required")
         except KeyError:
             pass
 
         # Cog defaults
         try:
-            remaining_nodes = required_nodes.difference(cog_config["guild_allow"])
-            if not remaining_nodes:
+            required_nodes = required_nodes.difference(cog_config["guild_allow"])
+            if not required_nodes:
                 log.debug("All required nodes were explicitly default-allowed")
                 return
-            log.debug(f"After guild_allow, {remaining_nodes} remain required")
-            required_nodes = remaining_nodes
+            log.debug(f"After guild_allow, {required_nodes} remain required")
         except KeyError:
             pass
 
