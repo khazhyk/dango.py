@@ -54,7 +54,7 @@ from dataclasses import dataclass
 import json
 import typing
 
-from discord.ext.commands import group, errors, Converter
+from discord.ext.commands import group, errors, Converter, guild_only
 
 from dango.core import dcog, Cog
 from dango.plugins import grants
@@ -191,7 +191,10 @@ class JsonConfig(Cog):
         """Validate and store."""
         self._registry[entry_name].validate(value)
         guild_config = await self._lookup_guild_config(guild_id)
-        guild_config[entry_name] = value
+        if value is None:
+            del guild_config[entry_name]
+        else:
+            guild_config[entry_name] = value
         await self._update_guild_config(guild_id, guild_config)
         self._registry[entry_name].on_updated(value)
     
@@ -243,7 +246,10 @@ class JsonConfig(Cog):
                 except KeyError:
                     editable_cursor[crumb] = {}
                     editable_cursor = editable_cursor[crumb]
-            editable_cursor[crumbs[-1]] = value
+            if value is None:
+                del editable_cursor[crumbs[-1]]
+            else:
+                editable_cursor[crumbs[-1]] = value
         else:
             new_config = value
 
@@ -255,12 +261,14 @@ class JsonConfigEdit(Cog):
     """Commands for editing the config."""
 
     def __init__(self, config, grants_cog, jsonconfig):
-        del config
-        self._grants = grants_cog
-        self._jsonconfig = jsonconfig
         super().__init__()
+        del config
+        self._jsonconfig = jsonconfig
+        self.gctx = grants_cog.context(self)
+        self.gctx.permission_allow("manage_guild", "config.manage")
 
     @group()
+    @guild_only()
     async def config(self, ctx):
         pass
     
@@ -272,7 +280,7 @@ class JsonConfigEdit(Cog):
     @config.command()
     # FIXME - even though we imported grants, reloading it doesn't work,
     # we have to reload one, then the other.?!?!? idk, for another time
-    @grants.check()
+    @grants.check("config.manage")
     async def update(self, ctx, path, *, value: _Json):
         """Update a sub-section of the config.
 
@@ -280,6 +288,17 @@ class JsonConfigEdit(Cog):
         value must be valid json. (This means strings must be in quotes, etc.)
         """
         await self._jsonconfig.update(ctx.guild.id, path, value)
-        
         await ctx.send(f"```json\n{json.dumps({path:await self._jsonconfig.get_json(ctx.guild.id, path)}, indent=2)}```")
     
+    @config.command()
+    @grants.check("config.manage")
+    async def clear(self, ctx, path):
+        """Clear a sub-section of the config.
+
+        path is required, you may not update the entire config at once.
+        """
+        try:
+            await self._jsonconfig.update(ctx.guild.id, path, None)
+            await ctx.send(f"cleared {path}")
+        except KeyError:
+            raise errors.BadArgument(f"{path} doesn't exist to clear...")

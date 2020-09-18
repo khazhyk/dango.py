@@ -1,3 +1,1 @@
-from .cog import Grants  # noqa
-
-from .grants import check, require
+from .cog import Grants, check  # noqa
