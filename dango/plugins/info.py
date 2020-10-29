@@ -219,31 +219,29 @@ class Info(Cog):
         await ctx.send(("Channel topic: " + channel.topic) if channel.topic else "No topic set.")
 
     @command(aliases=["guildinfo"])
-    @commands.guild_only()
-    async def serverinfo(self, ctx):
+    async def serverinfo(self, ctx, guild: converters.GuildConverter=converters.CurrentGuild):
         """Show information about a server."""
-        server = ctx.message.guild
-        text_count = len(server.text_channels)
-        voice_count = len(server.voice_channels)
+        text_count = len(guild.text_channels)
+        voice_count = len(guild.voice_channels)
         text_hid = sum(
-            1 for c in server.channels
-            if c.overwrites_for(server.default_role).read_messages is False)
+            1 for c in guild.channels
+            if c.overwrites_for(guild.default_role).read_messages is False)
 
-        roles = ", ".join([r.name for r in sorted(server.roles, key=lambda r: -r.position)])
+        roles = ", ".join([r.name for r in sorted(guild.roles, key=lambda r: -r.position)])
 
         i = InfoBuilder()
 
-        i.add_field("Server", server.name)
-        i.add_field("ID", server.id)
-        i.add_field("Region", server.region)
+        i.add_field("Guild", guild.name)
+        i.add_field("ID", guild.id)
+        i.add_field("Region", guild.region)
         i.add_field("Members", "{} ({} online)".format(
-            len(server.members),
-            sum(1 for m in server.members if m.status is not discord.Status.offline)))
+            len(guild.members),
+            sum(1 for m in guild.members if m.status is not discord.Status.offline)))
         i.add_field(
             "Chats", "{} Text ({}) Hidden / {} Voice".format(text_count, text_hid, voice_count))
-        i.add_field("Owner", server.owner)
-        i.add_field("Created", format_time(server.created_at))
-        i.add_field("Icon", server.icon_url)
+        i.add_field("Owner", guild.owner)
+        i.add_field("Created", format_time(guild.created_at))
+        i.add_field("Icon", guild.icon_url)
         i.add_field("Roles", roles)
 
         await ctx.send(i.code_block())
