@@ -200,7 +200,7 @@ class Meta(Cog):
 
     @command()
     async def largestservers(self, ctx):
-        """Show the 5 largest servers the bot sees."""
+        """Show the 10 largest servers the bot sees."""
         servers = sorted(ctx.bot.guilds, key=lambda x: -len(x.members))
 
         msg = ""
