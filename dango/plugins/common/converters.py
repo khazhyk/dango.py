@@ -198,6 +198,57 @@ class UserMemberConverter(Converter):
         return match
 
 
+class GuildConverter(Converter):
+    """Match guild_id, or guild name exact, only if author is in the guild."""
+
+    def get_by_name(self, ctx, guild_name):
+        """Lookup by name.
+
+        Returns list of possible matches.
+
+        Try doing an exact match.
+        Fall back to inexact match.
+
+        Will only return matches if ctx.author is in the guild.
+        """
+
+        result = discord.utils.find(lambda g: g.name == guild_name and g.get_member(ctx.author.id), ctx.bot.guilds)
+        if result:
+            return [result]
+
+        guild_name = guild_name.lower()
+
+        return [g for g in ctx.bot.guilds if g.name.lower() == guild_name and g.get_member(ctx.author.id)]
+
+    async def find_match(self, ctx, argument):
+        """Get a match...
+
+        If we have a number, try lookup by id.
+        Fallback to lookup by name.
+        Only allow matches where ctx.author shares a guild.
+
+        Disambiguate in case we have multiple name results.
+        """
+        lax_id_match = lax_id_regex.match(argument)
+        if lax_id_match:
+            result = ctx.bot.get_guild(int(lax_id_match.group(1)))
+
+            if result and result.get_member(ctx.author.id):
+                return result
+
+        results = self.get_by_name(ctx, argument)
+        if results:
+            return await disambiguate(ctx, results, sort=lambda x: (x.name, x.id))
+
+    async def convert(self, ctx, argument):
+        match = await self.find_match(ctx, argument)
+
+        if not match:
+            raise errors.BadArgument(
+                """Guild "{}" not found, or you aren't a member""".format(argument))
+        return match
+
+
 ChannelConverter = typing.Union[
     converter.TextChannelConverter,
     converter.VoiceChannelConverter,
@@ -275,6 +326,14 @@ class MessageConverter(Converter):
         elif msg.channel.id != channel.id:
             raise errors.BadArgument("Message not found")
         return msg
+
+
+class CurrentGuild(CustomDefault):
+
+    async def default(self, ctx, param):
+        if not ctx.guild:
+            raise errors.MissingRequiredArgument(param)
+        return ctx.guild
 
 
 class AuthorAvatar(CustomDefault):
