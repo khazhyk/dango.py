@@ -127,6 +127,7 @@ class UserMemberConverter(Converter):
 
     async def get_by_id(self, ctx, user_id):
         """Exact user_id lookup."""
+        result = None
         if ctx.guild:
             result = ctx.guild.get_member(user_id)
         if not result:
