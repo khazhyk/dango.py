@@ -10,6 +10,7 @@ from dango import dcog, Cog
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import converter
+from discord.ext.commands import default
 from discord.ext.commands import errors
 from discord.utils import cached_property
 import humanize
@@ -44,6 +45,17 @@ def osu_map_url(value):
     elif match.group("beatmap"):
         return dict(beatmap=match.group("beatmap"))
     raise errors.BadArgument("Not recognized as a beatmap url!")
+
+
+def get_mode(command_name: str):
+    if command_name.startswith("osu"):
+        return OsuMode.osu
+    if command_name.startswith("taiko"):
+        return OsuMode.taiko
+    if command_name.startswith("mania"):
+        return OsuMode.mania
+    if command_name.startswith("ctb"):
+        return OsuMode.ctb
 
 
 class OsuRichPresence:
@@ -185,6 +197,62 @@ class Osu(Cog):
         self._beatmap_cache[beatmap_id] = beatmaps[0]
         return beatmaps[0]
 
+    @command(aliases=['taikotop', 'ctbtop', 'maniatop'])
+    async def osutop(self, ctx, *, account: StringOrMentionConverter=default.Author):
+        """Show a user's top osu plays."""
+        mode = get_mode(ctx.invoked_with)
+
+        with ctx.typing():
+            if isinstance(account, discord.abc.User):
+                osu_acct = await self._get_osu_account(ctx, account, mode)
+            else:
+                osu_acct = await self._lookup_acct(account, mode=mode)
+
+            top_scores = await self.osuapi.get_user_best(
+                osu_acct.user_id, mode=mode)
+
+        embed = discord.Embed()
+        embed.title = osu_acct.username
+        embed.url = "https://osu.ppy.sh/u/%s" % osu_acct.user_id
+        embed.color = hash(str(osu_acct.user_id)) % (1 << 24)
+        if isinstance(account, discord.abc.User):
+            embed.set_author(
+                name=str(account), icon_url=account.avatar_url_as(static_format="png"))
+
+        if not top_scores:
+            embed.description = "%s has not played %s" % (
+                osu_acct.username, mode.name)
+        else:
+            map_descriptions = []
+
+            expected_len = 0
+
+            for score in top_scores:
+                beatmap = await self._get_beatmap(score.beatmap_id)
+                if not beatmap:
+                    continue
+
+                entry = (
+                    "**{pp}pp - {rank}{mods} - {score.score:,} ({percent:.2f}%) {score.maxcombo}x - {map.difficultyrating:.2f} Stars** - {ago}\n"
+                    "[{map.artist} - {map.title}[{map.version}]]({map.url}) by [{map.creator}](https://osu.ppy.sh/u/{map.creator_id})").format(
+                        pp=score.pp,
+                        rank=score.rank.upper(),
+                        mods=" +{:s}".format(score.enabled_mods) if score.enabled_mods.value else "",
+                        percent=100*score.accuracy(mode),
+                        ago=humanize.naturaltime(score.date + DATE_OFFSET),
+                        score=score,
+                        map=beatmap)
+
+                if expected_len + len(entry) + 1 <= 2048:
+                    map_descriptions.append(entry)
+                    expected_len += len(entry) + 1
+                else:
+                    break
+
+            embed.description = "\n".join(map_descriptions)
+
+        await ctx.send(embed=embed)
+
     @command(aliases=['taikorecent', 'ctbrecent', 'maniarecent'])
     async def osurecent(self, ctx, *, account: StringOrMentionConverter=None):
         """Show a user's recent osu plays.
@@ -213,8 +281,6 @@ class Osu(Cog):
 
             recent_scores = await self.osuapi.get_user_recent(
                 osu_acct.user_id, mode=mode)
-
-        embed = discord.Embed()
 
         embed = discord.Embed()
         embed.title = osu_acct.username
