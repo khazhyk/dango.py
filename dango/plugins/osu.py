@@ -254,26 +254,16 @@ class Osu(Cog):
         await ctx.send(embed=embed)
 
     @command(aliases=['taikorecent', 'ctbrecent', 'maniarecent'])
-    async def osurecent(self, ctx, *, account: StringOrMentionConverter=None):
+    async def osurecent(self, ctx, *, account: StringOrMentionConverter=default.Author):
         """Show a user's recent osu plays.
 
         Use + to give a raw account name. e.g.:
         osu +cookiezi
         osu @ppy
         """
-        account = account or ctx.message.author
-
-        mode = {
-            'osurecent': OsuMode.osu,
-            'taikorecent': OsuMode.taiko,
-            'maniarecent': OsuMode.mania,
-            'ctbrecent': OsuMode.ctb
-        }[ctx.invoked_with]
+        mode = get_mode(ctx.invoked_with)
 
         with ctx.typing():
-            if account is None:
-                raise errors.BadArgument("Invalid mention...!")
-
             if isinstance(account, discord.abc.User):
                 osu_acct = await self._get_osu_account(ctx, account, mode)
             else:
@@ -324,26 +314,16 @@ class Osu(Cog):
         await ctx.send(embed=embed)
 
     @command(pass_context=True, aliases=['taiko', 'ctb', 'mania'])
-    async def osu(self, ctx, *, account: StringOrMentionConverter=None):
+    async def osu(self, ctx, *, account: StringOrMentionConverter=default.Author):
         """Show a user's osu profile.
 
         Use + to give a raw account name. e.g.:
         osu +cookiezi
         osu @ppy
         """
-        account = account or ctx.message.author
-
-        mode = {
-            'osu': OsuMode.osu,
-            'taiko': OsuMode.taiko,
-            'mania': OsuMode.mania,
-            'ctb': OsuMode.ctb
-        }[ctx.invoked_with]
+        mode = get_mode(ctx.invoked_with)
 
         with ctx.typing():
-            if account is None:
-                raise errors.BadArgument("Invalid mention...!")
-
             if isinstance(account, discord.abc.User):
                 osu_acct = await self._get_osu_account(ctx, account, mode)
             else:
