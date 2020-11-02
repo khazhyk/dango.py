@@ -298,7 +298,7 @@ def loading_emoji(ctx):
     return _LoadingEmojiContext(ctx)
 
 def jump_url(message):
-  return "<https://discordapp.com/channels/{0.channel.guild.id}/{0.channel.id}/{0.id}>".format(message)
+  return "<https://discord.com/channels/{0.channel.guild.id}/{0.channel.id}/{0.id}>".format(message)
 
 class AliasCmd(discord.ext.commands.Command):
     def __init__(self, name, alias, owner, bypass=False):
@@ -362,7 +362,7 @@ def escape_invis_chars(input):
 async def fetch_image(url):
     """Fetch the given image."""
     url = str(url)
-    # Workaround https://github.com/aio-libs/aiohttp/issues/3426            
+    # Workaround https://github.com/aio-libs/aiohttp/issues/3426
     async with aiohttp.ClientSession(
             connector=aiohttp.TCPConnector(enable_cleanup_closed=True)) as sess:
         # proxy_url must be passed exactly - encoded=True

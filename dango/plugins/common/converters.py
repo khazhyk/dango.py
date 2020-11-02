@@ -275,7 +275,7 @@ class AnyImage(Converter):
 
 MESSAGE_ID_RE = re.compile(r'^(?:(?P<channel_id>[0-9]{15,21})[-/:])?(?P<message_id>[0-9]{15,21})$')
 MESSAGE_LINK_RE = re.compile(
-    r'^https?://(?:(ptb|canary)\.)?discordapp\.com/channels/'
+    r'^https?://(?:(ptb|canary)\.)?discord(?:app)?\.com/channels/'
     r'(?:([0-9]{15,21})|(@me))'
     r'/(?P<channel_id>[0-9]{15,21})/(?P<message_id>[0-9]{15,21})$')
 
