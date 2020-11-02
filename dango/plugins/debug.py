@@ -223,7 +223,7 @@ class Debug(Cog):
                 await ctx.bot.user.edit(avatar=await resp.read())
         await ctx.message.add_reaction(":helYea:236243426662678528")
 
-    @command()
+    @command(aliases=["jumptest"])
     async def do_jumps_work_in_embeds_yet(self, ctx):
         embed = discord.Embed(
             description="[Jump!](%s)" % ctx.message.jump_url,
