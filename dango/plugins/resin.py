@@ -50,9 +50,10 @@ class Resin(Cog):
 
             if last_count is not None and last_date_timestamp:
                 last_date = datetime.fromtimestamp(last_date_timestamp, timezone.utc)
-
-            minutes_since_last_set = (right_now - last_date).total_seconds() // 60
-            current = min(last_count + (minutes_since_last_set//RESIN_INTERVAL), RESIN_CAP)
+                minutes_since_last_set = (right_now - last_date).total_seconds() // 60
+                current = min(last_count + (minutes_since_last_set//RESIN_INTERVAL), RESIN_CAP)
+            else:
+                current = None
 
         if current is None:
             raise errors.BadArgument("I don't know, set ur resin at least once")
