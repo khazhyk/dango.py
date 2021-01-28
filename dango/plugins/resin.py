@@ -12,7 +12,6 @@ class ScheduledTasks(Cog):
 
 class Localization(Cog):
     """Allow users to store timezones and such, to format times and such."""
-    pass
 
 
 RESIN_CAP = 160
@@ -22,6 +21,26 @@ INTERESTING_POINTS = [20, 40, 60, 80, 120, RESIN_CAP]
 
 def tzs(dt):
     return dt.astimezone(tz=None).replace(tzinfo=None)
+
+
+def resin_embed(current, last_resin=None, last_minutes_ago=None):
+    if last_resin is None:
+        last_resin = current
+        last_minutes_ago = 0
+
+    the_embed = discord.Embed()
+    the_embed.description = f"**Current:** {current}/{RESIN_CAP}"
+
+    for resin_point in INTERESTING_POINTS:
+        if current >= resin_point:
+            continue
+
+        minutes_until = (RESIN_INTERVAL * (resin_point - last_resin)) - last_minutes_ago
+
+        the_embed.add_field(name=f"{resin_point}/{RESIN_CAP}",
+            value=f"{humanize.precisedelta(timedelta(minutes=minutes_until))} from now")
+    return the_embed
+
 
 @dcog(depends=["AttributeStore"])
 class Resin(Cog):
@@ -58,25 +77,17 @@ class Resin(Cog):
         if current is None:
             raise errors.BadArgument("I don't know, set ur resin at least once")
 
-        remaining = RESIN_CAP - current
-
-
-        the_embed = discord.Embed()
-        the_embed.description = f"**Current:** {current}/{RESIN_CAP}"
-
-        for resin_point in INTERESTING_POINTS:
-            if current >= resin_point:
-                continue
-
-            minutes_until = (RESIN_INTERVAL * (resin_point - last_count)) - minutes_since_last_set
-
-            the_embed.add_field(name=f"{resin_point}/{RESIN_CAP}",
-                value=f"{humanize.precisedelta(timedelta(minutes=minutes_until))} from now")
-
+        the_embed = resin_embed(current, last_count, minutes_since_last_set)
         # Abuse timestamp localization
         the_embed.set_footer(text="Resin last set")
         the_embed.timestamp = last_date
 
+        # Show current status
+        await ctx.send(embed=the_embed)
+
+    @resin.command(name="if")
+    async def if_(self, ctx, current: int = None):
+        the_embed = resin_embed(current)
         # Show current status
         await ctx.send(embed=the_embed)
 
