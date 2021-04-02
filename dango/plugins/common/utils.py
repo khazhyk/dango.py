@@ -228,6 +228,11 @@ class InfoBuilder:
             clean_invite_embed(clean_triple_backtick(clean_mentions(
                 "\n".join(value_format(k, v, col_len) for k, v in self.fields)))))
 
+    def as_file(self):
+        col_len = max(len(name) for name, _ in self.fields)
+
+        return discord.File(io.StringIO("\n".join(value_format(k, v, col_len) for k, v in self.fields)), filename="info.prolog")
+
     def embed(self):
         e = discord.Embed()
         for k, v in self.fields:
