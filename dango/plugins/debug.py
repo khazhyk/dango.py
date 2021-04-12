@@ -119,7 +119,7 @@ class Debug(Cog):
     @checks.is_owner()
     async def die(self, ctx):
         await ctx.message.add_reaction(":discordok:293495010719170560")
-        await ctx.bot.logout()
+        await ctx.bot.close()
 
     @command()
     @checks.is_owner()

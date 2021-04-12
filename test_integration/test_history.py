@@ -32,7 +32,7 @@ class FetchMessageTest(unittest.TestCase):
     @classmethod
     @async_test
     async def tearDownClass(cls):
-        await cls.bot.logout()
+        await cls.bot.close()
         await cls.task
 
     @async_test
@@ -68,7 +68,7 @@ class HistoryIteratorTest(unittest.TestCase):
     @classmethod
     @async_test
     async def tearDownClass(cls):
-        await cls.bot.logout()
+        await cls.bot.close()
         await cls.task
 
     @async_test
