@@ -217,7 +217,7 @@ class ModInfo(Cog):
     @checks.author_needs(["view_audit_log"])
     @checks.bot_needs(["view_audit_log"])
     async def audinfo(self, ctx, *, user_id: int):
-        """This would be useful if audit logs lasted more than 14 days..."""
+        """This would be useful if audit logs lasted more than 45 days..."""
         matches = []
         # TODO - a cache would be nice here...
         async for event in ctx.guild.audit_logs(limit=None):
