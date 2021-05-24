@@ -17,7 +17,11 @@ from .common import utils
 
 try:
     from pip._internal.utils import misc as pip_utils_misc
-    discord_version = pip_utils_misc.get_installed_version("discord.py")
+    try:
+        discord_version = pip_utils_misc.get_installed_version("discord.py")
+    except AttributeError:
+        discord_version = discord.utils.get(
+            pip_utils_misc.get_installed_distributions(), project_name="discord.py").version
 except ImportError:
     try:
         from pip import util as pip_utils
