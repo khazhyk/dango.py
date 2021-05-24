@@ -14,6 +14,7 @@ import tabulate
 import logging
 
 from .common import converters
+from .common import checks
 from .common import utils
 from .common.utils import InfoBuilder
 from .common.paginator import GroupLinesPaginator
@@ -189,6 +190,50 @@ def activity_string(activity):
         log.warning("Unhandled activity type: {} {}".format(
             type(activity), activity))
         return str(activity)
+
+
+@dcog()
+class ModInfo(Cog):
+    """Lookup bans or audit logs."""
+
+    def __init__(self, config):
+        pass
+
+    @command()
+    @commands.guild_only()
+    @checks.author_needs(["ban_members"])
+    @checks.bot_needs(["ban_members"])
+    async def baninfo(self, ctx, *, user_id: int):
+        """Because looking up by ID doesn't work in the UI and is 100x easier."""
+        for ban in await ctx.guild.bans():
+            if ban.user.id == user_id:
+                await ctx.send(f"{ban.user} was banned for {ban.reason}")
+                return
+        await ctx.send("No bans match")
+
+
+    @command()
+    @commands.guild_only()
+    @checks.author_needs(["view_audit_log"])
+    @checks.bot_needs(["view_audit_log"])
+    async def audinfo(self, ctx, *, user_id: int):
+        """This would be useful if audit logs lasted more than 14 days..."""
+        matches = []
+        # TODO - a cache would be nice here...
+        async for event in ctx.guild.audit_logs(limit=None):
+            if not event.target or event.target.id != user_id:
+                continue
+            if event.action == discord.AuditLogAction.kick:
+                matches.append(f"{event.target} was kicked by {event.user} for {event.reason} at {event.created_at}")
+            elif event.action == discord.AuditLogAction.ban:
+                matches.append(f"{event.target} was banned by {event.user} for {event.reason} at {event.created_at}")
+            elif event.action == discord.AuditLogAction.unban:
+                matches.append(f"{event.target} was unbanned by {event.user} for {event.reason} at {event.created_at}")
+
+        if matches:
+            await ctx.send("\n".join(matches))
+        else:
+            await ctx.send("No records match")
 
 
 @dcog()
