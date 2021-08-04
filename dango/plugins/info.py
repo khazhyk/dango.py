@@ -220,15 +220,16 @@ class ModInfo(Cog):
         """This would be useful if audit logs lasted more than 45 days..."""
         matches = []
         # TODO - a cache would be nice here...
-        async for event in ctx.guild.audit_logs(limit=None):
-            if not event.target or event.target.id != user_id:
-                continue
-            if event.action == discord.AuditLogAction.kick:
-                matches.append(f"{event.target} was kicked by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
-            elif event.action == discord.AuditLogAction.ban:
-                matches.append(f"{event.target} was banned by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
-            elif event.action == discord.AuditLogAction.unban:
-                matches.append(f"{event.target} was unbanned by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
+        with ctx.typing():
+            async for event in ctx.guild.audit_logs(limit=None):
+                if not event.target or event.target.id != user_id:
+                    continue
+                if event.action == discord.AuditLogAction.kick:
+                    matches.append(f"{event.target} was kicked by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
+                elif event.action == discord.AuditLogAction.ban:
+                    matches.append(f"{event.target} was banned by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
+                elif event.action == discord.AuditLogAction.unban:
+                    matches.append(f"{event.target} was unbanned by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
 
         if matches:
             await ctx.send("\n".join(matches))
