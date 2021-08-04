@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 import copy
 import codecs
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import io
 import os
@@ -399,3 +399,8 @@ async def fetch_image(url):
                     raise errors.BadArgument("File too big")
             source_bytes = b''.join(blocks)
     return source_bytes
+
+
+def format_utcdt(the_dt, formatcode="f"):
+    return f"<t:{int(the_dt.replace(tzinfo=timezone.utc).timestamp())}:{formatcode}>"
+

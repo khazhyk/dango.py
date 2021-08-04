@@ -16,7 +16,7 @@ import logging
 from .common import converters
 from .common import checks
 from .common import utils
-from .common.utils import InfoBuilder
+from .common.utils import InfoBuilder, format_utcdt
 from .common.paginator import GroupLinesPaginator
 
 log = logging.getLogger(__name__)
@@ -224,11 +224,11 @@ class ModInfo(Cog):
             if not event.target or event.target.id != user_id:
                 continue
             if event.action == discord.AuditLogAction.kick:
-                matches.append(f"{event.target} was kicked by {event.user} for {event.reason} at {event.created_at}")
+                matches.append(f"{event.target} was kicked by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
             elif event.action == discord.AuditLogAction.ban:
-                matches.append(f"{event.target} was banned by {event.user} for {event.reason} at {event.created_at}")
+                matches.append(f"{event.target} was banned by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
             elif event.action == discord.AuditLogAction.unban:
-                matches.append(f"{event.target} was unbanned by {event.user} for {event.reason} at {event.created_at}")
+                matches.append(f"{event.target} was unbanned by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
 
         if matches:
             await ctx.send("\n".join(matches))
