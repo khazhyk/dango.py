@@ -230,9 +230,18 @@ class ModInfo(Cog):
                     matches.append(f"{event.target} was banned by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
                 elif event.action == discord.AuditLogAction.unban:
                     matches.append(f"{event.target} was unbanned by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
+                elif event.action == discord.AuditLogAction.member_role_update:
+                    removed = set(event.before.roles) - set(event.after.roles)
+                    added = set(event.after.roles) - set(event.before.roles)
+                    if removed:
+                        removed = ", ".join(r.mention for r in removed)
+                        matches.append(f"{event.target} had roles {removed} removed by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
+                    if added:
+                        added = ", ".join(r.mention for r in added)
+                        matches.append(f"{event.target} had roles {added} added by {event.user} for {event.reason} at {format_utcdt(event.created_at)}")
 
         if matches:
-            await ctx.send("\n".join(matches))
+            await ctx.send("\n".join(matches), allowed_mentions=discord.AllowedMentions.none())
         else:
             await ctx.send("No records match")
 
