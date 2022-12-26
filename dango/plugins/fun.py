@@ -36,7 +36,7 @@ from .common import checks
 from .common import img_utils
 from .common.utils import AliasCmd, fetch_image
 
-ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4'}
 
 
 def _allowed_ext(filename):
