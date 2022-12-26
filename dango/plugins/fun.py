@@ -362,7 +362,12 @@ class ImgFun(Cog):
             # First, convert to jpeg
             first_frame = Image.open(io.BytesIO(inset))
             jpeg_buff = io.BytesIO()
-            jpeg_frame = first_frame.convert("RGB")
+            if first_frame.mode == "RGBA":
+                jpeg_frame = Image.new("RGBA", (first_frame.width, first_frame.height), "Black")
+                jpeg_frame.paste(first_frame, (0,0), mask=first_frame)
+            else:
+                jpeg_frame = first_frame
+            jpeg_frame = jpeg_frame.convert("RGB")
             jpeg_frame.save(jpeg_buff, "jpeg")
             jpeg_buff.seek(0)
             inset = jpeg_buff.read()
