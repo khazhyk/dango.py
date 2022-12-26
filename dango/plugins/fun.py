@@ -349,6 +349,45 @@ class ImgFun(Cog):
             img_buff = await ctx.bot.loop.run_in_executor(None, self.make_triggered, content)
             await ctx.send(file=discord.File(img_buff, filename="TRIGGERED.gif"))
 
+    @command()
+    @checks.bot_needs(["attach_files"])
+    async def glitch(self, ctx, *, url: converters.AnyImage=converters.AuthorAvatar):
+        def make_glitch(inset):
+            def corrupt(img_buff):
+                img_buff = bytearray(img_buff)
+                for i in range(random.randint(1, 25)):
+                    img_buff[random.randint(0, len(img_buff) - 1)] = random.randint(1, 254)
+                return img_buff
+
+            # First, convert to jpeg
+            first_frame = Image.open(io.BytesIO(inset))
+            jpeg_buff = io.BytesIO()
+            jpeg_frame = first_frame.convert("RGB")
+            jpeg_frame.save(jpeg_buff, "jpeg")
+            jpeg_buff.seek(0)
+            inset = jpeg_buff.read()
+
+            # Then corrupt a bit...
+            frames = []
+            for _ in range(50):
+                try:
+                    frame = Image.open(io.BytesIO(corrupt(inset)))
+                    frame = frame.convert("P", dither=False)
+                except OSError:
+                    continue
+                frames.append(frame)
+
+            buff = io.BytesIO()
+            first_frame.save(buff, "gif", save_all=True, append_images=frames,
+                             duration=100, loop=0xffff)
+            buff.seek(0)
+            return buff
+
+        with ctx.typing():
+            content = await fetch_image(url)
+            img_buff = await ctx.bot.loop.run_in_executor(None, make_glitch, content)
+            await ctx.send(file=discord.File(img_buff, filename="glitch.gif"))
+
     @staticmethod
     def make_crab_rave(res_dir, text, working_dir):
         """make crab crab_rave.
