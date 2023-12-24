@@ -5,6 +5,7 @@ on:
       - master
 jobs:
   build:
+    environment: Discord Test
     runs-on: '${{ matrix.os }}'
     strategy:
       matrix:
