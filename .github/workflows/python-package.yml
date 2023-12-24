@@ -20,6 +20,8 @@ jobs:
           - '3.12'
     steps:
       - name: 'Set up Python ${{ matrix.python-version }}'
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         uses: actions/setup-python@v2
         with:
           python-version: '${{ matrix.python-version }}'
