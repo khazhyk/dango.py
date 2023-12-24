@@ -1,0 +1,32 @@
+name: Run Tests
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: '${{ matrix.os }}'
+    strategy:
+      matrix:
+        os:
+          - ubuntu-18.04
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+          - '3.10'
+          - '3.11'
+          - '3.12'
+    steps:
+      - name: 'Set up Python ${{ matrix.python-version }}'
+        uses: actions/setup-python@v2
+        with:
+          python-version: '${{ matrix.python-version }}'
+      - uses: actions/checkout@v2
+      - run: pip install -r requirements.txt
+      - run: psql -c 'create database spootest;' -U postgres
+      - run: psql spootest < scripts/nametracking.sql
+      - run: psql spootest < scripts/last_seen.sql
+      - run: 'export PYTHONPATH=$PYTHONPATH:$(pwd)'
+      - run: pytest -vs
