@@ -77,7 +77,7 @@ class Mentions(Cog):
         """Grab the last 4 messages before a message and format it properly."""
         context = [message]
 
-        async for msg in utils.CachedHistoryIterator(message.channel, limit=4, before=message):
+        async for msg in utils.cached_history(self.bot, message.channel, limit=4, before=message):
             context.append(msg)
 
         context_msg = [

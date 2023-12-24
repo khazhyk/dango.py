@@ -34,7 +34,7 @@ class AttributeStore(Cog):
         self._lru_types = set()
 
         # Member can't be LRU mapped if we have multi-process bot.
-        self.register_mapping(discord.abc.User, 'member')
+        self.register_mapping(discord.user._UserTag, 'member')
         self.register_mapping(discord.Guild, 'server')
         self.register_mapping(discord.TextChannel, 'channel')
 
@@ -54,9 +54,9 @@ class AttributeStore(Cog):
 
     async def _get_redis(self, item_type, item_id):
         async with self.redis.acquire() as conn:
-            res = await conn.get(_redis_key(item_type, item_id), encoding='utf8')
+            res = await conn.get(_redis_key(item_type, item_id))
             if res:
-                return json.loads(res)
+                return json.loads(res.decode("utf8"))
 
     async def _put_redis(self, item_type, item_id, value):
         async with self.redis.acquire() as conn:

@@ -34,11 +34,9 @@ class Redis(Cog):
 
     async def _connect(self):
         try:
-            self._pool = await aioredis.create_redis_pool(
-                (self.host(), self.port()),
-                db=self.db(),
-                minsize=self.minsize(),
-                maxsize=self.maxsize()
+            self._pool = await aioredis.from_url(
+                f"redis://{self.host()}:{self.port()}/{self.db()}",
+                decode_responses=False
             )
             self._ready.set()
         except Exception:
@@ -47,16 +45,18 @@ class Redis(Cog):
 
     async def _acquire(self):
         await self._ready.wait()
-        # Bizzare interface, awaiting the pool gives us a context manager
-        # for an individual connection.
-        return await self._pool
+        return self._pool.client()
+        
+        # # Bizzare interface, awaiting the pool gives us a context manager
+        # # for an individual connection.
+        # return await self._pool
 
     async def _cleanup(self):
         await self._unheld.wait()
         self._pool.close()
 
     def acquire(self):
-        return utils.ContextWrapper(self._acquire())
+        return utils.AsyncContextWrapper(self._acquire())
 
     def cog_unload(self):
         self._connect_task.cancel()

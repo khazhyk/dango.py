@@ -16,19 +16,22 @@ from .common import converters
 from .common import utils
 
 try:
-    from pip._internal.utils import misc as pip_utils_misc
     try:
-        discord_version = pip_utils_misc.get_installed_version("discord.py")
-    except AttributeError:
-        discord_version = discord.utils.get(
-            pip_utils_misc.get_installed_distributions(), project_name="discord.py").version
-except ImportError:
-    try:
-        from pip import util as pip_utils
+        from pip._internal.utils import misc as pip_utils_misc
+        try:
+            discord_version = pip_utils_misc.get_installed_version("discord.py")
+        except AttributeError:
+            discord_version = discord.utils.get(
+                pip_utils_misc.get_installed_distributions(), project_name="discord.py").version
     except ImportError:
-        from pip import utils as pip_utils
-    discord_version = discord.utils.get(
-        pip_utils.get_installed_distributions(), project_name="discord.py").version
+        try:
+            from pip import util as pip_utils
+        except ImportError:
+            from pip import utils as pip_utils
+        discord_version = discord.utils.get(
+            pip_utils.get_installed_distributions(), project_name="discord.py").version
+except:
+    discord_version = "unknown"
 
 
 SOURCE_URL = "https://github.com/khazhyk/dango.py/tree/master"
@@ -145,7 +148,7 @@ class Meta(Cog):
 
         invite_url = discord.utils.oauth_url(
                 self._application_info.id,
-                discord.Permissions(-1)  # TODO
+                permissions=discord.Permissions(-1)  # TODO
         )
 
         embed = discord.Embed(
@@ -155,8 +158,8 @@ class Meta(Cog):
         embed.color = 0xb19bd9
 
         embed.set_author(
-            name=ctx.bot.user.name, icon_url=ctx.bot.user.avatar_url_as(static_format="png"))
-        embed.set_thumbnail(url=ctx.bot.user.avatar_url_as(static_format="png"))
+            name=ctx.bot.user.name, icon_url=ctx.bot.user.avatar.replace(static_format="png"))
+        embed.set_thumbnail(url=ctx.bot.user.avatar.replace(static_format="png"))
 
         servers = len(ctx.bot.guilds)
         members = sum(len(g.members) for g in ctx.bot.guilds)

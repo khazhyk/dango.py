@@ -39,6 +39,7 @@ def raster_font_textwrap(text, wrap_width, font) -> list:
         lines = text.split("\n")
         return list(itertools.chain(*(raster_font_textwrap(line, wrap_width, font) for line in lines)))
     else:
-        avg_width, _ = font.getsize(text)
+        left, _, right, _ = font.getbbox(text)
+        avg_width = right - left
         px_per_char = max(avg_width / len(text), 1)
         return textwrap.wrap(text, int(wrap_width / px_per_char))

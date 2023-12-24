@@ -198,7 +198,7 @@ class Minecraft(Cog):
 
     @command()
     async def mcstatus(self, ctx, *, server):
-        with ctx.typing():
+        async with ctx.typing():
             status = await ctx.bot.loop.run_in_executor(None, lookup_and_status, server)
 
         await ctx.send(**self.mcstatus_message(status))

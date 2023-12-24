@@ -153,7 +153,7 @@ class ImgFun(Cog):
     async def corrupt(self, ctx, *, user: converters.UserMemberConverter=None):
         """Corrupt a user's avatar."""
         user = user or ctx.message.author
-        img_buff = bytearray(await fetch_image(user.avatar_url_as(format="jpg")))
+        img_buff = bytearray(await fetch_image(user.avatar.replace(format="jpg")))
         for i in range(random.randint(5, 25)):
             img_buff[random.randint(0, len(img_buff))] = random.randint(1, 254)
         await ctx.send(file=discord.File(io.BytesIO(img_buff), filename="img.jpg"))
@@ -220,7 +220,7 @@ class ImgFun(Cog):
 
         start = time.time()
         async with ctx.typing():
-            avys = await asyncio.gather(*[fetch_image(t.avatar_url_as(format="png")) for t in [source] + list(dest)])
+            avys = await asyncio.gather(*[fetch_image(t.avatar.replace(format="png")) for t in [source] + list(dest)])
             avys = [io.BytesIO(a) for a in avys]
             img_buff = await ctx.bot.loop.run_in_executor(None,
                     self._gifmap, avys
@@ -276,7 +276,7 @@ class ImgFun(Cog):
     @checks.bot_needs(["attach_files"])
     async def dont(self, ctx, *, url: converters.AnyImage=converters.AuthorAvatar):
         """dont run me or my son ever again"""
-        with ctx.typing():
+        async with ctx.typing():
             content = await fetch_image(url)
             img_buff = await ctx.bot.loop.run_in_executor(None, self.make_dont_image, content)
 
@@ -306,7 +306,7 @@ class ImgFun(Cog):
     @checks.bot_needs(["attach_files"])
     async def rip(self, ctx, *, url: converters.AnyImage=converters.AuthorAvatar):
         """RIP in Peace."""
-        with ctx.typing():
+        async with ctx.typing():
             content = await fetch_image(url)
             img_buff = await ctx.bot.loop.run_in_executor(None, self.make_rip, content)
             await ctx.send(file=discord.File(img_buff, filename="rip.png"))
@@ -344,7 +344,7 @@ class ImgFun(Cog):
     async def triggered(self, ctx, *, url: converters.AnyImage=converters.AuthorAvatar):
         """TRIGGERED."""
 
-        with ctx.typing():
+        async with ctx.typing():
             content = await fetch_image(url)
             img_buff = await ctx.bot.loop.run_in_executor(None, self.make_triggered, content)
             await ctx.send(file=discord.File(img_buff, filename="TRIGGERED.gif"))
@@ -388,7 +388,7 @@ class ImgFun(Cog):
             buff.seek(0)
             return buff
 
-        with ctx.typing():
+        async with ctx.typing():
             content = await fetch_image(url)
             img_buff = await ctx.bot.loop.run_in_executor(None, make_glitch, content)
             await ctx.send(file=discord.File(img_buff, filename="glitch.gif"))
@@ -441,7 +441,9 @@ class ImgFun(Cog):
         # Initial top pad to center vertically
         top_pad = -(line_height * len(lines) / 2) + (line_height - font_height)
         for line in lines:
-            text_x, text_y = font.getsize(line)
+            left, top, right, bottom = font.getbbox(line)
+            text_x = right - left
+            text_y = bottom - top
             text_pos = (center_x - text_x/2, center_y + top_pad)
             top_pad += line_height
             # We draw one by one because it lets me do custom centering
@@ -460,7 +462,7 @@ class ImgFun(Cog):
     @max_concurrency(2, per=BucketType.guild, wait=False)
     async def crab_rave(self, ctx, *, content="DISCORD IS DEAD"):
         """DISCORD IS DEAD."""
-        with ctx.typing():
+        async with ctx.typing():
             with tempfile.TemporaryDirectory(prefix="crab_rave_nonsense") as working_dir:
                 await ctx.bot.loop.run_in_executor(self.process_executor, self.make_crab_rave, self.res.dir(), content, working_dir)
                 await ctx.send(file=discord.File(
@@ -487,7 +489,7 @@ class ImgFun(Cog):
         """They're dead. Deal with it already.
 
         @roadcrosser"""
-        with ctx.typing():
+        async with ctx.typing():
             content = await fetch_image(url)
             img_buff = await ctx.bot.loop.run_in_executor(None, self.make_dead, content)
             await ctx.send(file=discord.File(img_buff, filename="dead.png"))
@@ -504,7 +506,7 @@ class ImgFun(Cog):
     @command()
     @checks.bot_needs(["attach_files"])
     async def needsmorejpeg(self, ctx, url=converters.LastImage):
-        with ctx.typing():
+        async with ctx.typing():
             content = await fetch_image(url)
             jpeg_buff = await ctx.bot.loop.run_in_executor(None, self.make_more_jpeg, content)
             await ctx.send(file=discord.File(jpeg_buff, filename="more_jpeg.jpg"))
@@ -534,7 +536,9 @@ class ImgFun(Cog):
                 sublines = reversed(sublines)
 
             for subtext in sublines:
-                w, h_ = font.getsize(subtext)
+                left, top, right, bottom = font.getbbox(subtext)
+                w = right - left
+                h_ = bottom - top
 
                 h = h_ - top_pad * (-1 if lines_go_up else 1)
                 top_pad += h_ * 1.2

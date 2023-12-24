@@ -9,11 +9,10 @@ class TestTypeInheritanceMap(unittest.TestCase):
     def test_lookup(self):
         m = utils.TypeMap()
 
-        m.put(discord.abc.User, "something")
+        m.put(discord.user._UserTag, "something")
         m.put(discord.TextChannel, "something else")
         m.put(discord.Guild, "another thing")
 
-        self.assertEqual("something", m.lookup(discord.abc.User))
         self.assertEqual("something", m.lookup(discord.User))
         self.assertEqual("something", m.lookup(discord.Member))
         self.assertEqual("something else", m.lookup(discord.TextChannel))
@@ -21,12 +20,11 @@ class TestTypeInheritanceMap(unittest.TestCase):
 
     def test_constructed(self):
         m = utils.TypeMap({
-            discord.abc.User: "something",
+            discord.user._UserTag: "something",
             discord.TextChannel: "something else",
             discord.Guild: "another thing"
         })
 
-        self.assertEqual("something", m.lookup(discord.abc.User))
         self.assertEqual("something", m.lookup(discord.User))
         self.assertEqual("something", m.lookup(discord.Member))
         self.assertEqual("something else", m.lookup(discord.TextChannel))
@@ -127,12 +125,12 @@ class TestFormattingUtils(unittest.TestCase):
 
     def test_clean_newline(self):
         samples = [
-            ["\`\`\` test triple", "``` test triple"],
+            [r"\`\`\` test triple", "``` test triple"],
             ["``` test triple with `", "``` test triple with `"],
-            ["Test `backtick` with extra \`", "Test `backtick` with extra `"],
-            ['\`test command', '`test command'],
-            ['backtick at end\`', 'backtick at end`'],
-            ['double backtick \`\`', 'double backtick ``']
+            [r"Test `backtick` with extra \`", "Test `backtick` with extra `"],
+            [r'\`test command', '`test command'],
+            [r'backtick at end\`', 'backtick at end`'],
+            [r'double backtick \`\`', 'double backtick ``']
         ]
 
         for sample in samples:

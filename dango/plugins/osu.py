@@ -10,7 +10,7 @@ from dango import dcog, Cog
 import discord
 from discord.ext.commands import command
 from discord.ext.commands import converter
-from discord.ext.commands import default
+from discord.ext.commands import parameters
 from discord.ext.commands import errors
 from discord.utils import cached_property
 import humanize
@@ -130,7 +130,7 @@ class Osu(Cog):
     @command()
     async def setosu(self, ctx, *, username: str):
         """Set your osu account to be remembered by the bot."""
-        with ctx.typing():
+        async with ctx.typing():
             osu_acct = await self._set_osu_username(ctx.message.author, username)
 
         await ctx.send(
@@ -198,11 +198,11 @@ class Osu(Cog):
         return beatmaps[0]
 
     @command(aliases=['taikotop', 'ctbtop', 'maniatop'])
-    async def osutop(self, ctx, *, account: StringOrMentionConverter=default.Author):
+    async def osutop(self, ctx, *, account: StringOrMentionConverter=parameters.Author):
         """Show a user's top osu plays."""
         mode = get_mode(ctx.invoked_with)
 
-        with ctx.typing():
+        async with ctx.typing():
             if isinstance(account, discord.abc.User):
                 osu_acct = await self._get_osu_account(ctx, account, mode)
             else:
@@ -217,7 +217,7 @@ class Osu(Cog):
         embed.color = hash(str(osu_acct.user_id)) % (1 << 24)
         if isinstance(account, discord.abc.User):
             embed.set_author(
-                name=str(account), icon_url=account.avatar_url_as(static_format="png"))
+                name=str(account), icon_url=account.avatar.replace(static_format="png"))
 
         if not top_scores:
             embed.description = "%s has not played %s" % (
@@ -254,7 +254,7 @@ class Osu(Cog):
         await ctx.send(embed=embed)
 
     @command(aliases=['taikorecent', 'ctbrecent', 'maniarecent'])
-    async def osurecent(self, ctx, *, account: StringOrMentionConverter=default.Author):
+    async def osurecent(self, ctx, *, account: StringOrMentionConverter=parameters.Author):
         """Show a user's recent osu plays.
 
         Use + to give a raw account name. e.g.:
@@ -263,7 +263,7 @@ class Osu(Cog):
         """
         mode = get_mode(ctx.invoked_with)
 
-        with ctx.typing():
+        async with ctx.typing():
             if isinstance(account, discord.abc.User):
                 osu_acct = await self._get_osu_account(ctx, account, mode)
             else:
@@ -278,7 +278,7 @@ class Osu(Cog):
         embed.color = hash(str(osu_acct.user_id)) % (1 << 24)
         if isinstance(account, discord.abc.User):
             embed.set_author(
-                name=str(account), icon_url=account.avatar_url_as(static_format="png"))
+                name=str(account), icon_url=account.avatar.replace(static_format="png"))
 
         if not recent_scores:
             embed.description = "%s hasn't played %s recently" % (
@@ -314,7 +314,7 @@ class Osu(Cog):
         await ctx.send(embed=embed)
 
     @command(pass_context=True, aliases=['taiko', 'ctb', 'mania'])
-    async def osu(self, ctx, *, account: StringOrMentionConverter=default.Author):
+    async def osu(self, ctx, *, account: StringOrMentionConverter=parameters.Author):
         """Show a user's osu profile.
 
         Use + to give a raw account name. e.g.:
@@ -323,7 +323,7 @@ class Osu(Cog):
         """
         mode = get_mode(ctx.invoked_with)
 
-        with ctx.typing():
+        async with ctx.typing():
             if isinstance(account, discord.abc.User):
                 osu_acct = await self._get_osu_account(ctx, account, mode)
             else:
@@ -338,7 +338,7 @@ class Osu(Cog):
         embed.color = hash(str(osu_acct.user_id)) % (1 << 24)
         if isinstance(account, discord.abc.User):
             embed.set_author(
-                name=str(account), icon_url=account.avatar_url_as(static_format="png"))
+                name=str(account), icon_url=account.avatar.replace(static_format="png"))
         embed.set_thumbnail(
             url="http://a.ppy.sh/%s?_=%s" % (osu_acct.user_id, time.time()))
 

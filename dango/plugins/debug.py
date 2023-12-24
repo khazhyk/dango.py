@@ -68,7 +68,7 @@ class Debug(Cog):
     @command()
     async def reactinfo(self, ctx):
         resp = ""
-        async for msg in utils.CachedHistoryIterator(ctx, limit=10):
+        async for msg in utils.cached_history(ctx.bot, ctx, limit=10):
             print(msg, msg.content)
             for r in msg.reactions:
                 if r.custom_emoji and getattr(r.emoji, 'guild', None):
@@ -162,7 +162,7 @@ class Debug(Cog):
         if not self.footgun():
             raise errors.CommandError("You probably don't want to run this...")
 
-        with ctx.typing():
+        async with ctx.typing():
             stdout, stderr = await utils.run_subprocess(cmd)
 
         if stderr:

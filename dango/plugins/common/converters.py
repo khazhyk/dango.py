@@ -2,9 +2,10 @@
 import asyncio
 import re
 import typing
+import inspect
 
 import discord
-from discord.ext.commands import Converter, CustomDefault, converter, errors
+from discord.ext.commands import Converter, parameter, converter, errors
 
 from . import paginator
 from . import utils
@@ -268,7 +269,7 @@ class AnyImage(Converter):
 
         member = await UserMemberConverter().convert(ctx, argument)
         if member:
-            return member.avatar_url_as(format="png")
+            return member.avatar.replace(format="png")
 
         raise errors.BadArgument("{argument} isn't a member or url.".format(argument=argument))
 
@@ -328,31 +329,24 @@ class MessageConverter(Converter):
         return msg
 
 
-class CurrentGuild(CustomDefault):
+def current_guild(ctx):
+    if not ctx.guild:
+        raise errors.MissingRequiredArgument(ctx.current_parameter)
+    return ctx.guild
 
-    async def default(self, ctx, param):
-        if not ctx.guild:
-            raise errors.MissingRequiredArgument(param)
-        return ctx.guild
+CurrentGuild = parameter(default=current_guild)
 
-
-class AuthorAvatar(CustomDefault):
-
-    async def default(self, ctx, param):
-        return ctx.author.avatar_url_as(format="png")
+AuthorAvatar = parameter(default=lambda ctx: ctx.author.avatar.replace(format="png"))
 
 
-class LastImage(CustomDefault):
-    """Default param which finds the last image in chat.
+async def last_image(ctx):
+    async for message in utils.cached_history(ctx.bot, ctx, limit=100):
+        for embed in message.embeds:
+            if embed.thumbnail and embed.thumbnail.proxy_url:
+                return embed.thumbnail.proxy_url
+        for attachment in message.attachments:
+            if attachment.proxy_url:
+                return attachment.proxy_url
+    raise errors.MissingRequiredArgument(ctx.current_parameter)
 
-    Can be None."""
-
-    async def default(self, ctx, param):
-        async for message in utils.CachedHistoryIterator(ctx, limit=100):
-            for embed in message.embeds:
-                if embed.thumbnail and embed.thumbnail.proxy_url:
-                    return embed.thumbnail.proxy_url
-            for attachment in message.attachments:
-                if attachment.proxy_url:
-                    return attachment.proxy_url
-        raise errors.MissingRequiredArgument(param)
+LastImage = parameter(default=last_image)

@@ -1,5 +1,5 @@
-git+https://github.com/khazhyk/discord.py@master#egg=discord.py[voice]
-#git+https://github.com/Rapptz/discord.py@master#egg=discord.py[voice]
+#git+https://github.com/khazhyk/discord.py@master#egg=discord.py[voice]
+git+https://github.com/Rapptz/discord.py@master#egg=discord.py[voice]
 aiohttp
 watchdog
 psutil

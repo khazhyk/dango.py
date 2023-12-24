@@ -8,6 +8,15 @@ from common import setup_logging
 loop = asyncio.get_event_loop()
 
 
+
+def async_test(f):
+    def wrapper(*args, **kwargs):
+        coro = f(*args, **kwargs)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(coro)
+    return wrapper
+
+
 class PluginDirLoadTest(unittest.TestCase):
 
     def setUpClass():
@@ -20,20 +29,22 @@ class PluginDirLoadTest(unittest.TestCase):
     def tearDown(self):
         loop.run_until_complete(self.b.close())
 
-    def test_sanity(self):
+    @async_test
+    async def test_sanity(self):
         b = self.b
 
-        b._loader.watch_spec("extension_test_data.*")
+        await b._loader.watch_spec("extension_test_data.*")
 
         self.assertIn("UsesCommon", b.cogs)
         self.assertIn("extension_test_data.extension", b.extensions)
         self.assertIn("extension_test_data.common", b.extensions)
 
-    def test_unload_dependants(self):
+    @async_test
+    async def test_unload_dependants(self):
         b = self.b
-        b._loader.watch_spec("extension_test_data.*")
+        await b._loader.watch_spec("extension_test_data.*")
 
-        unloaded_deps = b._loader._register.unload_extension(
+        unloaded_deps = await b._loader._register.unload_extension(
             "extension_test_data.common", unload_dependants=True)
 
         self.assertNotIn("extension_test_data.common", b.extensions)
@@ -41,11 +52,12 @@ class PluginDirLoadTest(unittest.TestCase):
         self.assertNotIn("UsesCommon", b.cogs)
         self.assertIn("UnrelatedVictim", b.cogs)
 
-    def test_reload_dependants(self):
+    @async_test
+    async def test_reload_dependants(self):
         b = self.b
-        b._loader.watch_spec("extension_test_data.*")
+        await b._loader.watch_spec("extension_test_data.*")
 
-        reloaded_deps = b._loader._register.reload_extension(
+        reloaded_deps = await b._loader._register.reload_extension(
             "extension_test_data.common")
 
         self.assertIn("extension_test_data.common", b.extensions)

@@ -1,4 +1,5 @@
 """Main bot file."""
+import asyncio
 import logging
 import sys
 
@@ -29,8 +30,9 @@ def setup_logging():
 def main():
     setup_logging()
     bot = DangoAutoShardedBot(
-        game=discord.Game(name="rewrite is the future!"))
-    bot.run()
+        game=discord.Game(name="rewrite is the future!"),
+        intents=discord.Intents.all())
+    asyncio.run(bot.start())
 
 
 fix_unicode()

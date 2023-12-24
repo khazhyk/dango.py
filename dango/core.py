@@ -84,7 +84,7 @@ class DangoContext(commands.Context):
 
 class DangoBotBase(commands.bot.BotBase):
 
-    def __init__(self, *args, conf="config.yml", **kwargs):
+    def __init__(self, *args, conf="config.yml", intents=discord.Intents.all(), **kwargs):
         self._config = config.FileConfiguration(conf)
         self._config.load()
         cgroup = self._config.root
@@ -100,16 +100,16 @@ class DangoBotBase(commands.bot.BotBase):
 
         self._loader = extensions.WatchdogExtensionLoader(self)
         self._dango_unloaded_cogs = {}
-        super().__init__(self.prefix.value, *args, self_bot=not self._is_bot, **kwargs)
+        super().__init__(self.prefix.value, *args, self_bot=not self._is_bot, intents=intents, **kwargs)
 
-    def run(self, *args, **kwargs):
+    async def start(self, *args, **kwargs):
         if isinstance(self.plugins(), str):
-            self._loader.watch_spec(self.plugins())
+            await self._loader.watch_spec(self.plugins())
         else:
             for plugin_dir in self.plugins():
-                self._loader.watch_spec(plugin_dir)
+                await self._loader.watch_spec(plugin_dir)
         self._loader.start()
-        super().run(self.token.value, *args, bot=self._is_bot, **kwargs)
+        await super().start(self.token.value, *args, **kwargs)
 
     async def on_error(self, event, *args, **kwargs):
         log.exception(
@@ -119,7 +119,7 @@ class DangoBotBase(commands.bot.BotBase):
     def get_context(self, message):
         return super().get_context(message, cls=DangoContext)
 
-    def add_cog(self, cls):
+    async def add_cog(self, cls):
         """Tries to load a cog.
 
         If not all dependencies are loaded, will defer until they are.
@@ -147,7 +147,7 @@ class DangoBotBase(commands.bot.BotBase):
             raise
         finally:
             self._config.save()
-        super().add_cog(cog)
+        await super().add_cog(cog)
         setattr(cog, COG_DESC, CogDesc(datetime.datetime.utcnow()))
         log.debug("Loaded dcog %s.%s", cls.__module__, cls.__name__)
 
@@ -155,9 +155,9 @@ class DangoBotBase(commands.bot.BotBase):
         unloaded_plugins = self._dango_unloaded_cogs
         self._dango_unloaded_cogs = {}
         for plugin in unloaded_plugins.values():
-            self.add_cog(plugin)
+            await self.add_cog(plugin)
 
-    def remove_cog(self, name, remove=True):
+    async def remove_cog(self, name, remove=True):
         """Unloads a cog.
 
         Name of a cog must be it's class name.
@@ -175,22 +175,22 @@ class DangoBotBase(commands.bot.BotBase):
             return
 
         if hasattr(cog, PLUGIN_DESC):
-            self.unload_cog_deps(cog)
+            await self.unload_cog_deps(cog)
             self._config.root.remove_group(utils.snakify(name))
 
-        super().remove_cog(name)
+        await super().remove_cog(name)
         log.debug("Unloaded dcog %s", name)
 
-    def unload_cog_deps(self, unloading_cog):
+    async def unload_cog_deps(self, unloading_cog):
         for cog_name, cog_inst in self.cogs.copy().items():
             desc = getattr(cog_inst, PLUGIN_DESC, None)
             if not desc:
                 continue
 
             if type(unloading_cog).__name__ in desc.depends:
-                self.remove_cog(cog_name, remove=False)
+                await self.remove_cog(cog_name, remove=False)
 
-    def load_extension(self, name):
+    async def load_extension(self, name):
         """Override load extension to auto-detect dcogs."""
         if name in self.extensions:
             return
@@ -203,7 +203,7 @@ class DangoBotBase(commands.bot.BotBase):
         for item in dir(lib):  # TODO - inspect.members
             val = getattr(lib, item)
             if isinstance(val, type) and hasattr(val, PLUGIN_DESC):
-                self.add_cog(val)
+                await self.add_cog(val)
 
         setup = getattr(lib, 'setup', None)
         if setup:

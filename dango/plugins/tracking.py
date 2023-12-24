@@ -194,7 +194,7 @@ class Tracking(Cog):
             params.append(str(member.id))  # TODO - convert schema to BigInt
             if since:
                 query += "AND date >= $2 "
-                params.append((datetime.utcnow() - since))
+                params.append((datetime.utcnow().replace(tzinfo=timezone.utc) - since))
             query += "ORDER BY idx DESC "
             if since:
                 query = (
@@ -224,7 +224,7 @@ class Tracking(Cog):
             params.extend((str(member.id), str(member.guild.id)))
             if since:
                 query += "AND date >= $3 "
-                params.append((datetime.utcnow() - since))
+                params.append((datetime.utcnow().replace(tzinfo=timezone.utc) - since))
             query += "ORDER BY idx DESC "
             if since:
                 query = (
@@ -290,7 +290,7 @@ class Tracking(Cog):
 
     def queue_batch_names_update(self, member):
         self.batch_name_updates.append((
-            member, datetime.utcnow()))
+            member, datetime.utcnow().replace(tzinfo=timezone.utc)))
 
     async def do_batch_names_update(self):
         """Batch update member names and nicks.
@@ -653,7 +653,7 @@ class Tracking(Cog):
         if data['author']['discriminator'] == '0000':
             return  # Ignore webhooks.
 
-        if data['edited_timestamp'] is None:
+        if data.get('edited_timestamp') is None:
             return  # Ignore pins/etc. that aren't actually edits.
 
         # If we had a recent pin in this channel, and the edited_timestamp is
@@ -667,11 +667,11 @@ class Tracking(Cog):
         # updating incorrectly, but oh well.
         if (last_pin_time and edit_time < last_pin_time - timedelta(seconds=5)):
             return  # If we get an edit in the past, ignore it, it's a pin.
-        elif(edit_time < datetime.utcnow() - timedelta(minutes=2)):
+        elif(edit_time < datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(minutes=2)):
             log.info("Got edit with old timestamp, missed pin? %s", data)
             return  # This *may* be a pin, since it's old, but we didn't get a pin event.
 
-        if data['guild_id']:
+        if data.get('guild_id'):
             guild = self.bot.get_guild(int(data['guild_id']))
             author = guild.get_member(int(data['author']['id']))
         else:
@@ -684,11 +684,11 @@ class Tracking(Cog):
 
     @Cog.listener()
     async def on_guild_channel_pins_update(self, channel, last_pin):
-        self._recent_pins[str(channel.id)] = datetime.utcnow()
+        self._recent_pins[str(channel.id)] = datetime.utcnow().replace(tzinfo=timezone.utc)
 
     @Cog.listener()
     async def on_private_channel_pins_update(self, channel, last_pin):
-        self._recent_pins[str(channel.id)] = datetime.utcnow()
+        self._recent_pins[str(channel.id)] = datetime.utcnow().replace(tzinfo=timezone.utc)
 
     @Cog.listener()
     async def on_raw_reaction_add(self, raw_event):
@@ -782,7 +782,7 @@ class Tracking(Cog):
     @command()
     @checks.is_owner()
     async def migrate_presence_db(self, ctx):
-        with ctx.typing():
+        async with ctx.typing():
             await self.queue_migrate_redis()
             await self.updatestatus.invoke(ctx)
 

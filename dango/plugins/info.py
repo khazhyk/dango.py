@@ -220,7 +220,7 @@ class ModInfo(Cog):
         """This would be useful if audit logs lasted more than 45 days..."""
         matches = []
         # TODO - a cache would be nice here...
-        with ctx.typing():
+        async with ctx.typing():
             async for event in ctx.guild.audit_logs(limit=None):
                 if not event.target or event.target.id != user_id:
                     continue
@@ -363,7 +363,7 @@ class Info(Cog):
         if user is None:
             user = ctx.message.author
 
-        await ctx.send(str(user.avatar_url_as(static_format='png')))
+        await ctx.send(str(user.avatar.replace(static_format='png')))
 
     @command()
     async def defaultavatar(self, ctx, *, user: converters.UserMemberConverter=None):

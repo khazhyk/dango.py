@@ -14,7 +14,6 @@ import yarl
 
 import discord
 from discord.ext.commands import errors
-from discord.iterators import HistoryIterator
 from PIL import Image
 
 
@@ -175,7 +174,7 @@ def clean_newline(line):
 
     idx = match.end() if match else 0
 
-    line = line[:idx] + line[idx:].replace('`', '\`')
+    line = line[:idx] + line[idx:].replace('`', r'\`')
 
     return line
 
@@ -323,31 +322,35 @@ class AliasCmd(discord.ext.commands.Command):
         elif await new_ctx.bot.can_run(new_ctx, call_once=True):
             await new_ctx.bot.invoke(new_ctx)
 
-class CachedHistoryIterator(HistoryIterator):
-    """HistoryIterator, but we hit the cache first."""
 
-    def __init__(self, messageable, limit,
-                 before=None, after=None, around=None, oldest_first=None):
-        super().__init__(messageable, limit, before, after, around, oldest_first)
-        self.prefill = self.reverse is False and around is None
+async def cached_history(bot, messageable, *, limit, before=None, after=None, around=None, oldest_first=None):
+    # This is copy-pasted from discord.py abc.py::Messageable.history - keep in sync.
+    if oldest_first is None:
+        reverse = after is not None
+    else:
+        reverse = oldest_first
 
-    async def next(self):
-        if self.prefill:
-            await self.prefill_from_cache()
-            self.prefill = False
-        return await super().next()
+    # Only support simple reverse chronological
+    if not reverse and around is None:
+        # Need to find the real channel id
+        channel = await messageable._get_channel()
 
-    async def prefill_from_cache(self):
-        if not hasattr(self, 'channel'):
-            # do the required set up
-            channel = await self.messageable._get_channel()
-            self.channel = channel
+        # Need to pre-evaluate `before` and `after`, copypasted from d.py
+        if isinstance(before, datetime):
+            before = discord.Object(id=discord.utils.time_snowflake(before, high=False))
+        if isinstance(after, datetime):
+            after = discord.Object(id=discord.utils.time_snowflake(after, high=True))
 
-        for msg in reversed(self.channel._state._messages):
-            if msg.channel.id == self.channel.id and self.limit > 0 and (not self.before or msg.id < self.before.id):
-                self.limit -= 1
-                self.before = discord.Object(id=msg.id)
-                await self.messages.put(msg)
+        for msg in reversed(bot.cached_messages):
+            if msg.channel.id == channel.id and limit > 0 and (not before or msg.id < before.id) and (not after or msg.id > after.id):
+                limit -= 1
+                before = discord.Object(msg.id)
+                yield msg
+
+    # Serve the rest from the normal history iterator
+    async for msg in messageable.history(limit=limit, before=before, after=after, around=around, oldest_first=oldest_first):
+        yield msg
+
 
 CONTROL_CHARS = re.compile('[%s]' % re.escape(''.join(chr(i) for i in range(sys.maxunicode) if unicodedata.category(chr(i)).startswith('C'))))
 

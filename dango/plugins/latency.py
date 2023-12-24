@@ -1,8 +1,9 @@
 import asyncio
 import collections
 import statistics
-from datetime import datetime
+from datetime import datetime, timezone
 
+from discord import utils
 from dango import dcog, Cog
 from discord.ext.commands import command
 
@@ -16,7 +17,7 @@ class Latency(Cog):
 
     @Cog.listener()
     async def on_message(self, message):
-        now = datetime.utcnow()
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.message_latencies.append((now, now - message.created_at))
 
     @command()
@@ -42,10 +43,10 @@ class Latency(Cog):
             "message", timeout=15,
             check=lambda m: (m.author == ctx.bot.user and
                              m.content == msg_content)))
-        now = datetime.utcnow()
+        now = utils.utcnow()
         sent_message = await ctx.send(msg_content)
         await task
-        rtt_time = datetime.utcnow()
+        rtt_time = utils.utcnow()
 
         await sent_message.edit(
             content="RCV: {:.2f}ms, M2M: {:.2f}ms, RTT: {:.2f}ms".format(

@@ -92,7 +92,7 @@ class Overwatch(Cog):
             else:
                 tag = BattleTag.from_tag(tag)
 
-        with ctx.typing():
+        async with ctx.typing():
             async with aiohttp.ClientSession() as client:
                 if not tag.is_complete:
                     tag = await find_tag(client, tag)

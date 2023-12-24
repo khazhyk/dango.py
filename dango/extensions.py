@@ -36,7 +36,7 @@ class ModuleDirWatchdog(events.FileSystemEventHandler):
         return fut.result()
 
     async def _unload(self, mod_to_unload):
-        self._register.unload_extension(mod_to_unload)
+        await self._register.unload_extension(mod_to_unload)
 
     async def _try_reload(self, mod_to_reload):
         now = time.time()
@@ -46,7 +46,7 @@ class ModuleDirWatchdog(events.FileSystemEventHandler):
         self.debounce[mod_to_reload] = now
         try:
             log.info("Reloading %s", mod_to_reload)
-            self._register.reload_extension(mod_to_reload)
+            await self._register.reload_extension(mod_to_reload)
         except BaseException:
             log.exception("Failed to reload! %s", mod_to_reload)
 
@@ -97,7 +97,7 @@ class WatchdogExtensionLoader:
             self._observer.unschedule_all()
         self._observer = None
 
-    def watch_spec(self, plugin_spec):
+    async def watch_spec(self, plugin_spec):
         """Watch the plugin spec for changes.
 
         Arguments
@@ -153,7 +153,7 @@ class WatchdogExtensionLoader:
                 lib = _module_name(os.path.join(watched_location, item))
                 if lib:
                     try:
-                        self._register.load_extension(lib)
+                        await self._register.load_extension(lib)
                     except config.InvalidConfig:
                         log.error("Could not load %s due to invalid config!", lib)
 
@@ -180,7 +180,7 @@ class WatchdogExtensionLoader:
                 watched_location = os.path.split(mod.__spec__.origin)[0]
             self._watches[watched_location] = ModuleDirWatchdog(self._register, module_name)
             try:
-                self._register.load_extension(plugin_spec)
+                await self._register.load_extension(plugin_spec)
             except config.InvalidConfig:
                 log.error("Could not load %s due to invalid config!", plugin_spec)
 
@@ -209,14 +209,14 @@ class ExtensionDependencyRegister:
         """Mark a base module and it's submodules as reloadable."""
         self._reloadable.append(base)
 
-    def load_extension(self, name):
+    async def load_extension(self, name):
         """Load an extension and track it's dependencies.
 
         Extension "curious" imports "common", so add a dependency.
         self._deps["common"].append("curious")
         """
 
-        self.bot.load_extension(name)  # Assume all goes well...
+        await self.bot.load_extension(name)  # Assume all goes well...
         lib = self.bot.extensions[name]  # Will throw if it didn't go well anyways RIP
 
         for item in dir(lib):  # TODO - inspect.members
@@ -231,7 +231,7 @@ class ExtensionDependencyRegister:
             elif hasattr(val, "__module__"):  # TODO
                 pass
 
-    def unload_extension(self, name, unload_dependants=False, unloaded_extensions=None):
+    async def unload_extension(self, name, unload_dependants=False, unloaded_extensions=None):
         """Unload an extension. Do not unload dependants.
 
         It's not garunteed an extension will be re-loaded, just leave
@@ -254,26 +254,26 @@ class ExtensionDependencyRegister:
                     if _is_submodule(name, dep):
                         log.info("Unloading %s should unload %s since it needs %s", name, key, dep)
 
-                        self.unload_extension(
+                        await self.unload_extension(
                             key, unload_dependants=True,
                             unloaded_extensions=unloaded_extensions)
                         break
 
         log.info("Finally unloading %s", name)
         try:
-            self.bot.unload_extension(name)
+            await self.bot.unload_extension(name)
         except errors.ExtensionNotLoaded:
             log.warn("Extension %s wasn't loaded", name)
         return unloaded_extensions
 
-    def reload_extension(self, name):
+    async def reload_extension(self, name):
         """Reload an extension and it's dependants.
 
         Unloading extension "common", check _deps and unload it's dependants
         first. (recursively etc.)
 
         """
-        unloaded_deps = self.unload_extension(name, unload_dependants=True)
+        unloaded_deps = await self.unload_extension(name, unload_dependants=True)
         for unloaded_dep in unloaded_deps:
-            self.load_extension(unloaded_dep)
+            await self.load_extension(unloaded_dep)
         return unloaded_deps
