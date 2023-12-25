@@ -107,17 +107,21 @@ class HTTP(Cog):
         self.loop = asyncio.get_running_loop()
         self.app = web.Application(loop=self.loop)
         self.handlers = {}
-        self._ready = asyncio.Event()
 
-        self.add_handler('GET', '/', default_handler)
-        utils.create_task(self.start_app())
-        
+    async def cog_load(self):
+        self.handlers['GET', '/'] = default_handler
+        await self.start_app()
 
-    def add_handler(self, method, location, handler):
+    async def cog_unload(self):
+        await self.stop_app()
+
+    async def add_handler(self, method, location, handler):
         self.handlers[method, location] = handler
+        await self.reload()
 
-        if self._ready.is_set():  # TODO - test
-            utils.create_task(self.reload())
+    async def drop_handler(self, method, location):
+        del self.handlers[method, location]
+        await self.reload()
 
     async def reload(self):
         await self.stop_app()
@@ -137,22 +141,15 @@ class HTTP(Cog):
         self.server = await self.loop.create_server(
             self.handler, '0.0.0.0', 8080)
         log.debug("Webserver created.")
-        self._ready.set()
 
     async def stop_app(self):
         log.debug("Shutting down web server.")
-        await self._ready.wait()
         self.server.close()
         await self.server.wait_closed()
         await self.app.shutdown()
         await self.handler.shutdown(10)
         await self.app.cleanup()
-        self._ready.clear()
         log.debug("Shutdown complete")
-
-    def cog_unload(self):
-        """d.py cog cleanup fn."""
-        utils.create_task(self.stop_app())
 
 
 class HttpClientRequestHook:
@@ -194,10 +191,6 @@ class PrometheusMetrics(Cog):
         if function:
             getattr(self, name).set_function(function)
 
-    def cog_unload(self):
-        # Unhook HTTP
-        self.bot.http.request = self.bot.http.request.orig
-
     def __init__(self, bot, config, http):
         self.declare_metric(
             "opcodes", prometheus_client.Counter, 'Opcodes', ['opcode'])
@@ -238,8 +231,15 @@ class PrometheusMetrics(Cog):
         self._in_flight_ctx = {}
         self.bot = bot
         self.bot.http.request = HttpClientRequestHook(self.bot.http.request, self)
+        self.http = http
 
-        http.add_handler("GET", "/metrics", self.handle_metrics)
+    async def cog_load(self):
+        await self.http.add_handler("GET", "/metrics", self.handle_metrics)
+
+    async def cog_unload(self):
+        # Unhook HTTP
+        await self.http.drop_handler("GET", "/metrics")
+        self.bot.http.request = self.bot.http.request.orig
 
     def _member_count_factory(self, status):
         return lambda: self._member_counts[status]

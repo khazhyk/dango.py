@@ -89,9 +89,7 @@ class Tracking(Cog):
     def __init__(self, bot, config, database, redis):
         self.bot = bot
         self.database = database
-        self.database.hold()
         self.redis = redis
-        self.redis.hold()
 
         self._recent_pins = lru.LRU(128)
 
@@ -105,11 +103,11 @@ class Tracking(Cog):
         self.batch_presence_task = utils.create_task(self.batch_presence())
         self.batch_name_task = utils.create_task(self.batch_name())
 
-    def cog_unload(self):
+    async def cog_unload(self):
         self.batch_presence_task.cancel()
+        await self.batch_presence_task
         self.batch_name_task.cancel()
-        self.database.unhold()
-        self.redis.unhold()
+        await self.batch_name_task
 
     async def batch_presence(self):
         try:    
