@@ -115,21 +115,21 @@ class TestPresenceTracking(unittest.TestCase):
         members = [member() for _ in range(1000)] + [member(user_override=common_user) for _ in range(100)]
 
         async with self.rds.acquire() as conn:
-            await conn.mset(*itertools.chain(*(
+            await conn.mset(dict([
                 (
                     last_seen_deprecated_key(m),
                     datetime_to_redis(member_last_seen(m).last_seen))
-                for m in members)))
-            await conn.mset(*itertools.chain(*(
+                for m in members]))
+            await conn.mset(dict([
                 (
                     last_spoke_deprecated_key(m),
                     datetime_to_redis(member_last_seen(m).last_spoke))
-                for m in members)))
-            await conn.mset(*itertools.chain(*(
+                for m in members]))
+            await conn.mset(dict([
                 (
                     member_last_spoke_deprecated_key(m),
                     datetime_to_redis(member_last_seen(m).server_last_spoke))
-                for m in members)))
+                for m in members]))
 
         await self.tracking.queue_migrate_redis()
         await self.tracking.do_batch_presence_update()

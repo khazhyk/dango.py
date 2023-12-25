@@ -427,14 +427,15 @@ class Tracking(Cog):
             return
 
         async with self.redis.acquire() as conn:
-            user_keys = (
+            user_keys = [
                 ("spoo:last_username:%d" % m_id, name_to_redis(m_name))
-                for m_id, (m_name, _) in current_names.items())
-            name_keys = (
+                for m_id, (m_name, _) in current_names.items()]
+            name_keys = [
                 ("spoo:last_nickname:%d:%d" % (m_id, m_server), name_to_redis(m_name))
-                for (m_id, m_server), (m_name, _) in current_nicks.items())
-            await conn.mset(*itertools.chain(
-                *user_keys, *name_keys))
+                for (m_id, m_server), (m_name, _) in current_nicks.items()]
+            
+            all_keys = dict(user_keys + name_keys)
+            await conn.mset(all_keys)
 
     # Presence tracking
     async def last_seen(self, member: Union[discord.User, discord.Member]) -> LastSeenTuple:

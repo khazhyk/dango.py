@@ -21,7 +21,7 @@ class FetchMessageTest(unittest.TestCase):
         logging.getLogger("discord").setLevel(logging.ERROR)
         logging.getLogger("websockets").setLevel(logging.ERROR)
 
-        bot = discord.Client(fetch_offline_members=False)
+        bot = discord.Client(fetch_offline_members=False, intents=discord.Intents.all())
         await bot.login(os.environ['DISCORD_TOKEN'])
         cls.bot = bot
         cls.task = asyncio.ensure_future(bot.connect())
@@ -57,7 +57,7 @@ class HistoryIteratorTest(unittest.TestCase):
         logging.getLogger("discord").setLevel(logging.ERROR)
         logging.getLogger("websockets").setLevel(logging.ERROR)
 
-        bot = discord.Client(fetch_offline_members=False)
+        bot = discord.Client(fetch_offline_members=False, intents=discord.Intents.all())
         await bot.login(os.environ['DISCORD_TOKEN'])
         cls.bot = bot
         cls.task = asyncio.ensure_future(bot.connect())
