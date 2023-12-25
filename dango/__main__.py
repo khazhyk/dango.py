@@ -27,12 +27,16 @@ def setup_logging():
     root.addHandler(stdouthandler)
 
 
-def main():
+async def real_main():
     setup_logging()
     bot = DangoAutoShardedBot(
         game=discord.Game(name="rewrite is the future!"),
         intents=discord.Intents.all())
-    asyncio.run(bot.start())
+    await bot.start()
+
+
+def main():
+    asyncio.run(real_main())
 
 
 fix_unicode()
