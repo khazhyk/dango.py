@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import io
 import collections
@@ -199,7 +200,7 @@ class Minecraft(Cog):
     @command()
     async def mcstatus(self, ctx, *, server):
         async with ctx.typing():
-            status = await ctx.bot.loop.run_in_executor(None, lookup_and_status, server)
+            status = await asyncio.get_running_loop().run_in_executor(None, lookup_and_status, server)
 
         await ctx.send(**self.mcstatus_message(status))
 

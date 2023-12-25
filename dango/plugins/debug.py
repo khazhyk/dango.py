@@ -105,14 +105,14 @@ class Debug(Cog):
     @command(name="objgraph")
     @checks.is_owner()
     async def objgraph_(self, ctx):
-        mct = await ctx.bot.loop.run_in_executor(None, objgraph.most_common_types)
+        mct = await asyncio.get_running_loop().run_in_executor(None, objgraph.most_common_types)
         await ctx.send(str(mct))
 
     @command()
     @checks.is_owner()
     async def objgrowth(self, ctx):
         stdout = io.StringIO()
-        await ctx.bot.loop.run_in_executor(None, functools.partial(objgraph.show_growth, file=stdout))
+        await asyncio.get_running_loop().run_in_executor(None, functools.partial(objgraph.show_growth, file=stdout))
         await ctx.send(stdout.getvalue())
 
     @command()

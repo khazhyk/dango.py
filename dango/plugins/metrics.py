@@ -99,12 +99,12 @@ def log_task(fut):
         log.warn(fut.exception())
 
 
-@dcog(pass_bot=True)
+@dcog()
 class HTTP(Cog):
     """Launch an aiohttp web server, allow registration etc."""
 
-    def __init__(self, bot, config):
-        self.loop = bot.loop
+    def __init__(self, config):
+        self.loop = asyncio.get_running_loop()
         self.app = web.Application(loop=self.loop)
         self.handlers = {}
         self._ready = asyncio.Event()

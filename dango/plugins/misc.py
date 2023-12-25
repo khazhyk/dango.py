@@ -312,7 +312,7 @@ class Misc(Cog):
     @command(aliases=['showcolour'], require_var_positional=True)
     async def showcolor(self, ctx, *color: resolve_color):
         """Show a color."""
-        color_image = await ctx.bot.loop.run_in_executor(None, self.make_pil_color_preview, *color)
+        color_image = await asyncio.get_running_loop().run_in_executor(None, self.make_pil_color_preview, *color)
 
         await ctx.send(file=discord.File(color_image, filename="showcolor.png"))
 

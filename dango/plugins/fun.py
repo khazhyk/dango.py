@@ -222,7 +222,7 @@ class ImgFun(Cog):
         async with ctx.typing():
             avys = await asyncio.gather(*[fetch_image(t.avatar.replace(format="png")) for t in [source] + list(dest)])
             avys = [io.BytesIO(a) for a in avys]
-            img_buff = await ctx.bot.loop.run_in_executor(None,
+            img_buff = await asyncio.get_running_loop().run_in_executor(None,
                     self._gifmap, avys
                 )
         elapsed = time.time() - start
@@ -244,7 +244,7 @@ class ImgFun(Cog):
     @command()
     @checks.bot_needs(["attach_files"])
     async def dot(self, ctx):
-        res = await ctx.bot.loop.run_in_executor(None, self.make_dot)
+        res = await asyncio.get_running_loop().run_in_executor(None, self.make_dot)
         await ctx.send(file=discord.File(res, filename="dot.png"))
 
     def make_dont_image(self, content):
@@ -278,7 +278,7 @@ class ImgFun(Cog):
         """dont run me or my son ever again"""
         async with ctx.typing():
             content = await fetch_image(url)
-            img_buff = await ctx.bot.loop.run_in_executor(None, self.make_dont_image, content)
+            img_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_dont_image, content)
 
             await ctx.send(file=discord.File(img_buff, filename="dont.jpg"))
 
@@ -308,7 +308,7 @@ class ImgFun(Cog):
         """RIP in Peace."""
         async with ctx.typing():
             content = await fetch_image(url)
-            img_buff = await ctx.bot.loop.run_in_executor(None, self.make_rip, content)
+            img_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_rip, content)
             await ctx.send(file=discord.File(img_buff, filename="rip.png"))
 
     @staticmethod
@@ -346,7 +346,7 @@ class ImgFun(Cog):
 
         async with ctx.typing():
             content = await fetch_image(url)
-            img_buff = await ctx.bot.loop.run_in_executor(None, self.make_triggered, content)
+            img_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_triggered, content)
             await ctx.send(file=discord.File(img_buff, filename="TRIGGERED.gif"))
 
     @command()
@@ -390,7 +390,7 @@ class ImgFun(Cog):
 
         async with ctx.typing():
             content = await fetch_image(url)
-            img_buff = await ctx.bot.loop.run_in_executor(None, make_glitch, content)
+            img_buff = await asyncio.get_running_loop().run_in_executor(None, make_glitch, content)
             await ctx.send(file=discord.File(img_buff, filename="glitch.gif"))
 
     @staticmethod
@@ -464,7 +464,7 @@ class ImgFun(Cog):
         """DISCORD IS DEAD."""
         async with ctx.typing():
             with tempfile.TemporaryDirectory(prefix="crab_rave_nonsense") as working_dir:
-                await ctx.bot.loop.run_in_executor(self.process_executor, self.make_crab_rave, self.res.dir(), content, working_dir)
+                await asyncio.get_running_loop().run_in_executor(self.process_executor, self.make_crab_rave, self.res.dir(), content, working_dir)
                 await ctx.send(file=discord.File(
                     os.path.join(working_dir, "out.mp4"), filename="{}.mp4".format(content)))
 
@@ -491,7 +491,7 @@ class ImgFun(Cog):
         @roadcrosser"""
         async with ctx.typing():
             content = await fetch_image(url)
-            img_buff = await ctx.bot.loop.run_in_executor(None, self.make_dead, content)
+            img_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_dead, content)
             await ctx.send(file=discord.File(img_buff, filename="dead.png"))
 
     def make_more_jpeg(self, before):
@@ -508,7 +508,7 @@ class ImgFun(Cog):
     async def needsmorejpeg(self, ctx, url=converters.LastImage):
         async with ctx.typing():
             content = await fetch_image(url)
-            jpeg_buff = await ctx.bot.loop.run_in_executor(None, self.make_more_jpeg, content)
+            jpeg_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_more_jpeg, content)
             await ctx.send(file=discord.File(jpeg_buff, filename="more_jpeg.jpg"))
 
     def make_img_macro(self, base_image, *lines, format='png'):
@@ -566,7 +566,7 @@ class ImgFun(Cog):
         if not text:
             text = "Transform: Anti-bully Ranger!"
 
-        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/antibully.jpg', dict(
+        img_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/antibully.jpg', dict(
             text=text,
             font=self.res.dir() + '/font/Aller/Aller_Bd.ttf',
             bottom=20,
@@ -588,7 +588,7 @@ class ImgFun(Cog):
         if not text:
             text = "PREPARE TO BE BULLIED NERDS"
 
-        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/antiantibully.jpg', dict(
+        img_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/antiantibully.jpg', dict(
             text=text,
             font=self.res.dir() + '/font/impact/IMPACT.ttf',
             bottom=25,
@@ -610,7 +610,7 @@ class ImgFun(Cog):
         if not text:
             text = ctx.message.author.name
 
-        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/hate_new2.png', dict(
+        img_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/hate_new2.png', dict(
             text=text,
             font=self.res.dir() + '/font/anime-ace/animeace.ttf',
             bottom=146,
@@ -630,7 +630,7 @@ class ImgFun(Cog):
         if not text:
             text = ctx.message.author.name
 
-        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/love.png', dict(
+        img_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/love.png', dict(
             text=text,
             font=self.res.dir() + '/font/anime-ace/animeace.ttf',
             bottom=147,
@@ -650,7 +650,7 @@ class ImgFun(Cog):
         if not text:
             text = "join general"
 
-        img_buff = await ctx.bot.loop.run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/discord_invite.png', dict(
+        img_buff = await asyncio.get_running_loop().run_in_executor(None, self.make_img_macro, self.res.dir() + '/img/discord_invite.png', dict(
             text=text,
             font=self.res.dir() + '/font/whitney/whitney_semibold-webfont.ttf',
             bottom=0,
