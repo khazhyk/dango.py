@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import cProfile
+import collections
 import functools
 import logging
 import io
@@ -95,6 +96,10 @@ class Debug(Cog):
     @command()
     async def test(self, ctx):
         await ctx.send("\N{AUBERGINE}")
+
+    @command()
+    async def cogs(self, ctx):
+        await ctx.send(", ".join(sorted(ctx.bot.cogs.keys())))
 
     @command()
     async def shard_id(self, ctx, shard_count:int=None, guild_id:int=None):
