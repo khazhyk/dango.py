@@ -160,5 +160,5 @@ class REPL(commands.Cog):
                 await ctx.send('Unexpected error: `{}`'.format(e))
 
 
-def setup(bot):
-    bot.add_cog(REPL(bot))
+async def setup(bot):
+    await bot.add_cog(REPL(bot))

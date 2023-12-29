@@ -127,7 +127,7 @@ class DangoBotBase(commands.bot.BotBase):
         desc = getattr(cls, PLUGIN_DESC, None)
         if not desc:
             log.debug("Loading cog %s", cls)
-            return super().add_cog(cls)
+            return await super().add_cog(cls)
 
         depends = [self.get_cog(name) for name in desc.depends]
         if not all(depends):
@@ -207,7 +207,7 @@ class DangoBotBase(commands.bot.BotBase):
 
         setup = getattr(lib, 'setup', None)
         if setup:
-            setup(self)
+            await discord.utils.maybe_coroutine(setup, self)
 
         self._BotBase__extensions[name] = lib
 
