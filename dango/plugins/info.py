@@ -144,8 +144,8 @@ class Find(Cog):
         await ctx.send(msg)
 
 # Discord epoch
-UNKNOWN_CUTOFF = datetime.utcfromtimestamp(1420070400.000)
-UNKNOWN_CUTOFF_TZ = UNKNOWN_CUTOFF.replace(tzinfo=timezone.utc)
+UNKNOWN_CUTOFF = datetime.utcfromtimestamp(1420070400.000).replace(tzinfo=timezone.utc)
+UNKNOWN_CUTOFF_TZ = UNKNOWN_CUTOFF
 
 
 def format_time(time):
