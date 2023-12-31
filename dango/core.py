@@ -3,6 +3,7 @@ import datetime
 import importlib
 import logging
 import os
+import io
 import sys
 import re
 
@@ -13,8 +14,6 @@ from discord.utils import cached_property
 from . import config
 from . import extensions
 from . import utils
-from . import waaai
-from . import privatebin
 
 log = logging.getLogger(__name__)
 
@@ -54,28 +53,29 @@ CogDesc = collections.namedtuple("PluginDesc", "load_time")
 
 class DangoContext(commands.Context):
 
-    async def send(self, content=None, *args, **kwargs):
+    async def send(self, content=None, file=None, files=None, *args, **kwargs):
         """Override for send to add message filtering."""
         # TODO - this maybe shouldn't be in dango
+        file_to_send = None
         if content:
             content = str(content)
             content = re.sub("@everyone", "@\u200beveryone", content, flags=re.IGNORECASE)
             content = re.sub("@here", "@\u200bhere", content, flags=re.IGNORECASE)
 
             if len(content) > 2000:
-                try:
-                    pbin_url = await privatebin.upload(content)
-                    waaai_url = await waaai.shorten(
-                        pbin_url, self.bot.waaai_api_key())
-                    content = "Content too long: %s" % waaai_url
-                except privatebin.PrivateBinException:
-                    log.exception("Exception when uploading to privatebin...")
-                    content = "Way too big..."
-                except waaai.AkariError:
-                    log.exception("Exception when uploading to waa.ai...")
-                    content = pbin_url
+                text_file = io.BytesIO(content.encode('utf8'))
+                content = None
+                file_to_send = discord.File(fp=text_file, filename="message.txt")
 
-        sent_message = await super().send(content, *args, **kwargs)
+        if file_to_send:
+            if file:
+                files = [file, file_to_send]
+            elif files:
+                files.append(file_to_send)
+            else:
+                files = [file_to_send]
+
+        sent_message = await super().send(content, *args, file=file, files=files, **kwargs)
         self.bot.dispatch("dango_message_sent", sent_message, self)
         return sent_message
 
