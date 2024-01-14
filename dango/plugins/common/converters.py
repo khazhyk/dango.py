@@ -303,7 +303,7 @@ class MessageIdConverter(Converter):
 
         author = channel.guild.get_member(ctx.author.id)
 
-        if not channel.guild.me.permissions_in(channel).read_messages:
+        if not channel.permissions_for(channel.guild.me).read_messages:
             raise errors.CheckFailure("I don't have permission to view channel {0.mention}".format(channel))
         if not author or not channel.permissions_for(author).read_messages:
             raise errors.CheckFailure("You don't have permission to view channel {0.mention}".format(channel))
