@@ -96,7 +96,7 @@ def message_embed(msg):
         author_name = "{} • {}".format(msg.author.display_name, msg.author)
     else:
         author_name = msg.author
-    embed.set_author(name=author_name, icon_url=msg.author.avatar_url)
+    embed.set_author(name=author_name, icon_url=msg.author.avatar)
     embed.set_footer(text="#{} in {}".format(msg.channel, msg.guild))
     embed.color = hash(str(msg.author.id)) % (1 << 24)
     return embed
@@ -193,7 +193,7 @@ class Misc(Cog):
           players.append({
             "name": m.display_name,
             "g": pyrandom.choice([0,1,2]),
-            "pic": str(m.avatar_url),
+            "pic": str(m.avatar),
             "team": m.display_name,
             "perks": [pyrandom.choice(perks), pyrandom.choice(perks), pyrandom.choice(weapons)],
           })
@@ -272,7 +272,7 @@ class Misc(Cog):
         if num <= 0:
             raise errors.BadArgument("Try a number greater than 0.")
         await ctx.send("{0}".format(pyrandom.randint(0, num)))
-    
+
     @group(invoke_without_command=True)
     async def charinfo(self, ctx, *, chars: str):
         """Show information about a unicode character."""

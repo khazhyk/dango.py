@@ -374,4 +374,4 @@ class Info(Cog):
         if user is None:
             user = ctx.message.author
 
-        await ctx.send(str(user.default_avatar_url))
+        await ctx.send(str(user.default_avatar))

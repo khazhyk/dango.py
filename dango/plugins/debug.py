@@ -236,7 +236,7 @@ class Debug(Cog):
             url=ctx.message.jump_url,
                     )
         embed.set_author(name="Jump!", url=ctx.message.jump_url,
-                         icon_url=ctx.bot.user.avatar_url)
+                         icon_url=ctx.bot.user.avatar)
         await ctx.send(embed=embed)
 
     @command()
