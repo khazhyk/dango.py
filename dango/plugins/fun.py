@@ -13,6 +13,7 @@ Tag types:
    - Python custom image generation (everything else).
 """
 import asyncio
+import datetime
 import concurrent.futures as cf
 import io
 import inspect
@@ -660,3 +661,41 @@ class ImgFun(Cog):
         ))
 
         await ctx.send(file=discord.File(img_buff, filename="dinvite.png"))
+
+    @command()
+    async def voteban(self, ctx, member: converters.UserMemberConverter):
+        if ctx.author == member:
+            await ctx.send(f"{ctx.author.mention} was an imposter.")
+            return
+
+        voting_ends = discord.utils.utcnow() + datetime.timedelta(seconds=30)
+
+        helyea = discord.PartialEmoji.from_str(":helYea:236243426662678528")
+        helna = discord.PartialEmoji.from_str(":helNa:239120424938504192")
+
+        msg = await ctx.send(
+            f"""{ctx.author.mention} has started a poll to ban {member.mention}!
+            
+            React with {helyea} to vote to ban
+            React with {helna} to vote to acquit
+
+            Voting ends {discord.utils.format_dt(voting_ends, style="R")}
+            """, allowed_mentions=discord.AllowedMentions.none())
+        await msg.add_reaction(helyea)
+        await msg.add_reaction(helna)
+        await discord.utils.sleep_until(voting_ends)
+
+        msg_again = await ctx.fetch_message(msg.id)
+        votes_for = votes_against = 0
+        for reaction in msg_again.reactions:
+            if reaction.emoji == helyea:
+                votes_for = reaction.count
+            elif reaction.emoji == helna:
+                votes_against = reaction.count
+
+        if votes_for > votes_against:
+            await ctx.send(f"{member.mention} has been kicked off the island!!!!111!")
+        else:
+            await ctx.send(f"{ctx.author.mention} has been kicked off the island for false accusations!")
+
+        await msg.edit(content=msg.content.replace("ends", "ended"), allowed_mentions=discord.AllowedMentions.none())
