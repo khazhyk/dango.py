@@ -205,7 +205,7 @@ class ModInfo(Cog):
     @checks.bot_needs(["ban_members"])
     async def baninfo(self, ctx, *, user_id: int):
         """Because looking up by ID doesn't work in the UI and is 100x easier."""
-        for ban in await ctx.guild.bans():
+        async for ban in ctx.guild.bans():
             if ban.user.id == user_id:
                 await ctx.send(f"{ban.user} was banned for {ban.reason}")
                 return
