@@ -21,7 +21,7 @@ import objgraph
 from .common import converters
 from .common import checks
 from .common import utils
-from .common.paginator import EmbedPaginator
+from .common.paginator import ListPaginator
 
 log = logging.getLogger(__name__)
 
@@ -87,11 +87,11 @@ class Debug(Cog):
                 buf = io.StringIO()
                 task.print_stack(file=buf)
                 buf.seek(0)
-                lines.append(buf.read())
+                lines.append(f"```{buf.read()}```")
             except Exception as e:
-                lines.append(str(e))
+                lines.append(f"```{e}```")
 
-        await EmbedPaginator.from_lines(ctx, lines).send()
+        await ListPaginator.from_lines(ctx, lines).send()
 
     @command()
     async def test(self, ctx):
